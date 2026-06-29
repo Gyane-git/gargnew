@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import pool from "@/utils/db";
+import { buildCategoryTree, formatCategoryRows, shouldReturnFlatCategories } from "@/utils/apiFormatters";
 
-export async function GET() {
+export async function GET(req) {
   try {
-    const [rows] = await pool.query("SELECT * FROM categories");
+    const [rows] = await pool.query("SELECT * FROM categories ORDER BY id ASC");
+    const categories = shouldReturnFlatCategories(req)
+      ? formatCategoryRows(rows)
+      : buildCategoryTree(rows, { onlyActive: true });
 
     return NextResponse.json({
       success: true,
-      categories: rows,
+      categories,
     });
   } catch (error) {
     console.error("GET CATEGORIES ERROR:", error);

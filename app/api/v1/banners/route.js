@@ -1,18 +1,33 @@
 import pool from "@/utils/db";
+import { formatBanner } from "@/utils/apiFormatters";
 import { writeFile } from "fs/promises";
 import path from "path";
 
 // GET ALL BANNERS
-export async function GET() {
+export async function GET(req) {
   try {
-    const [rows] = await pool.query("SELECT * FROM carousel_images ORDER BY id DESC");
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get("include_inactive") === "1";
+    const onlyOffer = searchParams.get("is_offer");
+
+    const conditions = [];
+    const params = [];
+
+    if (!includeInactive) {
+      conditions.push("status = 1");
+    }
+
+    if (onlyOffer !== null) {
+      conditions.push("is_offer = ?");
+      params.push(onlyOffer);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const [rows] = await pool.query(`SELECT * FROM carousel_images ${where} ORDER BY id DESC`, params);
 
     return Response.json({
       success: true,
-      banners: rows.map(row => ({
-        ...row,
-        image_full_url: row.file_path ? `/uploads/carousel/${row.file_path}` : null,
-      })),
+      banners: rows.map(formatBanner),
     });
   } catch (error) {
     return Response.json({ success: false, message: error.message }, { status: 500 });

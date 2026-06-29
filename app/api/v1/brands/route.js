@@ -1,15 +1,20 @@
 import pool from "@/utils/db";
+import { formatBrand } from "@/utils/apiFormatters";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET ALL BRANDS
-export async function GET() {
+export async function GET(req) {
   try {
-    const [rows] = await pool.query("SELECT * FROM brands ORDER BY id DESC");
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get("include_inactive") === "1";
+    const conditions = includeInactive ? [] : ["status = 1"];
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const [rows] = await pool.query(`SELECT * FROM brands ${where} ORDER BY COALESCE(order_wise, 999999), id DESC`);
 
     return Response.json({
       success: true,
-      brands: rows,
+      brands: rows.map(formatBrand),
     });
   } catch (error) {
     return Response.json({ success: false, message: error.message }, { status: 500 });
@@ -44,7 +49,7 @@ export async function POST(req) {
       await mkdir(uploadDir, { recursive: true });
       await writeFile(filepath, buffer);
 
-      image_path = `/uploads/brands/${filename}`;
+      image_path = filename;
     }
 
     await pool.query(
