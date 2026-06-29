@@ -45,6 +45,8 @@ export const formatProduct = (product) => ({
   image_full_url: assetUrl(product.main_image, "uploads/products"),
   main_image_full_url: assetUrl(product.main_image, "uploads/products"),
   product_catalogue_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
+  catalogue_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
+  files_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
   brand: product.brand_id
     ? {
         id: product.brand_id,

@@ -5,9 +5,12 @@ import { formatProduct, parsePagination } from "@/utils/apiFormatters";
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
+    const shouldPaginate = searchParams.has("limit") || searchParams.has("offset");
     const { limit, offset } = parsePagination(searchParams, { defaultLimit: 20 });
     const includeInactive = searchParams.get("include_inactive") === "1";
     const where = includeInactive ? "" : "WHERE p.status = 1";
+    const paginationSql = shouldPaginate ? "LIMIT ? OFFSET ?" : "";
+    const params = shouldPaginate ? [limit, offset] : [];
 
     const [rows] = await pool.query(
       `SELECT 
@@ -26,8 +29,8 @@ export async function GET(req) {
        LEFT JOIN brands b ON p.brand_id = b.id
        ${where}
        ORDER BY p.id DESC
-       LIMIT ? OFFSET ?`,
-      [limit, offset],
+       ${paginationSql}`,
+      params,
     );
 
     const [[totalRow]] = await pool.query(`SELECT COUNT(*) AS total FROM products p ${where}`);
@@ -37,8 +40,7 @@ export async function GET(req) {
       products: rows.map(formatProduct),
       count: rows.length,
       total: totalRow.total,
-      limit,
-      offset,
+      ...(shouldPaginate ? { limit, offset } : {}),
     });
   } catch (error) {
     console.error("GET ALL PRODUCTS ERROR:", error);

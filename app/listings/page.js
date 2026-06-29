@@ -22,9 +22,9 @@ import { useProductStore, useCategoryStore } from "@/stores/InitdataFetch";
 
 const DentalSuppliesListing = () => {
   // const [products, setProducts] = useState([]);
-  const { products, loading, error } = useProductStore();
+  const { products, loading, error, fetchProducts } = useProductStore();
 
-  const { categories, loadingcategory, errorcategory } = useCategoryStore();
+  const { categories, loadingcategory, errorcategory, fetchCategories } = useCategoryStore();
   const [loadings, setLoading] = useState(false);
   // const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,6 +87,11 @@ const DentalSuppliesListing = () => {
     setLoading(true);
     fetchManufacturers();
   }, []);
+
+  useEffect(() => {
+    if (products.length === 0) fetchProducts();
+    if (categories.length === 0) fetchCategories();
+  }, [products.length, categories.length, fetchProducts, fetchCategories]);
 
   const router = useRouter();
   const setSelectedProduct = useSelectedProductStore(

@@ -7,32 +7,10 @@ import ProductTabs from "@/components/ProductTabsDes";
 import OverViewProject from "./OverViewProject";
 import CatalogButton from "./Catalog";
 import RecommendedProducts from "./Recommendation";
-import { Star, Share2 } from "lucide-react";
+import { Star } from "lucide-react";
 import ButtonForShare from "./ButtonForShare";
 import { baseUrl } from "@/utils/config";
 import ProductCardList from "./ProductCardList";
-import QuantitySelector from "./QuantitySelector";
-import useQuantityStore from "@/stores/AddtoCartStore";
-import toast from "react-hot-toast";
-//to transform product
-function transformProduct(product) {
-  return {
-    id: product.id,
-    product_name: product.product_name,
-    product_code: product.product_code,
-    brand: product.brand?.brand_name || "No Brand",
-    category: product.category?.category_name || "Uncategorized",
-    item_number: `#${product.product_code}`,
-    actual_price: product.actual_price,
-    sell_price: product.sell_price,
-    image_url: product.image_full_url || "/assets/logo.png",
-    description: product.product_description,
-    available_quantity: product.available_quantity,
-    unit_info: product.unit_info,
-    flash_sale: product.flash_sale === "1",
-    delivery_days: product.delivery_target_days,
-  };
-}
 
 //fetch api data
 const getProductByCode = async (code) => {

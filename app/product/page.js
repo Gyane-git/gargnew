@@ -44,13 +44,13 @@ import {
 import FullScreenLoader from "@/components/FullScreenLoader";
 
 const ProductAPIRequest = () => {
-  const { products, loading, error } = useProductStore();
+  const { products, loading, error, fetchProducts } = useProductStore();
   // const [products, setProducts] = useState([]);
   const [loadings, setLoading] = useState(false);
   const [errors, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { categories, loadingcategory, errorcategory } = useCategoryStore();
+  const { categories, loadingcategory, errorcategory, fetchCategories } = useCategoryStore();
 
   const pathname = usePathname();
   const router = useRouter();
@@ -69,9 +69,23 @@ const ProductAPIRequest = () => {
   // const [manufacturers, setManufacturers] = useState([]);
   const { manufacturers, loadingmanufacturer, errormanufacturer } =
     useManufacturerStore();
+  const fetchManufacturers = useManufacturerStore((state) => state.fetchManufacturers);
 
   const [offset, setOffset] = useState(0);
   const [filterON, setfilterON] = useState(false);
+
+  useEffect(() => {
+    if (products.length === 0) fetchProducts();
+    if (categories.length === 0) fetchCategories();
+    if (manufacturers.length === 0) fetchManufacturers();
+  }, [
+    products.length,
+    categories.length,
+    manufacturers.length,
+    fetchProducts,
+    fetchCategories,
+    fetchManufacturers,
+  ]);
 
   //  set initial category from URL
   useEffect(() => {

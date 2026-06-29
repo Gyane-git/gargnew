@@ -19,6 +19,7 @@ const mapCategories = (categories) => categories.map(mapCategory);
 // stores/useProductStore.js
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
+const PRODUCTS_CACHE_VERSION = 2;
 
 export const useProductStore = create((set, get) => ({
     products: [],
@@ -37,7 +38,7 @@ export const useProductStore = create((set, get) => ({
     if (cached) {
         try {
         const parsed = JSON.parse(cached);
-        data = parsed.data || [];
+        data = parsed.version === PRODUCTS_CACHE_VERSION ? parsed.data || [] : [];
         expiry = parsed.expiry || 0;
         // console.log("Cached Products:", data);
         } catch {
@@ -94,7 +95,11 @@ export const useProductStore = create((set, get) => ({
       if (typeof window !== "undefined") {
         localStorage.setItem(
             "productsCache",
-            JSON.stringify({ data: transformedProducts, expiry: now + CACHE_DURATION })
+            JSON.stringify({
+              data: transformedProducts,
+              expiry: now + CACHE_DURATION,
+              version: PRODUCTS_CACHE_VERSION,
+            })
         );
         }
 

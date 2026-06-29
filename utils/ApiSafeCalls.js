@@ -35,8 +35,23 @@ export const getToken = () => {
   return sessionStorage.getItem("token");
 }
 
+const getApiBaseUrl = () => {
+  if (typeof window === "undefined") return baseUrl;
+
+  try {
+    const configuredUrl = new URL(baseUrl);
+    const currentUrl = new URL(window.location.origin);
+
+    if (["localhost", "127.0.0.1"].includes(configuredUrl.hostname)) {
+      return `${window.location.origin}/api/v1`;
+    }
+  } catch {}
+
+  return baseUrl || `${window.location.origin}/api/v1`;
+};
+
 export const apiRequest = async (url, tokenReq = true, options = {}) => {
-  url = `${baseUrl}${url}`;
+  url = `${getApiBaseUrl()}${url}`;
   const token = sessionStorage.getItem("token");
   const headers = {
     ...(tokenReq && token && { Authorization: `Bearer ${token}` }),
