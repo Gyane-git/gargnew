@@ -175,6 +175,8 @@ export default function RootLayout({ children }) {
           <ClientLayout>{children}</ClientLayout>
         </LayoutWrapper>
 
+       <Toast />
+
         
       </body>
     </html>
