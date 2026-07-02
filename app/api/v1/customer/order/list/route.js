@@ -3,20 +3,23 @@ import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 import { getProductByCode } from "@/utils/cart";
 
 const buildOrderItem = async (connection, row) => ({
-  id: row.id,
-  order_id: row.order_id,
-  product_code: row.product_code,
-  quantity: Number(row.quantity || 0),
-  price: Number(row.price || 0),
-  actual_price: Number(row.actual_price || 0),
-  subtotal_without_tax: Number(row.subtotal_without_tax || 0),
-  tax: Number(row.tax || 0),
-  subtotal: Number(row.subtotal || 0),
-  discount: Number(row.discount || 0),
-  shipping_cost: Number(row.shipping_cost || 0),
-  reviewed: Number(row.reviewed || 0),
-  product: await getProductByCode(row.product_code),
-});
+  const product = await getProductByCode(row.product_code);
+  return {
+    id: row.id,
+    order_id: row.order_id,
+    product_code: row.product_code,
+    quantity: Number(row.quantity || 0),
+    price: Number(row.price || product?.sell_price || product?.actual_price || 0),
+    actual_price: Number(row.actual_price || product?.actual_price || 0),
+    subtotal_without_tax: Number(row.subtotal_without_tax || 0),
+    tax: Number(row.tax || 0),
+    subtotal: Number(row.subtotal || 0),
+    discount: Number(row.discount || 0),
+    shipping_cost: Number(row.shipping_cost || 0),
+    reviewed: Number(row.reviewed || 0),
+    product,
+  };
+};
 
 const buildOrder = async (connection, row) => {
   const [itemRows] = await connection.query(

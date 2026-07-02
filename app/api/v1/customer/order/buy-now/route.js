@@ -27,10 +27,6 @@ export async function POST(req) {
     const buyNowItem = body.buy_now_item || {};
     const productCode = String(buyNowItem.product_code || "").trim();
     const quantity = Number(buyNowItem.quantity || 0);
-    const subtotal = toNumber(body.subtotal);
-    const grandtotal = toNumber(body.grandtotal);
-    const shipping = toNumber(body.shipping);
-
     if (!paymentMethod || !billingAddressId || !shippingAddressId || !invoiceEmail || !productCode || quantity < 1) {
       return Response.json(
         {
@@ -56,8 +52,13 @@ export async function POST(req) {
       return Response.json({ success: false, message: "Product not found." }, { status: 404 });
     }
 
-    const price = Number(product.sell_price || 0);
+    const price = Number(product.sell_price || product.actual_price || 0);
     const actualPrice = Number(product.actual_price || 0);
+    const subtotal = Number((price * quantity).toFixed(2));
+    const shipping = Number(
+      body.shipping ?? shippingAddress.shipping_cost ?? billingAddress.shipping_cost ?? 0,
+    );
+    const grandtotal = Number((subtotal + shipping).toFixed(2));
     const itemSubtotal = Number((price * quantity).toFixed(2));
     const orderItems = [
       {
