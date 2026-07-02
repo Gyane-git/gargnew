@@ -1,5 +1,10 @@
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
-import { formatCartItem, formatCartResponse, getProductByCode } from "@/utils/cart";
+import {
+  formatCartItem,
+  formatCartResponse,
+  getCustomerCartId,
+  getProductByCode,
+} from "@/utils/cart";
 import pool from "@/utils/db";
 
 const attachProducts = async (rows) =>
@@ -15,12 +20,24 @@ export async function GET(req) {
     const authUser = getAuthUser(req);
     if (!authUser?.id) return unauthorizedResponse();
 
+    const cartId = await getCustomerCartId(pool, authUser.id, false);
+    if (!cartId) {
+      return Response.json({
+        success: true,
+        cart: {
+          id: null,
+          items: [],
+          subtotal: 0,
+        },
+      });
+    }
+
     const [rows] = await pool.query(
       `SELECT id, cart_id, product_code, quantity, price, actual_price, created_at, updated_at
        FROM cart_items
        WHERE cart_id = ?
        ORDER BY id DESC`,
-      [authUser.id],
+      [cartId],
     );
 
     const items = attachProducts(rows).then((resolvedRows) => resolvedRows.map(formatCartItem));

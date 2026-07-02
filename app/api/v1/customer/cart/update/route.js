@@ -1,6 +1,11 @@
 import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
-import { formatCartItem, formatCartResponse, getProductByCode } from "@/utils/cart";
+import {
+  formatCartItem,
+  formatCartResponse,
+  getCustomerCartId,
+  getProductByCode,
+} from "@/utils/cart";
 
 export async function POST(req) {
   try {
@@ -10,14 +15,19 @@ export async function POST(req) {
     const body = await req.json();
     const itemId = Number(body.item_id);
     const quantity = Number(body.quantity);
+    const cartId = await getCustomerCartId(pool, authUser.id, false);
 
     if (!itemId || !Number.isFinite(quantity) || quantity < 1) {
       return Response.json({ success: false, message: "item_id and valid quantity are required" }, { status: 400 });
     }
 
+    if (!cartId) {
+      return Response.json({ success: false, message: "Cart not found" }, { status: 404 });
+    }
+
     const [items] = await pool.query(
       "SELECT id, cart_id, product_code, quantity, price, actual_price FROM cart_items WHERE id = ? AND cart_id = ? LIMIT 1",
-      [itemId, authUser.id],
+      [itemId, cartId],
     );
 
     if (items.length === 0) {
@@ -41,7 +51,7 @@ export async function POST(req) {
     await pool.query("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE id = ? AND cart_id = ?", [
       quantity,
       itemId,
-      authUser.id,
+      cartId,
     ]);
 
     const [rows] = await pool.query(
@@ -49,7 +59,7 @@ export async function POST(req) {
        FROM cart_items
        WHERE cart_id = ?
        ORDER BY id DESC`,
-      [authUser.id],
+      [cartId],
     );
 
     const resolved = await Promise.all(

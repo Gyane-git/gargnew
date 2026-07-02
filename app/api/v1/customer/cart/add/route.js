@@ -1,6 +1,11 @@
 import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
-import { formatCartItem, formatCartResponse, getProductByCode } from "@/utils/cart";
+import {
+  formatCartItem,
+  formatCartResponse,
+  getCustomerCartId,
+  getProductByCode,
+} from "@/utils/cart";
 
 export async function POST(req) {
   try {
@@ -25,9 +30,11 @@ export async function POST(req) {
       return Response.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
+    const cartId = await getCustomerCartId(pool, authUser.id, true);
+
     const [existing] = await pool.query(
       "SELECT id, quantity, price, actual_price FROM cart_items WHERE cart_id = ? AND product_code = ? LIMIT 1",
-      [authUser.id, productCode],
+      [cartId, productCode],
     );
 
     if (existing.length > 0) {
@@ -41,7 +48,7 @@ export async function POST(req) {
       const itemPrice = price > 0 ? price : Number(product.sell_price || product.actual_price || 0);
       await pool.query(
         "INSERT INTO cart_items (cart_id, product_code, quantity, price, actual_price, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-        [authUser.id, productCode, quantity, itemPrice, Number(product.actual_price || 0)],
+        [cartId, productCode, quantity, itemPrice, Number(product.actual_price || 0)],
       );
     }
 
@@ -50,7 +57,7 @@ export async function POST(req) {
        FROM cart_items
        WHERE cart_id = ?
        ORDER BY id DESC`,
-      [authUser.id],
+      [cartId],
     );
 
     const items = await Promise.all(

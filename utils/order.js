@@ -125,12 +125,12 @@ export const insertOrderItems = async (connection, orderId, items) => {
   }
 };
 
-export const removeCartItemsByIds = async (connection, customerId, itemIds) => {
+export const removeCartItemsByIds = async (connection, cartId, itemIds) => {
   if (!itemIds.length) return;
   const placeholders = itemIds.map(() => "?").join(",");
   await connection.query(
     `DELETE FROM cart_items WHERE cart_id = ? AND id IN (${placeholders})`,
-    [customerId, ...itemIds],
+    [cartId, ...itemIds],
   );
 };
 

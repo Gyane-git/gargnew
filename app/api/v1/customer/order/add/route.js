@@ -1,5 +1,6 @@
 import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
+import { getCustomerCartId } from "@/utils/cart";
 import {
   createDeliveryInformation,
   fetchAddressById,
@@ -42,6 +43,12 @@ export async function POST(req) {
 
     await connection.beginTransaction();
 
+    const cartId = await getCustomerCartId(connection, authUser.id, false);
+    if (!cartId) {
+      await connection.rollback();
+      return Response.json({ success: false, message: "Cart not found." }, { status: 404 });
+    }
+
     const billingAddress = await fetchAddressById(connection, authUser.id, billingAddressId);
     const shippingAddress = await fetchAddressById(connection, authUser.id, shippingAddressId);
     if (!billingAddress || !shippingAddress) {
@@ -60,7 +67,7 @@ export async function POST(req) {
        FROM cart_items ci
        LEFT JOIN products p ON p.product_code = ci.product_code
        WHERE ci.cart_id = ? AND ci.id IN (${selectedItems.map(() => "?").join(",")})`,
-      [authUser.id, ...selectedItems],
+      [cartId, ...selectedItems],
     );
 
     if (cartRows.length === 0 || cartRows.length !== selectedItems.length) {
@@ -131,7 +138,7 @@ export async function POST(req) {
     });
 
     await insertOrderItems(connection, orderNumber, orderItems);
-    await removeCartItemsByIds(connection, authUser.id, selectedItems);
+    await removeCartItemsByIds(connection, cartId, selectedItems);
 
     await connection.commit();
 
