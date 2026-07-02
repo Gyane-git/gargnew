@@ -2,8 +2,9 @@ import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 import { getProductByCode } from "@/utils/cart";
 
-const buildOrderItem = async (connection, row) => ({
+const buildOrderItem = async (_connection, row) => {
   const product = await getProductByCode(row.product_code);
+
   return {
     id: row.id,
     order_id: row.order_id,
