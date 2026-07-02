@@ -1,5 +1,5 @@
 import pool from "@/utils/db";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET SINGLE
@@ -47,7 +47,9 @@ export async function PUT(req, { params }) {
         const bytes = await desktopFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         const filename = `desktop_${Date.now()}_${desktopFile.name}`;
-        const filePath = path.join(process.cwd(), "public/uploads/carousel", filename);
+        const uploadDir = path.join(process.cwd(), "public/uploads/carousel");
+        const filePath = path.join(uploadDir, filename);
+        await mkdir(uploadDir, { recursive: true });
         await writeFile(filePath, buffer);
         newDesktopPath = filename;
       }
@@ -57,7 +59,9 @@ export async function PUT(req, { params }) {
         const bytes = await mobileFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         const filename = `mobile_${Date.now()}_${mobileFile.name}`;
-        const filePath = path.join(process.cwd(), "public/uploads/carousel", filename);
+        const uploadDir = path.join(process.cwd(), "public/uploads/carousel");
+        const filePath = path.join(uploadDir, filename);
+        await mkdir(uploadDir, { recursive: true });
         await writeFile(filePath, buffer);
         newMobilePath = filename;
       }
