@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { MoveUp } from "lucide-react";
 import { toast } from "react-toastify";
+import { useCallback, useEffect, useState } from "react";
 
 const RichTextEditor = dynamic(() => import("../RichTextEditor"), {
   ssr: false,
@@ -19,6 +19,7 @@ const INITIAL_CONTENT = `<h1>Company Information</h1>
 export default function AboutCompanyPage() {
   const [content, setContent] = useState(INITIAL_CONTENT);
   const [loading, setLoading] = useState(false);
+const [loadingContent, setLoadingContent] = useState(true);
 
   const handleContentChange = useCallback((value) => {
     setContent(value);
@@ -57,6 +58,29 @@ export default function AboutCompanyPage() {
     },
     [content],
   );
+
+  useEffect(() => {
+  const fetchCompanyInfo = async () => {
+    try {
+      const response = await fetch("/api/v1/compliance/about-company");
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      setContent(data.content || INITIAL_CONTENT);
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Failed to load company information.");
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  fetchCompanyInfo();
+}, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#eef1f9]">

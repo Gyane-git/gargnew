@@ -1,5 +1,45 @@
 import pool from "@/utils/db";
 
+export async function GET() {
+  try {
+    const [rows] = await pool.query("SELECT `value` FROM compliances WHERE `key` = ?", ["about_company"]);
+
+    if (!rows.length) {
+      return Response.json({
+        success: true,
+        content: "",
+        certifications: [],
+      });
+    }
+
+    let data;
+
+    try {
+      data = JSON.parse(rows[0].value);
+    } catch {
+      // Existing HTML only
+      data = {
+        content: rows[0].value,
+        certifications: [],
+      };
+    }
+
+    return Response.json({
+      success: true,
+      content: data.content || "",
+      certifications: data.certifications || [],
+    });
+  } catch (error) {
+    return Response.json(
+      {
+        success: false,
+        message: error.message,
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request) {
   try {
     const { content } = await request.json();

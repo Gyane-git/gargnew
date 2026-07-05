@@ -319,7 +319,7 @@ GET https://gargdental.omsok.com/api/v1/compliances
 ### Get all settings
 GET https://gargdental.omsok.com/api/v1/settings 
 
-### Get all get-valley-wise-addresss
+### Get all get-valley-wise-addresss    
 GET http://192.168.1.189:8080/api/v1/get-valley-wise-address
 
 ###Top categories lists
