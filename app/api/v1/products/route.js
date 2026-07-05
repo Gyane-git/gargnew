@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import pool from "@/utils/db";
 import { formatProduct, parsePagination } from "@/utils/apiFormatters";
+import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
 const productSelect = `
   SELECT 
@@ -41,9 +42,12 @@ export async function GET(req) {
       ${where}
     `);
 
+    const imageMap = await fetchProductImagesMap(rows.map((row) => row.product_code));
+    const enrichedRows = enrichProductsWithImages(rows, imageMap);
+
     return NextResponse.json({
       success: true,
-      products: rows.map(formatProduct),
+      products: enrichedRows.map(formatProduct),
       count: rows.length,
       total: totalRow.total,
       limit,
@@ -108,9 +112,14 @@ export async function POST(req) {
       [product_code, product_name, categoryIdValue, imagePath, actual_price, sell_price, discount, available_quantity, stock_quantity, status],
     );
 
+    const imageMap = await fetchProductImagesMap([product_code]);
+    const [insertedRows] = await pool.query("SELECT * FROM products WHERE product_code = ? LIMIT 1", [product_code]);
+    const insertedProduct = insertedRows[0] ? enrichProductsWithImages(insertedRows, imageMap)[0] : null;
+
     return NextResponse.json({
       success: true,
       message: "Product created successfully",
+      product: insertedProduct ? formatProduct(insertedProduct) : null,
     });
   } catch (error) {
     console.error("ADD PRODUCT ERROR:", error);
