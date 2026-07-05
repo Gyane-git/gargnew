@@ -2,6 +2,8 @@
 
 import { ArrowUpDown, Edit2, House, Info, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 const IconArrowUp = (props) => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" {...props}>
@@ -9,31 +11,18 @@ const IconArrowUp = (props) => (
   </svg>
 );
 
-/* ---------------- Dummy data (replace with API data later) ---------------- */
-
-const DUMMY_PROVINCES = [
-  { id: 1, name: "Koshi Province" },
-  { id: 2, name: "Madhesh Province" },
-  { id: 3, name: "Bagmati Province" },
-  { id: 4, name: "Gandaki Province" },
-  { id: 5, name: "Lumbini Province" },
-  { id: 6, name: "Karnali Province" },
-  { id: 7, name: "Sudurpaschim Province" },
-];
-
-/* ---------------------------------------------------------------------------- */
-
 export default function ProvincesPage() {
-  const [provinces, setProvinces] = useState(DUMMY_PROVINCES);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteProvince, setDeleteProvince] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const router = useRouter();
+  const [provinces, setProvinces] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [sortAsc, setSortAsc] = useState(true);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null); // null = add mode, object = edit mode
-  const [nameInput, setNameInput] = useState("");
 
   const [showTop, setShowTop] = useState(false);
 
@@ -59,32 +48,55 @@ export default function ProvincesPage() {
   const endIdx = Math.min(currentPage * perPage, totalEntries);
   const pageRows = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-  const openAdd = () => {
-    setEditing(null);
-    setNameInput("");
-    setShowModal(true);
-  };
+  const handleDelete = async () => {
+    try {
+      setDeleteLoading(true);
 
-  const openEdit = (province) => {
-    setEditing(province);
-    setNameInput(province.name);
-    setShowModal(true);
-  };
+      const res = await fetch(`/api/v1/addresses/province/${deleteId}`, {
+        method: "DELETE",
+      });
 
-  const handleDelete = (province) => {
-    if (!window.confirm(`Delete "${province.name}"?`)) return;
-    setProvinces((prev) => prev.filter((p) => p.id !== province.id));
-  };
+      const data = await res.json();
 
-  const handleSave = () => {
-    if (!nameInput.trim()) return;
-    if (editing) {
-      setProvinces((prev) => prev.map((p) => (p.id === editing.id ? { ...p, name: nameInput.trim() } : p)));
-    } else {
-      const nextId = provinces.length > 0 ? Math.max(...provinces.map((p) => p.id)) + 1 : 1;
-      setProvinces((prev) => [...prev, { id: nextId, name: nameInput.trim() }]);
+      if (data.success) {
+        toast.success("Province deleted successfully");
+        fetchProvinces();
+      } else {
+        toast.error(data.message || "Failed to delete province");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteId(null);
+      setDeleteProvince(null);
     }
-    setShowModal(false);
+  };
+  useEffect(() => {
+    fetchProvinces();
+  }, []);
+
+  const fetchProvinces = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/v1/addresses/province");
+      const data = await res.json();
+
+      if (data.success) {
+        setProvinces(
+          data.provinces.map((item) => ({
+            id: item.id,
+            name: item.province_name,
+          })),
+        );
+      }
+    } catch (error) {
+      console.error("Error loading provinces:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -104,7 +116,7 @@ export default function ProvincesPage() {
       <div className="rounded-[10px] bg-white px-5 py-6 shadow-[0_2px_10px_rgba(30,42,80,0.06)] sm:px-7">
         <div className="flex items-center justify-between">
           <h2 className="m-0 text-xl font-semibold text-[#232f4b]">Provinces</h2>
-          <button onClick={openAdd} className="rounded-md bg-[#2f55d4] px-[18px] py-2 text-sm font-medium text-white hover:bg-[#2645b0]">
+          <button onClick={() => router.push("/admin/provinces/add")} className="rounded-md bg-[#2f55d4] px-[18px] py-2 text-sm font-medium text-white hover:bg-[#2645b0]">
             Add Province
           </button>
         </div>
@@ -162,7 +174,13 @@ export default function ProvincesPage() {
               </tr>
             </thead>
             <tbody>
-              {pageRows.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-[#9aa2b1]">
+                    Loading...
+                  </td>
+                </tr>
+              ) : pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="py-8 text-center text-[#9aa2b1]">
                     No matching records found
@@ -180,12 +198,23 @@ export default function ProvincesPage() {
                     <td className="border-b border-[#f1f2f6] px-2 py-3">
                       <div className="flex gap-2">
                         <button title="View" className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#cfeaf7] bg-[#eef8fd] text-[#2f9bd6] hover:brightness-95">
-                          <Info size={16} />
+                          <button title="View" onClick={() => router.push(`/admin/provinces/view/${p.id}`)} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#cfeaf7] bg-[#eef8fd] text-[#2f9bd6] hover:brightness-95">
+                            <Info size={16} />
+                          </button>
                         </button>
                         <button title="Edit" onClick={() => openEdit(p)} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#d6ddf7] bg-[#eef1fd] text-[#2f55d4] hover:brightness-95">
-                          <Edit2 size={16} />
+                          <button title="View" onClick={() => router.push(`/admin/provinces/edit/${p.id}`)} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#cfeaf7] bg-[#eef8fd] text-[#2f9bd6] hover:brightness-95">
+                            <Edit2 size={16} />
+                          </button>
                         </button>
-                        <button title="Delete" onClick={() => handleDelete(p)} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#e5534b] bg-[#e5534b] text-white hover:brightness-95">
+                        <button
+                          title="Delete"
+                          onClick={() => {
+                            setDeleteId(p.id);
+                            setDeleteProvince(p);
+                          }}
+                          className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#e5534b] bg-[#e5534b] text-white hover:brightness-95"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -228,25 +257,49 @@ export default function ProvincesPage() {
           <IconArrowUp />
         </button>
       )}
+      {/* Delete Modal */}
+      <DeleteModal
+        province={deleteProvince}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setDeleteId(null);
+          setDeleteProvince(null);
+        }}
+      />
+    </div>
+  );
+}
+function DeleteModal({ province, onConfirm, onCancel, loading }) {
+  if (!province) return null;
 
-      {/* Add / Edit modal */}
-      {showModal && (
-        <div onClick={() => setShowModal(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,26,46,0.45)]">
-          <div onClick={(e) => e.stopPropagation()} className="w-[360px] max-w-[90vw] rounded-[10px] bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
-            <h3 className="mb-4 text-lg text-[#232f4b]">{editing ? "Edit Province" : "Add Province"}</h3>
-            <label className="mb-1.5 block text-[13px] text-[#6b7285]">Province Name</label>
-            <input autoFocus type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Enter province name" className="w-full rounded-md border border-[#dfe3ea] px-2.5 py-2 text-sm focus:border-[#2f55d4] focus:outline-none" />
-            <div className="mt-5 flex justify-end gap-2.5">
-              <button onClick={() => setShowModal(false)} className="rounded-md bg-[#f1f2f6] px-4 py-2 text-sm text-[#4b5468]">
-                Cancel
-              </button>
-              <button onClick={handleSave} className="rounded-md bg-[#2f55d4] px-4 py-2 text-sm text-white">
-                Save
-              </button>
-            </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+        <div className="p-6">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <Trash2 className="h-8 w-8 text-red-600" />
+          </div>
+
+          <h2 className="mt-4 text-center text-xl font-semibold text-gray-800">Delete Province?</h2>
+
+          <p className="mt-3 text-center text-gray-600">Are you sure you want to delete</p>
+
+          <p className="mt-1 text-center font-semibold text-gray-800">"{province.name}"</p>
+
+          <p className="mt-2 text-center text-sm text-red-500">This action cannot be undone.</p>
+
+          <div className="mt-6 flex justify-between">
+            <button onClick={onCancel} disabled={loading} className="rounded-md border border-gray-300 px-5 py-2 text-gray-700 hover:bg-gray-100">
+              Cancel
+            </button>
+
+            <button onClick={onConfirm} disabled={loading} className="rounded-md bg-red-600 px-5 py-2 text-white hover:bg-red-700 disabled:opacity-60">
+              {loading ? "Deleting..." : "Delete"}
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -71,6 +71,22 @@
 import pool from "@/utils/db";
 import bcrypt from "bcryptjs";
 
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const comparePassword = async (plainPassword, hashedPassword) => {
+  if (!hashedPassword) return false;
+
+  const normalizedHash = hashedPassword.startsWith("$2y$")
+    ? `$2b$${hashedPassword.slice(4)}`
+    : hashedPassword;
+
+  try {
+    return await bcrypt.compare(plainPassword, normalizedHash);
+  } catch {
+    return false;
+  }
+};
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -85,7 +101,7 @@ export async function POST(req) {
     const [rows] = await pool.execute(
       `SELECT id, full_name, email, phone, password, status, is_email_verified
        FROM users WHERE email = ? LIMIT 1`,
-      [email.trim().toLowerCase()],
+      [normalizeEmail(email)],
     );
 
     if (rows.length === 0) {
@@ -99,8 +115,23 @@ export async function POST(req) {
       return Response.json({ success: false, message: "Your account is inactive. Please contact support." }, { status: 403 });
     }
 
+    if (
+      String(process.env.REQUIRE_EMAIL_VERIFICATION || "").toLowerCase() === "true" &&
+      Number(user.is_email_verified) !== 1
+    ) {
+      return Response.json(
+        {
+          success: false,
+          message: "Please verify your account before login.",
+          email: user.email,
+          is_email_verified: user.is_email_verified,
+        },
+        { status: 403 },
+      );
+    }
+
     // --- Compare password ---
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePassword(password, user.password);
 
     if (!isMatch) {
       return Response.json({ success: false, message: "Invalid email or password." }, { status: 401 });

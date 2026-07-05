@@ -1,57 +1,83 @@
+import { existsSync } from "fs";
+import path from "path";
+
 const absoluteBaseUrl = () =>
   (
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
-    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_MEDIA_BASE_URL ||
+    process.env.NEXT_PUBLIC_ASSET_BASE_URL ||
     ""
   ).replace(/\/+$/, "");
 
-export const assetUrl = (value, folder = "") => {
-  if (!value) return null;
+const publicAssetExists = (candidatePath) => {
+  const localPath = path.join(process.cwd(), "public", candidatePath.replace(/^\/+/, ""));
+  return existsSync(localPath);
+};
 
-  const rawValue = String(value).trim();
-  if (!rawValue) return null;
-  if (/^https?:\/\//i.test(rawValue)) return rawValue;
+const uniqueCandidates = (candidates) => [...new Set(candidates.filter(Boolean))];
 
-  const base = absoluteBaseUrl();
+const pickAssetPath = (value, folder = "") => {
+  const rawValue = String(value || "").trim();
   const normalizedFolder = folder ? `/${folder.replace(/^\/+|\/+$/g, "")}` : "";
   const normalizedValue = rawValue.replace(/^public\//, "").replace(/^\/+/, "");
 
-  let path;
-  if (normalizedValue.startsWith("uploads/")) {
-    path = `/${normalizedValue}`;
-  } else if (normalizedValue.startsWith("storage/")) {
-    path = `/${normalizedValue}`;
-  } else {
-    path = `${normalizedFolder}/${normalizedValue}`.replace(/\/+/g, "/");
-  }
+  if (!rawValue) return null;
+  if (/^https?:\/\//i.test(rawValue)) return rawValue;
 
-  return base ? `${base}${path}` : path;
+  const filename = normalizedValue.split("/").filter(Boolean).pop() || normalizedValue;
+  const candidates = uniqueCandidates([
+    normalizedValue.startsWith("uploads/") ? `/${normalizedValue}` : null,
+    normalizedValue.startsWith("storage/") ? `/${normalizedValue}` : null,
+    normalizedFolder ? `${normalizedFolder}/${filename}` : null,
+    normalizedFolder && normalizedValue !== filename ? `${normalizedFolder}/${normalizedValue}` : null,
+    `/uploads/${filename}`,
+    `/uploads/${normalizedValue}`,
+    `/${normalizedValue}`,
+  ]);
+
+  const existing = candidates.find((candidate) => publicAssetExists(candidate));
+  return existing || candidates[0] || null;
+};
+
+export const assetUrl = (value, folder = "") => {
+  const resolvedPath = pickAssetPath(value, folder);
+  if (!resolvedPath) return null;
+
+  const base = absoluteBaseUrl();
+  return base ? `${base}${resolvedPath}` : resolvedPath;
 };
 
 export const formatBanner = (banner) => ({
   ...banner,
   image_full_url: assetUrl(banner.file_path, "uploads/carousel"),
   mobile_image_full_url: assetUrl(banner.mobile_file_path, "uploads/carousel"),
+  image_url: assetUrl(banner.file_path, "uploads/carousel"),
+  file_path_full_url: assetUrl(banner.file_path, "uploads/carousel"),
+  mobile_file_path_full_url: assetUrl(banner.mobile_file_path, "uploads/carousel"),
 });
 
 export const formatBrand = (brand) => ({
   ...brand,
   image_full_url: assetUrl(brand.image, "uploads/brands"),
+  image_url: assetUrl(brand.image, "uploads/brands"),
+  logo_full_url: assetUrl(brand.image, "uploads/brands"),
 });
 
 export const formatProduct = (product) => ({
   ...product,
   image_full_url: assetUrl(product.main_image, "uploads/products"),
   main_image_full_url: assetUrl(product.main_image, "uploads/products"),
+  image_url: assetUrl(product.main_image, "uploads/products"),
+  main_image_url: assetUrl(product.main_image, "uploads/products"),
   product_catalogue_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
   catalogue_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
   files_full_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
+  product_catalogue_url: assetUrl(product.product_catalogue, "uploads/catalogues"),
   brand: product.brand_id
     ? {
         id: product.brand_id,
         brand_name: product.brand_name,
         image_full_url: assetUrl(product.brand_image, "uploads/brands"),
+        image_url: assetUrl(product.brand_image, "uploads/brands"),
         top: product.brand_top,
         status: product.brand_status,
       }
@@ -62,6 +88,7 @@ export const formatProduct = (product) => ({
         category_name: product.category_name,
         parent_id: product.category_parent_id,
         image_full_url: assetUrl(product.category_image, "uploads"),
+        image_url: assetUrl(product.category_image, "uploads"),
         top: product.category_top,
         status: product.category_status,
       }
@@ -71,6 +98,7 @@ export const formatProduct = (product) => ({
 const formatCategory = (category) => ({
   ...category,
   image_full_url: assetUrl(category.image, "uploads"),
+  image_url: assetUrl(category.image, "uploads"),
 });
 
 export const formatCategoryRows = (rows) => rows.map(formatCategory);

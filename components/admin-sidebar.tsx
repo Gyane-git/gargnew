@@ -145,9 +145,9 @@ const menuItems = [
     path: "#",
     expandable: true,
     children: [
-      { name: "Manage Provinces", path: "/admin/manage-address/manage-provinces", icon: Settings },
-      { name: "Set City/Shipping", path: "/admin/manage-address/set-city-shipping", icon: MapPin },
-      { name: "Set City Zone", path: "/admin/manage-address/set-city-zone", icon: Calendar },
+      { name: "Manage Provinces", path: "/admin/provinces", icon: Settings },
+      { name: "Set City Zone", path: "/admin/address-zone", icon: Calendar },
+      { name: "Set City/Shipping", path: "/admin/set-shipping", icon: MapPin },
     ],
   },
   {

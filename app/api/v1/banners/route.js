@@ -1,6 +1,6 @@
 import pool from "@/utils/db";
 import { formatBanner } from "@/utils/apiFormatters";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET ALL BANNERS
@@ -55,8 +55,10 @@ export async function POST(req) {
       const buffer = Buffer.from(bytes);
 
       const filename = Date.now() + "_" + file.name;
-      const filepath = path.join(process.cwd(), "public/uploads/carousel", filename);
+      const uploadDir = path.join(process.cwd(), "public/uploads/carousel");
+      const filepath = path.join(uploadDir, filename);
 
+      await mkdir(uploadDir, { recursive: true });
       await writeFile(filepath, buffer);
       file_path = filename;
     }
@@ -67,8 +69,10 @@ export async function POST(req) {
       const buffer = Buffer.from(bytes);
 
       const filename = Date.now() + "_" + mobileFile.name;
-      const filepath = path.join(process.cwd(), "public/uploads/carousel", filename);
+      const uploadDir = path.join(process.cwd(), "public/uploads/carousel");
+      const filepath = path.join(uploadDir, filename);
 
+      await mkdir(uploadDir, { recursive: true });
       await writeFile(filepath, buffer);
       mobile_file_path = filename;
     }
