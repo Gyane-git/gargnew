@@ -123,7 +123,7 @@ export default function DashboardPage() {
         const [bannersRes, productsRes, brandsRes, categoriesRes, customersRes, inquiriesRes] = await Promise.allSettled([
           fetch("/api/v1/banners").then((r) => r.json()),
           fetch("/api/v1/products").then((r) => r.json()),
-          fetch("/api/v1/brands").then((r) => r.json()),
+          fetch("/api/v1/brands?include_inactive=1").then((r) => r.json()),
           fetch("/api/v1/categories").then((r) => r.json()),
           fetch("/api/v1/customers").then((r) => r.json()),
           fetch("/api/v1/inquiries").then((r) => r.json()),

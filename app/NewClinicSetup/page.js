@@ -65,11 +65,15 @@ export default function ClinicSetupPage() {
           remarks: "",
         });
       } else {
-        toast.error("Submission failed.");
+        toast.error(
+          response?.message ||
+            response?.errors?.[0]?.message ||
+            "Submission failed."
+        );
       }
     } catch (err) {
-      // console.error("Error submitting form:", err);
-      toast.error("Something went wrong.");
+      console.error("Error submitting clinic setup form:", err);
+      toast.error(err?.message || "Something went wrong.");
     }
   };
 

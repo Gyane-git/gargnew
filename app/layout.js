@@ -3,6 +3,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import Toast from "@/components/Toast";
 import { Toaster } from "react-hot-toast";
+import { ToastContainer } from "react-toastify";
 import FooterBar from "@/components/FooterBar";
 import "./globals.css";
 import HeaderBarNew from "@/components/HeaderBarNew";
@@ -24,8 +25,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Garg Dental - Total Solution Provider",
-  description:
-    "Buy high-quality dental products and equipment online. Trusted by dentists and dental professionals across Nepal.",
+  description: "Buy high-quality dental products and equipment online. Trusted by dentists and dental professionals across Nepal.",
   keywords: [
     "dental products",
     "dental tools",
@@ -92,8 +92,7 @@ export const metadata = {
 
   openGraph: {
     title: "Dental Nepal | Garg Dental - Total Dental Solution Provider",
-    description:
-      "Your trusted source for dental equipment and materials in Nepal. Explore quality, reliability, and innovation.",
+    description: "Your trusted source for dental equipment and materials in Nepal. Explore quality, reliability, and innovation.",
     url: "https://www.dentalnepal.com",
     siteName: "Dental Nepal",
     images: [
@@ -110,8 +109,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Dental Nepal | Garg Dental - Total Dental Solution Provider",
-    description:
-      "Buy top-quality dental tools and materials online in Nepal. Trusted by dentists across the country.",
+    description: "Buy top-quality dental tools and materials online in Nepal. Trusted by dentists across the country.",
     images: ["https://www.dentalnepal.com/og-image.jpg"],
   },
 };
@@ -122,8 +120,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/logo.ico" />
         <link rel="sitemap" type="application/xml" href="https://www.dentalnepal.com/sitemap.xml" />
-<link rel="robots" href="https://www.dentalnepal.com/robots.txt" />
-
+        <link rel="robots" href="https://www.dentalnepal.com/robots.txt" />
 
         <link rel="canonical" href="https://www.dentalnepal.com" />
         <meta name="robots" content="index, follow" />
@@ -135,49 +132,46 @@ export default function RootLayout({ children }) {
         <meta name="google-site-verification" content="18gb-WHx3STw9vdNBb02jAvlH9HqYrePDKl-RkW5ipg" />
 
         <script
-  type="application/ld+json"
-  dangerouslySetInnerHTML={{
-    __html: JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "Garg Dental Nepal",
-      url: "https://www.dentalnepal.com",
-      logo: "https://www.dentalnepal.com/logo.ico",
-      sameAs: [
-        "https://www.facebook.com/gargdentalnepal",
-        "https://www.instagram.com/gargdentalnepal",
-        "https://www.linkedin.com/company/gargdentalnepal",
-      ],
-      contactPoint: {
-        "@type": "ContactPoint",
-        telephone: "+977-9812345678",
-        contactType: "customer service",
-        areaServed: "NP",
-        availableLanguage: ["English", "Nepali"],
-      },
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "Putalisadak",
-        addressLocality: "Kathmandu",
-        addressRegion: "Bagmati",
-        postalCode: "44600",
-        addressCountry: "NP",
-      },
-    }),
-  }}
-/>
-
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Garg Dental Nepal",
+              url: "https://www.dentalnepal.com",
+              logo: "https://www.dentalnepal.com/logo.ico",
+              sameAs: ["https://www.facebook.com/gargdentalnepal", "https://www.instagram.com/gargdentalnepal", "https://www.linkedin.com/company/gargdentalnepal"],
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: "+977-9812345678",
+                contactType: "customer service",
+                areaServed: "NP",
+                availableLanguage: ["English", "Nepali"],
+              },
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Putalisadak",
+                addressLocality: "Kathmandu",
+                addressRegion: "Bagmati",
+                postalCode: "44600",
+                addressCountry: "NP",
+              },
+            }),
+          }}
+        />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
         <LayoutWrapper>
           <ClientLayout>{children}</ClientLayout>
         </LayoutWrapper>
-
-       <Toast />
-
-        
+        {/* <Toast /> */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+          }}
+        />
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable theme="light" />
       </body>
     </html>
   );

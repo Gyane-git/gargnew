@@ -270,12 +270,12 @@ export const useManufacturerStore = create(
         set({ loadingmanufacturer: true, errormanufacturer: null });
 
         try {
-          const response = await apiRequest("/brands", false);
+          const response = await apiRequest("/brands?include_inactive=1", false);
           if (response.success) {
             set({
               manufacturers: response.brands.map(b => ({
                 id: b.id,
-                brand_name: b.brand_name,
+                brand_name: b.brand_name || b.name || `Brand ${b.id}`,
               })),
               lastFetchedmanufacturer: now,
             });

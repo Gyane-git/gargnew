@@ -46,7 +46,7 @@ const AddBrand = () => {
       formData.append("top", top);
       formData.append("status", status);
       formData.append("order_wise", orderWise);
-      if (image) formData.append("image", image);
+      if (image) formData.append("image", image); 
 
       const res = await fetch("/api/v1/brands", {
         method: "POST",
