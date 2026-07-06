@@ -41,9 +41,13 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const { province_id, city, shipping_cost, apply_shipping, remarks } = body;
+    const provinceInput = body.province_id ?? body.province;
+    const city = typeof body.city === "string" ? body.city.trim() : "";
+    const shippingCost = body.shipping_cost ?? body.cost;
+    const applyShipping = body.apply_shipping ?? 1;
+    const remarks = typeof body.remarks === "string" ? body.remarks.trim() : "";
 
-    if (!province_id || !city || shipping_cost === "") {
+    if (!provinceInput || !city || shippingCost === "" || shippingCost === null || shippingCost === undefined) {
       return NextResponse.json(
         {
           success: false,
@@ -53,13 +57,28 @@ export async function POST(req) {
       );
     }
 
+    let provinceId = Number(provinceInput);
+    if (Number.isNaN(provinceId) || provinceId <= 0) {
+      const [provinceRows] = await pool.query("SELECT id FROM provinces WHERE LOWER(province_name) = LOWER(?) LIMIT 1", [String(provinceInput).trim()]);
+      if (!provinceRows.length) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Province not found.",
+          },
+          { status: 404 },
+        );
+      }
+      provinceId = Number(provinceRows[0].id);
+    }
+
     await pool.query(
       `
       INSERT INTO set_shipping
       (province_id, city, shipping_cost, apply_shipping, remarks)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [province_id, city, shipping_cost, apply_shipping ?? 1, remarks ?? ""],
+      [provinceId, city, shippingCost, applyShipping ?? 1, remarks || ""],
     );
 
     return NextResponse.json({

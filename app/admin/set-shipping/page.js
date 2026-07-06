@@ -45,71 +45,14 @@ const IconArrowUp = (props) => (
   </svg>
 );
 
-/* ---------------- Dummy data (replace with API data later) ---------------- */
-
-const AREA_NAMES = [
-  "Naxal Area",
-  "Lazimpat Area",
-  "Maharajgunj Area",
-  "Bishalnagar Area",
-  "Baluwatar Area",
-  "Chabahil Area",
-  "Gaushala Area",
-  "Sinamangal Area",
-  "New Baneshwor Area",
-  "Maitighar Area",
-  "Thapathali Area",
-  "Kalimati Area",
-  "Kalanki Area",
-  "Balaju Area",
-  "Swayambhu Area",
-  "Sundhara Area",
-  "Ratnapark Area",
-  "Putalisadak Area",
-  "Dillibazar Area",
-  "Baneshwor Area",
-  "Koteshwor Area",
-  "Tinkune Area",
-  "Sinamangal-2 Area",
-  "Gongabu Area",
-  "Balkhu Area",
-  "Kirtipur Area",
-  "Sanepa Area",
-  "Jawalakhel Area",
-  "Pulchowk Area",
-  "Kupondole Area",
-  "Ekantakuna Area",
-  "Satdobato Area",
-  "Gwarko Area",
-  "Balkumari Area",
-  "Thimi Area",
-  "Bhaktapur Area",
-  "Suryabinayak Area",
-  "Madhyapur Area",
-  "Sallaghari Area",
-  "Jorpati Area",
-  "Sundarijal Area",
-  "Budhanilkantha Area",
-  "Tokha Area",
-  "Dhapasi Area",
-  "Samakhusi Area",
-];
-
-const DUMMY_SHIPPING = AREA_NAMES.map((area, i) => ({
-  id: i + 1,
-  province: "Bagmati Province",
-  city: `Kathmandu Metro ${i + 1} - ${area}`,
-  cost: i === 0 ? 3.0 : 70.0,
-  applyShipping: true,
-  createdAt: i === 0 ? "09 Sep 2024 05:40" : `16 Sep 2024 ${16}:${(27 + i).toString().padStart(2, "0") % 60 || "00"}`,
-}));
-
 export default function SetShippingCostPage() {
   const router = useRouter();
-  const [rows, setRows] = useState(DUMMY_SHIPPING);
+  const [rows, setRows] = useState([]);
   const [search, setSearch] = useState("");
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -121,6 +64,48 @@ export default function SetShippingCostPage() {
     const onScroll = () => setShowTop(window.scrollY > 200);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const loadShipping = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("/api/v1/addresses/shipping", {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to load shipping data.");
+        }
+
+        const normalized = Array.isArray(data.shipping)
+          ? data.shipping.map((row) => ({
+              id: row.id,
+              province: row.province_name || `Province #${row.province_id || ""}`,
+              city: row.city || "",
+              cost: Number(row.shipping_cost || 0),
+              applyShipping: Number(row.apply_shipping ?? 1) === 1,
+              createdAt: row.created_at ? new Date(row.created_at).toLocaleString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              }).replace(",", "") : "",
+            }))
+          : [];
+
+        setRows(normalized);
+      } catch (fetchError) {
+        setError(fetchError.message || "Failed to load shipping data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadShipping();
   }, []);
 
   const filtered = useMemo(() => {
@@ -235,6 +220,8 @@ export default function SetShippingCostPage() {
 
         <div className="my-5 border-t border-[#eef0f4]" />
 
+        {error ? <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+
         <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3 text-sm">
           <div className="flex items-center gap-1.5">
             <span>Show</span>
@@ -305,7 +292,7 @@ export default function SetShippingCostPage() {
               {pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-[#9aa2b1]">
-                    No matching records found
+                    {loading ? "Loading..." : "No matching records found"}
                   </td>
                 </tr>
               ) : (
@@ -320,7 +307,7 @@ export default function SetShippingCostPage() {
                         <span className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition-transform ${r.applyShipping ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
                       </button>
                     </td>
-                    <td className="border-b border-[#f1f2f6] px-2 py-3 align-top text-[#4b5468]">{r.createdAt}</td>
+                    <td className="border-b border-[#f1f2f6] px-2 py-3 align-top text-[#4b5468]">{r.createdAt || "-"}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 align-top">
                       <div className="flex gap-2">
                         <button title="View" className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#cfeaf7] bg-[#eef8fd] text-[#2f9bd6] hover:brightness-95">

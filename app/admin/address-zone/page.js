@@ -63,19 +63,21 @@ export default function AddressCityZonePage() {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/v1/addresses/address-zone");
+      const res = await fetch("/api/v1/addresses/address-zone", { cache: "no-store" });
       const data = await res.json();
       console.log("data: ", data);
 
       if (data.success) {
-        setZones(
-          data.zones.map((item) => ({
-            id: item.id,
-            city: item.city_id,
-            zone: item.zone_name,
-            createdAt: item.created_at,
-          })),
-        );
+        const normalized = data.zones.map((item) => ({
+          id: item.id,
+          city: item.city_name || String(item.city_id || ""),
+          zone: item.zone_name,
+          createdAt: item.created_at,
+        }));
+
+        setZones(normalized);
+        setPerPage(normalized.length > 0 ? normalized.length : 10);
+        setPage(1);
       }
     } catch (err) {
       console.error(err);
@@ -91,7 +93,7 @@ export default function AddressCityZonePage() {
     if (search.trim()) {
       const q = search.trim().toLowerCase();
 
-      list = list.filter((z) => (z.city || "").toLowerCase().includes(q) || (z.zone || "").toLowerCase().includes(q));
+      list = list.filter((z) => String(z.city || "").toLowerCase().includes(q) || String(z.zone || "").toLowerCase().includes(q));
     }
 
     list.sort((a, b) => (sortAsc ? (a.zone || "").localeCompare(b.zone || "") : (b.zone || "").localeCompare(a.zone || "")));
@@ -271,9 +273,9 @@ export default function AddressCityZonePage() {
                 pageRows.map((z, i) => (
                   <tr key={z.id}>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#2f55d4]">{(currentPage - 1) * perPage + i + 1}</td>
-                    <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.city}</td>
+                    <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.city || "-"}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">
-                      {z.zone} {console.log(z.zone)}
+                      {z.zone}
                     </td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.createdAt}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3">
