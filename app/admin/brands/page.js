@@ -15,7 +15,7 @@ export default function Brands() {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch("/api/v1/brands");
+      const res = await fetch("/api/v1/brands?include_inactive=1");
       const data = await res.json();
       if (data.success) setBrands(data.brands || []);
     } catch (err) {
@@ -171,7 +171,7 @@ export default function Brands() {
                       </div>
                     </td>
 
-                    <td className="px-3 py-4">{brand.brand_name}</td>
+                    <td className="px-3 py-4">{brand.brand_name || brand.name || `Brand ${brand.id}`}</td>
 
                     {/* ✅ Top */}
                     <td className="px-3 py-4">

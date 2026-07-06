@@ -72,12 +72,12 @@ const DentalSuppliesListing = () => {
 
   // Fetch manufacturers
   const fetchManufacturers = async () => {
-    const response = await apiRequest("/brands", false);
+    const response = await apiRequest("/brands?include_inactive=1", false);
     if (response.success) {
       // console.log("response.brands", response);
       const simplifiedBrands = response.brands.map((brand) => ({
         id: brand.id,
-        brand_name: brand.brand_name,
+        brand_name: brand.brand_name || brand.name || `Brand ${brand.id}`,
       }));
       setManufacturers(simplifiedBrands);
       setLoading(false);
