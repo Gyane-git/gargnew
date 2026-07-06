@@ -69,8 +69,8 @@ export default function SetupRequestListPage() {
                   <th className="px-3 py-3">Budget</th>
                   <th className="px-3 py-3">City</th>
                   <th className="px-3 py-3">Remarks</th>
-                  <th className="px-3 py-3">Created</th>
-                  <th className="px-3 py-3">Updated</th>
+                  <th className="px-3 py-3">Requested Date</th>
+                  
                 </tr>
               </thead>
 
@@ -97,9 +97,9 @@ export default function SetupRequestListPage() {
                       <td className="px-3 py-4 text-gray-500">
                         {req.created_at ? new Date(req.created_at).toLocaleString() : "-"}
                       </td>
-                      <td className="px-3 py-4 text-gray-500">
+                      {/* <td className="px-3 py-4 text-gray-500">
                         {req.updated_at ? new Date(req.updated_at).toLocaleString() : "-"}
-                      </td>
+                      </td> */}
                     </tr>
                   ))
                 ) : (

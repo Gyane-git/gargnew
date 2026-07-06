@@ -197,9 +197,9 @@ export default function CarriersList() {
                         <span className="text-gray-400 text-xs">↑↓</span>
                       </div>
                     </th>
-                    <th className="px-3 py-3 border-r border-gray-200 w-28">
+                    {/* <th className="px-3 py-3 border-r border-gray-200 w-28">
                       <span>Publish</span>
-                    </th>
+                    </th> */}
                     <th className="px-3 py-3 w-28">Action</th>
                   </tr>
                 </thead>
@@ -237,7 +237,7 @@ export default function CarriersList() {
                         <td className="px-3 py-4 text-gray-800 border-r border-gray-200">
                           {carrier.type}
                         </td>
-                        <td className="px-3 py-4 border-r border-gray-200">
+                        {/* <td className="px-3 py-4 border-r border-gray-200">
                           <button
                             onClick={() => handleTogglePublish(carrier.id, carrier.publish)}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -250,7 +250,7 @@ export default function CarriersList() {
                               }`}
                             />
                           </button>
-                        </td>
+                        </td> */}
                         <td className="px-3 py-4">
                           <div className="flex items-center gap-3">
                             <button

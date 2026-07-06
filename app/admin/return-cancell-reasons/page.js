@@ -216,9 +216,9 @@ export default function OrderCancelReasons() {
                         <span className="text-gray-400 text-xs">↑↓</span>
                       </div>
                     </th>
-                    <th className="px-3 py-3 border-r border-gray-200 w-28">
+                    {/* <th className="px-3 py-3 border-r border-gray-200 w-28">
                       <span>Publish</span>
-                    </th>
+                    </th> */}
                     <th className="px-3 py-3 w-24">Action</th>
                   </tr>
                 </thead>
@@ -250,7 +250,7 @@ export default function OrderCancelReasons() {
                         <td className="px-3 py-4 text-gray-800 border-r border-gray-200">
                           {item.for}
                         </td>
-                        <td className="px-3 py-4 border-r border-gray-200">
+                        {/* <td className="px-3 py-4 border-r border-gray-200">
                           <button
                             onClick={() =>
                               handleTogglePublish(item.id, item.publish)
@@ -265,7 +265,7 @@ export default function OrderCancelReasons() {
                               }`}
                             />
                           </button>
-                        </td>
+                        </td> */}
                         <td className="px-3 py-4">
                           <div className="flex items-center gap-3">
                             <button
