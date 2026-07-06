@@ -21,7 +21,6 @@ export default function AddShippingCostPage() {
       const res = await fetch("/api/v1/addresses/address-zone");
       const data = await res.json();
       console.log("data: ", data);
-      
 
       if (data.success) {
         setCities(data.cities);
