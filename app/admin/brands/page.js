@@ -13,6 +13,10 @@ export default function Brands() {
   const [loadingId, setLoadingId] = useState(null);
   const router = useRouter();
 
+  const [search, setSearch] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchBrands = async () => {
     try {
       const res = await fetch("/api/v1/brands?include_inactive=1");
@@ -41,6 +45,17 @@ export default function Brands() {
   useEffect(() => {
     fetchBrands();
   }, []);
+
+  const filteredBrands = brands.filter((brand) => brand.brand_name?.toLowerCase().includes(search.toLowerCase()));
+
+  const totalEntries = filteredBrands.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
+
+  const paginatedBrands = filteredBrands.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
+  const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+
+  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
 
   const deleteBrand = async () => {
     try {
@@ -145,6 +160,43 @@ export default function Brands() {
             </Link>
           </div>
 
+          <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Show</span>
+
+              <select
+                value={entriesPerPage}
+                onChange={(e) => {
+                  setEntriesPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="border rounded px-2 py-1"
+              >
+                {[10, 25, 50, 100].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+
+              <span>entries</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm">
+              <span>Search:</span>
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="border rounded px-3 py-1"
+              />
+            </div>
+          </div>
+
           <div className="px-4 sm:px-6 py-5 overflow-x-auto">
             <table className="w-full text-sm min-w-[650px] border-t">
               <thead>
@@ -160,9 +212,9 @@ export default function Brands() {
               </thead>
 
               <tbody>
-                {brands.map((brand, index) => (
+                {paginatedBrands.map((brand, index) => (
                   <tr key={brand.id} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-4">{index + 1}</td>
+                    <td className="px-3 py-4">{(currentPage - 1) * entriesPerPage + index + 1}</td>
 
                     {/* IMAGE */}
                     <td className="px-6 py-4">
@@ -210,8 +262,26 @@ export default function Brands() {
               </tbody>
             </table>
 
-            <div className="flex justify-between mt-5 text-sm">
-              <span>Showing {brands.length} entries</span>
+            <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3 border-t">
+              <p className="text-sm text-gray-500">
+                Showing {startEntry} to {endEntry} of {totalEntries} entries
+              </p>
+
+              <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border rounded disabled:opacity-40">
+                  Previous
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded border text-sm ${currentPage === page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-100"}`}>
+                    {page}
+                  </button>
+                ))}
+
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border rounded disabled:opacity-40">
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>

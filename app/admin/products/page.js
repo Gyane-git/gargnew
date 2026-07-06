@@ -9,11 +9,11 @@ import toast from "react-hot-toast";
 export default function ProductListPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // tree for dropdown
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [entriesPerPage, setEntriesPerPage] = useState(50);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [bulkPublish, setBulkPublish] = useState(false);
   const [publishStates, setPublishStates] = useState({});
   const [deleteId, setDeleteId] = useState(null);
@@ -248,13 +248,8 @@ export default function ProductListPage() {
 
                   {/* Publish Toggle */}
                   <td className="px-4 py-3">
-                    <div
-                      onClick={() => handlePublishToggle(product.id, !publishStates[product.id])}
-                      className={`relative w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ${publishStates[product.id] ? "bg-blue-500" : "bg-gray-300"}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${publishStates[product.id] ? "translate-x-5" : "translate-x-0"}`}
-                      />
+                    <div onClick={() => handlePublishToggle(product.id, !publishStates[product.id])} className={`relative w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ${publishStates[product.id] ? "bg-blue-500" : "bg-gray-300"}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${publishStates[product.id] ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </td>
 
@@ -293,11 +288,7 @@ export default function ProductListPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
                 Previous
               </button>
 
@@ -307,23 +298,13 @@ export default function ProductListPage() {
                     ...
                   </span>
                 ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1.5 rounded border transition ${
-                      currentPage === page ? "bg-blue-600 border-blue-600 text-white font-semibold" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
-                    }`}
-                  >
+                  <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1.5 rounded border transition ${currentPage === page ? "bg-blue-600 border-blue-600 text-white font-semibold" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"}`}>
                     {page}
                   </button>
                 ),
               )}
 
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
+              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
                 Next
               </button>
             </div>

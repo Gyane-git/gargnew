@@ -62,18 +62,12 @@ function CategoryRow({ category, sn, level = 0, onToggleTop, onToggleStatus, onD
         <td className="px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-3">
             {/* Info */}
-            <button
-              onClick={() => toast.success(`ID: ${category.id} | ${category.category_name}`)}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-            >
+            <button onClick={() => toast.success(`ID: ${category.id} | ${category.category_name}`)} className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors">
               <Info size={16} />
             </button>
 
             {/* Edit */}
-            <Link
-              href={`/admin/categories/edit/${category.id}`}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-blue-700 text-blue-700 hover:bg-blue-50 transition-colors"
-            >
+            <Link href={`/admin/categories/edit/${category.id}`} className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-blue-700 text-blue-700 hover:bg-blue-50 transition-colors">
               <SquarePen size={15} />
             </Link>
 
@@ -86,11 +80,7 @@ function CategoryRow({ category, sn, level = 0, onToggleTop, onToggleStatus, onD
       </tr>
 
       {/* Recursive children */}
-      {open &&
-        hasChildren &&
-        category.children.map((child, i) => (
-          <CategoryRow key={child.id} category={child} sn={`${sn}.${i + 1}`} level={level + 1} onToggleTop={onToggleTop} onToggleStatus={onToggleStatus} onDelete={onDelete} loadingId={loadingId} />
-        ))}
+      {open && hasChildren && category.children.map((child, i) => <CategoryRow key={child.id} category={child} sn={`${sn}.${i + 1}`} level={level + 1} onToggleTop={onToggleTop} onToggleStatus={onToggleStatus} onDelete={onDelete} loadingId={loadingId} />)}
     </>
   );
 }
@@ -202,8 +192,7 @@ export default function CategoriesPage() {
   };
 
   // Recursively patch one node in the tree (optimistic update)
-  const updateNodeInTree = (nodes, targetId, patch) =>
-    nodes.map((node) => (node.id === targetId ? { ...node, ...patch } : { ...node, children: updateNodeInTree(node.children || [], targetId, patch) }));
+  const updateNodeInTree = (nodes, targetId, patch) => nodes.map((node) => (node.id === targetId ? { ...node, ...patch } : { ...node, children: updateNodeInTree(node.children || [], targetId, patch) }));
 
   //  Pagination & Search
   const filtered = categories.filter((cat) => (search ? cat.category_name.toLowerCase().includes(search.toLowerCase()) : true));
@@ -302,17 +291,7 @@ export default function CategoriesPage() {
                   </td>
                 </tr>
               ) : (
-                paginated.map((cat, i) => (
-                  <CategoryRow
-                    key={cat.id}
-                    category={cat}
-                    sn={(currentPage - 1) * entriesPerPage + i + 1}
-                    onToggleTop={handleToggleTop}
-                    onToggleStatus={handleToggleStatus}
-                    onDelete={setDeleteId}
-                    loadingId={loadingId}
-                  />
-                ))
+                paginated.map((cat, i) => <CategoryRow key={cat.id} category={cat} sn={(currentPage - 1) * entriesPerPage + i + 1} onToggleTop={handleToggleTop} onToggleStatus={handleToggleStatus} onDelete={setDeleteId} loadingId={loadingId} />)
               )}
             </tbody>
           </table>
@@ -325,29 +304,17 @@ export default function CategoriesPage() {
           </p>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
               Previous
             </button>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 text-sm rounded border transition-colors ${page === currentPage ? "bg-blue-500 text-white border-blue-500" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}
-              >
+              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 text-sm rounded border transition-colors ${page === currentPage ? "bg-blue-500 text-white border-blue-500" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}>
                 {page}
               </button>
             ))}
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
               Next
             </button>
           </div>

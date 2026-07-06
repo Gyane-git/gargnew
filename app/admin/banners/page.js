@@ -11,6 +11,10 @@ export default function BannerList() {
   const [deleteId, setDeleteId] = useState(null);
   const router = useRouter();
 
+  const [search, setSearch] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchBanners = async () => {
     try {
       const res = await fetch("/api/v1/banners");
@@ -80,12 +84,60 @@ export default function BannerList() {
     fetchBanners();
   }, []);
 
+  const filteredBanners = banners.filter((banner) => banner.product_code?.toLowerCase().includes(search.toLowerCase()));
+
+  const totalEntries = filteredBanners.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
+
+  const paginatedBanners = filteredBanners.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
+  const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+
+  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
+
   return (
     <div className="p-6">
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#1a3a6b]">Banner Management</h1>
         <p className="text-gray-500 mt-1 text-sm">Manage your banner collection</p>
+      </div>
+
+      <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Show</span>
+
+          <select
+            value={entriesPerPage}
+            onChange={(e) => {
+              setEntriesPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+
+          <span>entries</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Search:</span>
+
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          />
+        </div>
       </div>
 
       {/* LIST */}
@@ -103,17 +155,17 @@ export default function BannerList() {
           </thead>
 
           <tbody>
-            {banners.length === 0 ? (
+            {paginatedBanners.length === 0 ? (
               <tr>
                 <td colSpan="6" className="text-center py-10 text-gray-400">
                   No banners available
                 </td>
               </tr>
             ) : (
-              banners.map((banner, index) => (
+              paginatedBanners.map((banner, index) => (
                 <tr key={banner.id} className="border-b hover:bg-gray-50">
                   {/* S.N */}
-                  <td className="px-3 py-4">{index + 1}</td>
+                  <td className="px-3 py-4">{(currentPage - 1) * entriesPerPage + index + 1}</td>
 
                   {/* IMAGE */}
                   <td className="px-3 py-4">
@@ -157,8 +209,26 @@ export default function BannerList() {
           </tbody>
         </table>
 
-        <div className="flex justify-between mt-5 text-sm">
-          <span>Showing {banners.length} entries</span>
+        <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3 border-t border-gray-100">
+          <p className="text-sm text-gray-500">
+            Showing {startEntry} to {endEntry} of {totalEntries} entries
+          </p>
+
+          <div className="flex items-center gap-1">
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 text-sm rounded border transition-colors ${page === currentPage ? "bg-blue-500 text-white border-blue-500" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}>
+                {page}
+              </button>
+            ))}
+
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
