@@ -529,6 +529,8 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpI
     "address_id":39
 }
 
+
+
 ### validate-ips
 POST https://gargdental.omsok.com/api/v1/payment/ips/validate
 Content-Type: application/json

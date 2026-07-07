@@ -35,7 +35,7 @@ export default function InquiriesPage() {
   useEffect(() => {
     const q = search.toLowerCase();
 
-    setFiltered(inquiries.filter((i) => i.name.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || (i.subject || "").toLowerCase().includes(q)));
+    setFiltered(inquiries.filter((i) => i.name.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || (i.message || "").toLowerCase().includes(q)));
 
     setCurrentPage(1);
   }, [search, inquiries]);
@@ -116,7 +116,7 @@ export default function InquiriesPage() {
                 <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">S.N.</th>
                 <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Name</th>
                 <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Email</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Subject</th>
+                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Message</th>
                 <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Date</th>
                 <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Actions</th>
               </tr>
@@ -159,9 +159,9 @@ export default function InquiriesPage() {
                     {/* EMAIL */}
                     <td className="px-5 py-4 text-gray-500 text-xs">{item.email}</td>
 
-                    {/* SUBJECT */}
+                    {/* MESSAGE */}
                     <td className="px-5 py-4">
-                      <span className="truncate block max-w-[160px] text-gray-600">{item.subject || <span className="text-gray-300 italic">No subject</span>}</span>
+                      <span className="truncate block max-w-[160px] text-gray-600">{item.message || <span className="text-gray-300 italic">No message</span>}</span>
                     </td>
 
                     {/* DATE */}
