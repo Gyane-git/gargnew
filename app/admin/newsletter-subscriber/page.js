@@ -1,23 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { LayoutDashboard, Info, Trash2, X } from "lucide-react";
-
-// Sample data — replace with API
-const sampleSubscribers = [
-  { id: 1, email: "sushil@gmail.com",  date: "2026-01-10" },
-  { id: 2, email: "suyen@gmail.com",   date: "2026-01-15" },
-  { id: 3, email: "prakash@gmail.com", date: "2026-01-18" },
-  { id: 4, email: "sushil2@gmail.com", date: "2026-02-01" },
-  { id: 5, email: "suyen2@gmail.com",  date: "2026-02-05" },
-];
 
 const buildPageList = (currentPage, totalPages) => {
   if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
   const delta = 2;
   const pages = [1];
-  const left  = currentPage - delta;
+  const left = currentPage - delta;
   const right = currentPage + delta;
   if (left > 2) pages.push("...");
   for (let i = Math.max(2, left); i <= Math.min(totalPages - 1, right); i++) pages.push(i);
@@ -26,7 +17,6 @@ const buildPageList = (currentPage, totalPages) => {
   return pages;
 };
 
-// Info Modal
 function InfoModal({ subscriber, onClose }) {
   if (!subscriber) return null;
   return (
@@ -61,7 +51,6 @@ function InfoModal({ subscriber, onClose }) {
   );
 }
 
-// Delete Modal
 function DeleteModal({ subscriber, onConfirm, onCancel }) {
   if (!subscriber) return null;
   return (
@@ -70,8 +59,8 @@ function DeleteModal({ subscriber, onConfirm, onCancel }) {
         <h3 className="text-base font-semibold text-gray-800 mb-2">Delete Subscriber</h3>
         <p className="text-sm text-gray-600 mb-6">
           Are you sure you want to delete{" "}
-          <span className="font-medium text-gray-800">{subscriber.email}</span>?
-          This action cannot be undone.
+          <span className="font-medium text-gray-800">{subscriber.email}</span>? This action
+          cannot be undone.
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -81,7 +70,7 @@ function DeleteModal({ subscriber, onConfirm, onCancel }) {
             Cancel
           </button>
           <button
-            onClick={``}
+            onClick={onConfirm}
             className="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded hover:bg-red-600 transition"
           >
             Delete
@@ -93,37 +82,102 @@ function DeleteModal({ subscriber, onConfirm, onCancel }) {
 }
 
 export default function NewsletterSubscribers() {
-  const [subscribers,    setSubscribers]  = useState(sampleSubscribers);
-  const [search,         setSearch]       = useState("");
+  const [subscribers, setSubscribers] = useState([]);
+  const [search, setSearch] = useState("");
   const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [currentPage,    setCurrentPage]  = useState(1);
-  const [infoTarget,     setInfoTarget]   = useState(null);
-  const [deleteTarget,   setDeleteTarget] = useState(null); 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [infoTarget, setInfoTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Frontend-only delete
-  const handleDelete = () => {
-    setSubscribers((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-    setDeleteTarget(null);
+  const formatDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+    return date.toISOString().slice(0, 10);
   };
 
-  // Frontend-only search filter
-  const filtered = subscribers.filter((s) =>
-    s.email.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    const fetchSubscribers = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("/api/v1/newsletter-subscriber", { cache: "no-store" });
+        const data = await res.json();
+
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to load newsletter subscribers.");
+        }
+
+        const mapped = Array.isArray(data.newsletter_subscribers)
+          ? data.newsletter_subscribers.map((row) => ({
+              id: row.id,
+              email: row.email,
+              date: formatDate(row.created_at),
+              raw: row,
+            }))
+          : [];
+
+        setSubscribers(mapped);
+      } catch (err) {
+        setError(err.message || "Failed to load newsletter subscribers.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscribers();
+  }, []);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setError("");
+      const res = await fetch(`/api/v1/newsletter-subscriber/${deleteTarget.id}`, { method: "DELETE" });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to delete subscriber.");
+      }
+
+      setSubscribers((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      if (infoTarget?.id === deleteTarget.id) setInfoTarget(null);
+    } catch (err) {
+      setError(err.message || "Failed to delete subscriber.");
+    }
+  };
+
+  const filtered = useMemo(
+    () =>
+      subscribers.filter((s) =>
+        String(s.email || "")
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+      ),
+    [search, subscribers],
   );
 
   const safePerPage = Math.max(1, entriesPerPage);
-  const totalPages  = Math.ceil(filtered.length / safePerPage);
-  const startIndex  = (currentPage - 1) * safePerPage;
-  const paginated   = filtered.slice(startIndex, startIndex + safePerPage);
+  const totalPages = Math.ceil(filtered.length / safePerPage);
+  const startIndex = (currentPage - 1) * safePerPage;
+  const paginated = filtered.slice(startIndex, startIndex + safePerPage);
 
-  const handleSearch = (value) => { setSearch(value); setCurrentPage(1); };
-  const handleEntriesChange = (value) => { setEntriesPerPage(Math.max(1, Number(value))); setCurrentPage(1); };
+  const handleSearch = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleEntriesChange = (value) => {
+    setEntriesPerPage(Math.max(1, Number(value)));
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 p-3 sm:p-6">
-
-        {/* Breadcrumb */}
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-normal text-gray-900">Newsletter Subscribers</h1>
           <p className="flex items-center gap-1 text-sm text-gray-500 mt-1">
@@ -136,15 +190,12 @@ export default function NewsletterSubscribers() {
           </p>
         </div>
 
-        {/* Table Card */}
         <div className="bg-white rounded-lg shadow-sm">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">Newsletter Subscribers</h2>
           </div>
 
           <div className="px-4 sm:px-6 py-5">
-
-            {/* Controls */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>Show</span>
@@ -153,8 +204,7 @@ export default function NewsletterSubscribers() {
                   value={entriesPerPage}
                   min={1}
                   onChange={(e) => handleEntriesChange(e.target.value)}
-                  className="w-16 px-2 py-1 border border-gray-300 rounded text-center
-                             text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <span>entries</span>
               </div>
@@ -164,13 +214,11 @@ export default function NewsletterSubscribers() {
                   type="text"
                   value={search}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded text-gray-700
-                             focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="px-3 py-1 border border-gray-300 rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-t border-gray-200 min-w-[500px]">
                 <thead>
@@ -197,7 +245,19 @@ export default function NewsletterSubscribers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginated.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-12 text-gray-400">
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-12 text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : paginated.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="text-center py-12 text-gray-400">
                         No subscribers found.
@@ -205,10 +265,7 @@ export default function NewsletterSubscribers() {
                     </tr>
                   ) : (
                     paginated.map((subscriber, index) => (
-                      <tr
-                        key={subscriber.id}
-                        className="border-b border-gray-200 hover:bg-gray-50 transition"
-                      >
+                      <tr key={subscriber.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
                         <td className="px-3 py-3 text-gray-600 border-r border-gray-200">
                           {startIndex + index + 1}
                         </td>
@@ -228,7 +285,7 @@ export default function NewsletterSubscribers() {
                               <Info size={14} />
                             </button>
                             <button
-                              onClick={``}
+                              onClick={() => setDeleteTarget(subscriber)}
                               className="p-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
                               title="Delete Subscriber"
                             >
@@ -243,12 +300,10 @@ export default function NewsletterSubscribers() {
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between mt-5 text-sm text-gray-600 flex-wrap gap-3">
               <span>
                 Showing {filtered.length === 0 ? 0 : startIndex + 1} to{" "}
-                {Math.min(startIndex + safePerPage, filtered.length)} of{" "}
-                {filtered.length} entries
+                {Math.min(startIndex + safePerPage, filtered.length)} of {filtered.length} entries
               </span>
               <div className="flex items-center gap-1 flex-wrap">
                 <button
@@ -275,7 +330,7 @@ export default function NewsletterSubscribers() {
                     >
                       {page}
                     </button>
-                  )
+                  ),
                 )}
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
@@ -286,23 +341,17 @@ export default function NewsletterSubscribers() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="py-5 text-center text-sm text-gray-500 border-t border-gray-200">
         Copyright &copy; 2026{" "}
         <span className="font-bold text-gray-700">Global Tech Nepal Pvt. Ltd.</span>
       </footer>
 
       <InfoModal subscriber={infoTarget} onClose={() => setInfoTarget(null)} />
-      <DeleteModal
-        subscriber={deleteTarget}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
+      <DeleteModal subscriber={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
     </div>
   );
 }

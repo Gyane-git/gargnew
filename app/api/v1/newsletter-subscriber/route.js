@@ -16,6 +16,28 @@ const ensureTable = async () => {
   `);
 };
 
+export async function GET() {
+  try {
+    await ensureTable();
+
+    const [rows] = await pool.execute(
+      `SELECT id, email, status, created_at, updated_at
+       FROM newsletter_subscribers
+       ORDER BY id DESC`,
+    );
+
+    return Response.json({
+      success: true,
+      newsletter_subscribers: rows,
+    });
+  } catch (error) {
+    return Response.json(
+      { success: false, message: error.message || "Internal server error. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(req) {
   try {
     await ensureTable();
