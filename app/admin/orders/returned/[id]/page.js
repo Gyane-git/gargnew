@@ -5,8 +5,12 @@ import Link from "next/link";
 import { Printer, ArrowLeft, ShoppingCart, User, Truck, List, ArrowUp, Gauge } from "lucide-react";
 import { getOrderById } from "@/lib/dummyOrders";
 
-const statusOptions = ["pending", "processing", "shipped", "delivered", "cancelled"];
-const paymentOptions = ["unpaid", "paid"];
+const statusOptions = ["processing", "shipped", "delivered", "cancelled"];
+const paymentOptions = ["paid", "unpaid"];
+
+const shippingCarriers = ["Nepal Can Move", "Pathao Parcel", "FedEx", "UPS", "DHL"];
+const cancelReasons = ["Customer Request", "Out of Stock", "Payment Failed", "Duplicate Order", "Other"];
+const paymentModeOptions = ["Cash On Delivery", "Esewa", "Nepal Pay"];
 
 const statusBadgeStyles = {
   processing: "bg-yellow-400 text-slate-900",
@@ -28,16 +32,24 @@ export default function Page({ params }) {
   const order = getOrderById(id);
 
   const [orderStatus, setOrderStatus] = useState(order?.orderStatus ?? "returned");
-  const [paymentStatus, setPaymentStatus] = useState(order?.paymentStatus ?? "unpaid");
   const [selectedOrderStatus, setSelectedOrderStatus] = useState(order?.orderStatus ?? "processing");
-  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(order?.paymentStatus ?? "unpaid");
+
+  const [paymentStatus, setPaymentStatus] = useState(order?.paymentStatus ?? "unpaid");
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(order?.paymentStatus ?? "paid");
+
+  const [shippingCarrier, setShippingCarrier] = useState("");
+  const [estimatedDelivery, setEstimatedDelivery] = useState("");
+
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [receivedBy, setReceivedBy] = useState("");
+
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelNotes, setCancelNotes] = useState("");
 
   const [paymentMode, setPaymentMode] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [referenceId, setReferenceId] = useState("");
-
-  const paymentModeOptions = ["Cash On Delivery", "Esewa", "Nepal Pay"];
 
   if (!order) {
     return (
@@ -53,12 +65,27 @@ export default function Page({ params }) {
   const handleUpdate = () => {
     setOrderStatus(selectedOrderStatus);
     setPaymentStatus(selectedPaymentStatus);
-    console.log("Updated order", id, { selectedOrderStatus, selectedPaymentStatus });
+    console.log("Updated order", id, {
+      selectedOrderStatus,
+      selectedPaymentStatus,
+      shippingCarrier,
+      estimatedDelivery,
+      deliveryDate,
+      receivedBy,
+      cancelReason,
+      cancelNotes,
+      paymentMode,
+      paidAmount,
+      transactionId,
+      referenceId,
+    });
   };
 
   const handlePrintInvoice = () => {
     window.print();
   };
+
+  const inputClass = "w-full border border-slate-300 rounded px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -129,32 +156,91 @@ export default function Page({ params }) {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-2">Payment Mode</label>
-                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full border border-slate-300 rounded px-4 py-2.5 text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
-                  <option value="">Select Payment Mode</option>
-                  {paymentModeOptions.map((opt) => (
-                    <option key={opt} value={opt} className="text-slate-700">
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Dynamic fields for order status */}
+              {selectedOrderStatus === "shipped" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Shipping Carrier</label>
+                    <select value={shippingCarrier} onChange={(e) => setShippingCarrier(e.target.value)} className={inputClass}>
+                      <option value="">Select Carrier</option>
+                      {shippingCarriers.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Estimated Delivery Date</label>
+                    <input type="date" value={estimatedDelivery} onChange={(e) => setEstimatedDelivery(e.target.value)} className={inputClass} />
+                  </div>
+                </>
+              )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-2">Paid Amount</label>
-                <input type="text" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Enter Paid Amount" className="w-full border border-slate-300 rounded px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-              </div>
+              {selectedOrderStatus === "delivered" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Delivery Date</label>
+                    <input type="datetime-local" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Received By</label>
+                    <input type="text" placeholder="Person who received the package" value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} className={inputClass} />
+                  </div>
+                </>
+              )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-2">Transaction ID</label>
-                <input type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="Enter Transaction ID" className="w-full border border-slate-300 rounded px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-              </div>
+              {selectedOrderStatus === "cancelled" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Cancellation Reason</label>
+                    <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className={inputClass}>
+                      <option value="">Select Cancel Reason</option>
+                      {cancelReasons.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Additional Notes</label>
+                    <textarea value={cancelNotes} onChange={(e) => setCancelNotes(e.target.value)} rows={3} className={inputClass} />
+                  </div>
+                </>
+              )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-2">Reference ID</label>
-                <input type="text" value={referenceId} onChange={(e) => setReferenceId(e.target.value)} placeholder="Enter Reference ID (if any)" className="w-full border border-slate-300 rounded px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-              </div>
+              {/* Dynamic fields for payment status - only show when "paid" is selected */}
+              {selectedPaymentStatus === "paid" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Payment Mode</label>
+                    <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className={inputClass}>
+                      <option value="">Select Payment Mode</option>
+                      {paymentModeOptions.map((opt) => (
+                        <option key={opt} value={opt} className="text-slate-700">
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Paid Amount</label>
+                    <input type="text" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Enter Paid Amount" className={inputClass} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Transaction ID</label>
+                    <input type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="Enter Transaction ID" className={inputClass} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Reference ID</label>
+                    <input type="text" value={referenceId} onChange={(e) => setReferenceId(e.target.value)} placeholder="Enter Reference ID (if any)" className={inputClass} />
+                  </div>
+                </>
+              )}
 
               <div>
                 <button onClick={handleUpdate} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2.5 rounded">

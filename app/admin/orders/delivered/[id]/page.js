@@ -19,8 +19,8 @@ const paymentBadgeStyles = {
   refunded: "bg-slate-400 text-white",
 };
 
-export default async function Page({ params }) {
-  const { id } = await params;
+export default function Page({ params }) {
+  const { id } = params;
   const order = getOrderById(id);
 
   const [orderStatus, setOrderStatus] = useState(order?.orderStatus ?? "processing");
