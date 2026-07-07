@@ -249,6 +249,11 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpI
     "default_billing" : "Y",
     "landmark" : "ktm"
 }
+{ "status": "success", "message": "Address updated successfully"
+"d"
+    
+
+}
 
 ###set default shipping address
 POST https://gargdental.omsok.com/api/v1/customer/address/set-default-shipping/38 HTTP/1.1
