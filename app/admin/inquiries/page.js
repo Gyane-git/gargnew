@@ -10,6 +10,8 @@ export default function InquiriesPage() {
   const [deleteId, setDeleteId] = useState(null);
   const [viewItem, setViewItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchInquiries = async () => {
     try {
@@ -30,11 +32,23 @@ export default function InquiriesPage() {
     fetchInquiries();
   }, []);
 
-  // Search filter
   useEffect(() => {
     const q = search.toLowerCase();
+
     setFiltered(inquiries.filter((i) => i.name.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || (i.subject || "").toLowerCase().includes(q)));
+
+    setCurrentPage(1);
   }, [search, inquiries]);
+
+  const totalEntries = filtered.length;
+
+  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
+
+  const paginatedInquiries = filtered.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
+  const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+
+  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
 
   const deleteInquiry = async () => {
     try {
@@ -63,18 +77,34 @@ export default function InquiriesPage() {
           <h1 className="text-3xl font-bold text-[#1a3a6b]">Inquiries</h1>
           <p className="text-gray-500 mt-1 text-sm">All contact form submissions</p>
         </div>
-
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search by name, email..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b] transition" />
-        </div>
       </div>
+      {/* Search */}
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Show</span>
 
-      {/* STAT PILLS */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <span className="bg-blue-50 text-blue-600 border border-blue-100 text-xs font-bold rounded-full px-3 py-1">Total: {inquiries.length}</span>
-        <span className="bg-slate-100 text-gray-500 border border-gray-200 text-xs font-bold rounded-full px-3 py-1">Showing: {filtered.length}</span>
+          <select
+            value={entriesPerPage}
+            onChange={(e) => {
+              setEntriesPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+
+          <span>entries</span>
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+
+          <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+        </div>
       </div>
 
       {/* TABLE */}
@@ -103,7 +133,7 @@ export default function InquiriesPage() {
                     ))}
                   </tr>
                 ))
-              ) : filtered.length === 0 ? (
+              ) : paginatedInquiries.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="text-center py-16 text-gray-400">
                     <Mail size={32} className="mx-auto mb-3 text-gray-300" />
@@ -111,10 +141,10 @@ export default function InquiriesPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((item, index) => (
+                paginatedInquiries.map((item, index) => (
                   <tr key={item.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors">
                     {/* S.N */}
-                    <td className="px-5 py-4 text-gray-400 font-mono text-xs">{index + 1}</td>
+                    <td className="px-5 py-4 text-gray-400 font-mono text-xs">{(currentPage - 1) * entriesPerPage + index + 1}</td>
 
                     {/* NAME */}
                     <td className="px-5 py-4">
@@ -155,8 +185,26 @@ export default function InquiriesPage() {
           </table>
         </div>
 
-        <div className="px-5 py-3.5 border-t text-xs text-gray-400">
-          Showing {filtered.length} of {inquiries.length} entries
+        <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3 border-t">
+          <p className="text-sm text-gray-500">
+            Showing {startEntry} to {endEntry} of {totalEntries} entries
+          </p>
+
+          <div className="flex items-center gap-1">
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40">
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 text-sm rounded border ${currentPage === page ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-gray-300 hover:bg-gray-50"}`}>
+                {page}
+              </button>
+            ))}
+
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40">
+              Next
+            </button>
+          </div>
         </div>
       </div>
 

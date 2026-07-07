@@ -22,13 +22,9 @@ const paymentBadgeStyles = {
   refunded: "bg-slate-400 text-white",
 };
 
-// This file should live at: app/processing/[id]/page.js
-// Next.js automatically passes { id } into params based on the folder name
 export default function Page({ params }) {
   const { id } = params;
 
-  // Replace with a real API call once you have a backend, e.g.:
-  // const order = await fetch(`/api/orders/${id}`).then(r => r.json());
   const order = getOrderById(id);
 
   const [orderStatus, setOrderStatus] = useState(order?.orderStatus ?? "processing");
