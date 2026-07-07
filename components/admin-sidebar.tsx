@@ -64,11 +64,11 @@ const menuItems = [
     path: "#",
     expandable: true,
     children: [
-      { name: "Processing-list", path: "/admin/ManageOrder/Processing-list", icon: Clock, count: 28 },
-      { name: "Shipping-list", path: "/admin/ManageOrder/Shipping-list", icon: Calendar },
-      { name: "Delivered-list", path: "/admin/ManageOrder/Delivered-list", icon: FileText },
-      { name: "Cancelled-list", path: "/admin/ManageOrder/Cancelled-list", icon: Video },
-      { name: "Return requests-list", path: "/admin/ManageOrder/Return-request-list", icon: XCircle },
+      { name: "Processing-list", path: "/admin/orders/processing", icon: Clock, count: 28 },
+      { name: "Shipping-list", path: "/admin/orders/shipped", icon: Calendar },
+      { name: "Delivered-list", path: "/admin/orders/delivered", icon: FileText },
+      { name: "Cancelled-list", path: "/admin/orders/cancelled", icon: Video },
+      { name: "Return requests-list", path: "/admin/orders/returned", icon: XCircle },
     ],
   },
   {
