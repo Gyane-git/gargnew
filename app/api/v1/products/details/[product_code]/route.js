@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
-import { assetUrl, formatProduct } from "@/utils/apiFormatters";
+import { formatProduct } from "@/utils/apiFormatters";
+import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
 const productDetailsSelect = `
   SELECT 
@@ -42,18 +43,8 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
-    let gallery = [];
-    try {
-      const [imageRows] = await pool.query(
-        "SELECT id, image_path FROM product_images WHERE product_code = ? ORDER BY id ASC",
-        [product_code],
-      );
-      gallery = imageRows.map((image) => ({
-        ...image,
-        image_url: assetUrl(image.image_path, "uploads/products"),
-        image_full_url: assetUrl(image.image_path, "uploads/products"),
-      }));
-    } catch {}
+    const imageMap = await fetchProductImagesMap([product_code]);
+    const gallery = imageMap.get(String(product_code)) || [];
 
     let variations = [];
     try {
@@ -80,7 +71,7 @@ export async function GET(req, { params }) {
         : 0;
     } catch {}
 
-    const product = formatProduct(rows[0]);
+    const product = formatProduct(enrichProductsWithImages(rows, imageMap)[0]);
 
     return NextResponse.json({
       success: true,

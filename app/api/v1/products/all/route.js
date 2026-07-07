@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { formatProduct, parsePagination } from "@/utils/apiFormatters";
+import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
 export async function GET(req) {
   try {
@@ -35,9 +36,12 @@ export async function GET(req) {
 
     const [[totalRow]] = await pool.query(`SELECT COUNT(*) AS total FROM products p ${where}`);
 
+    const imageMap = await fetchProductImagesMap(rows.map((row) => row.product_code));
+    const enrichedRows = enrichProductsWithImages(rows, imageMap);
+
     return NextResponse.json({
       success: true,
-      products: rows.map(formatProduct),
+      products: enrichedRows.map(formatProduct),
       count: rows.length,
       total: totalRow.total,
       ...(shouldPaginate ? { limit, offset } : {}),

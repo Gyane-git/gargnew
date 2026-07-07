@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LayoutDashboard } from "lucide-react";
 
 const CARRIER_TYPES = ["Staff", "Company"];
 
 export default function AddCarrier() {
+  const router = useRouter();
 
   const [form, setForm] = useState({
     name:    "",
@@ -16,16 +18,53 @@ export default function AddCarrier() {
   });
 
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError("");
+    setMessage("");
   };
 
-  // Validate form — backend dev wires submit to POST /api/shipping-carriers
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (!form.name.trim()) return setError("Carrier name is required.");
-    if (!form.type)        return setError("Please select a carrier type.");
+    if (!form.type) return setError("Please select a carrier type.");
+
+    try {
+      setSaving(true);
+      const res = await fetch("/api/shipping-carriers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to save carrier.");
+      }
+
+      setMessage(data.message || "Carrier created successfully.");
+      setForm({
+        name: "",
+        address: "",
+        phone: "",
+        type: "",
+      });
+      setTimeout(() => {
+        router.push("/admin/shipping-carriers/carrier-list");
+        router.refresh();
+      }, 500);
+    } catch (err) {
+      setError(err.message || "Failed to save carrier.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -125,19 +164,24 @@ export default function AddCarrier() {
           <div className="flex items-center justify-between mt-10">
             <button
               onClick={handleSubmit}
+              disabled={saving}
               className="px-6 py-2.5 bg-green-700 hover:bg-green-800 text-white
                          text-sm font-semibold rounded-lg transition"
             >
-              Add Carrier
+              {saving ? "Saving..." : "Add Carrier"}
             </button>
             <Link
-              href="/admin/shipping-carriers/carriers-list"
+              href="/admin/shipping-carriers/carrier-list"
               className="px-6 py-2.5 bg-gray-500 hover:bg-gray-600 text-white
                          text-sm font-semibold rounded-lg transition"
             >
               Cancel
             </Link>
           </div>
+
+          {message ? (
+            <p className="mt-4 text-center text-sm text-green-700">{message}</p>
+          ) : null}
 
         </div>
       </div>

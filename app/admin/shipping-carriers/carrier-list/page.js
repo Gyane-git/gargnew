@@ -11,17 +11,35 @@ export default function CarriersList() {
   const [search, setSearch] = useState("");
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchCarriers() {
       try {
+        setLoading(true);
+        setError("");
         const res = await fetch(CARRIERS_API);
         const data = await res.json();
         if (data.success) {
-          setCarriers(data.carriers || []);
+          setCarriers(
+            (data.carriers || []).map((carrier) => ({
+              ...carrier,
+              name: carrier.name || "",
+              address: carrier.address || "",
+              phone: carrier.phone || "",
+              type: carrier.type || "",
+              publish: Number(carrier.publish ?? 1) === 1,
+            })),
+          );
+        } else {
+          setError(data.message || "Failed to fetch carriers.");
         }
       } catch (err) {
         console.error("Failed to fetch carriers:", err);
+        setError("Failed to fetch carriers.");
+      } finally {
+        setLoading(false);
       }
     }
     fetchCarriers();
@@ -55,14 +73,14 @@ export default function CarriersList() {
 
   const filteredCarriers = carriers.filter(
     (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.address.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone.toLowerCase().includes(search.toLowerCase()) ||
-      c.type.toLowerCase().includes(search.toLowerCase())
+      String(c.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(c.address || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(c.phone || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(c.type || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const totalEntries = filteredCarriers.length;
-  const totalPages = Math.ceil(totalEntries / entriesPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
   const startIndex = (currentPage - 1) * entriesPerPage;
   const currentItems = filteredCarriers.slice(startIndex, startIndex + entriesPerPage);
 
@@ -108,6 +126,12 @@ export default function CarriersList() {
           </div>
 
           <div className="px-6 py-5">
+            {error ? (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            ) : null}
+
             {/* Show Entries + Search */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -173,14 +197,20 @@ export default function CarriersList() {
                         <span className="text-gray-400 text-xs">↑↓</span>
                       </div>
                     </th>
-                    <th className="px-3 py-3 border-r border-gray-200 w-28">
+                    {/* <th className="px-3 py-3 border-r border-gray-200 w-28">
                       <span>Publish</span>
-                    </th>
+                    </th> */}
                     <th className="px-3 py-3 w-28">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {currentItems.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-12 text-gray-400 border-b border-gray-200">
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : currentItems.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="text-center py-12 text-gray-400 border-b border-gray-200">
                         No carriers found
@@ -207,7 +237,7 @@ export default function CarriersList() {
                         <td className="px-3 py-4 text-gray-800 border-r border-gray-200">
                           {carrier.type}
                         </td>
-                        <td className="px-3 py-4 border-r border-gray-200">
+                        {/* <td className="px-3 py-4 border-r border-gray-200">
                           <button
                             onClick={() => handleTogglePublish(carrier.id, carrier.publish)}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -220,7 +250,7 @@ export default function CarriersList() {
                               }`}
                             />
                           </button>
-                        </td>
+                        </td> */}
                         <td className="px-3 py-4">
                           <div className="flex items-center gap-3">
                             <button

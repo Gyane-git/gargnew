@@ -5,9 +5,16 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const [rows] = await pool.query(
-      `SELECT id, city_id, zone_name, created_at, updated_at
-       FROM address_zone
-       ORDER BY id DESC`,
+      `SELECT
+         z.id,
+         z.city_id,
+         s.city AS city_name,
+         z.zone_name,
+         z.created_at,
+         z.updated_at
+       FROM address_zone z
+       LEFT JOIN set_shipping s ON s.id = z.city_id
+       ORDER BY z.id DESC`,
     );
 
     return NextResponse.json({

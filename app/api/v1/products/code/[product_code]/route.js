@@ -80,6 +80,8 @@
 
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
+import { formatProduct } from "@/utils/apiFormatters";
+import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
 export async function GET(req, { params }) {
   const { code } = await params;
@@ -98,7 +100,10 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, product: rows[0] });
+    const imageMap = await fetchProductImagesMap([code]);
+    const product = formatProduct(enrichProductsWithImages(rows, imageMap)[0]);
+
+    return NextResponse.json({ success: true, product });
   } catch (error) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
