@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard, Upload, Link as LinkIcon, Video } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -11,6 +11,7 @@ const getEmbedUrl = (url) => {
 };
 
 export default function SetupPage() {
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentCoverImage, setCurrentCoverImage] = useState("");
@@ -51,6 +52,15 @@ export default function SetupPage() {
 
     fetchSetup();
   }, []);
+
+  const handleRemoveCover = () => {
+    setCoverFile(null);
+    setPreviewImage(currentCoverImage || "");
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -122,17 +132,18 @@ export default function SetupPage() {
             <div className="px-5 py-5 space-y-4">
               <div>
                 <label className="block text-sm text-gray-700 mb-2">Choose Cover Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverChange}
-                  className="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4 file:rounded file:border file:border-gray-300 file:text-sm file:text-gray-700 file:bg-white file:cursor-pointer hover:file:bg-gray-50 transition"
-                />
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleCoverChange} className="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4 file:rounded file:border file:border-gray-300" />
               </div>
 
-              <div className="border border-gray-200 rounded-lg overflow-hidden w-full max-w-2xl bg-gray-50">
+              <div className="relative border border-gray-200 rounded-lg overflow-hidden w-full max-w-2xl bg-gray-50">
                 {previewImage ? (
-                  <img src={previewImage} alt="Cover preview" className="w-full object-cover max-h-56" />
+                  <>
+                    <img src={previewImage} alt="Cover preview" className="w-full object-cover max-h-56" />
+
+                    <button type="button" onClick={handleRemoveCover} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600">
+                      ✕
+                    </button>
+                  </>
                 ) : (
                   <div className="h-40 flex items-center justify-center text-gray-400 text-sm">No cover image selected</div>
                 )}
@@ -150,66 +161,50 @@ export default function SetupPage() {
             <div className="px-5 py-5 space-y-4">
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Video Title</label>
-                <input
-                  type="text"
-                  name="clinic_video_title"
-                  value={form.clinic_video_title}
-                  onChange={handleChange}
-                  placeholder="Enter video title"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
+                <input type="text" name="clinic_video_title" value={form.clinic_video_title} onChange={handleChange} placeholder="Enter video title" className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Video Description</label>
-                <textarea
-                  name="clinic_video_description"
-                  value={form.clinic_video_description}
-                  onChange={handleChange}
-                  placeholder="Enter video description"
-                  rows={4}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400 resize-y"
-                />
+                <textarea name="clinic_video_description" value={form.clinic_video_description} onChange={handleChange} placeholder="Enter video description" rows={4} className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400 resize-y" />
               </div>
 
               <div>
                 <label className="block text-sm text-gray-700 mb-1 flex items-center gap-2">
                   <LinkIcon size={14} /> YouTube Video Link
                 </label>
-                <input
-                  type="url"
-                  name="clinic_video_link"
-                  value={form.clinic_video_link}
-                  onChange={handleChange}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
+                <input type="url" name="clinic_video_link" value={form.clinic_video_link} onChange={handleChange} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
               <div>
                 <p className="text-sm text-gray-700 mb-2">Preview</p>
-                <div className="w-full rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-50">
+
+                <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-50">
                   {embedUrl ? (
-                    <iframe
-                      src={embedUrl}
-                      title={form.clinic_video_title || "Clinic Setup Video"}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full"
-                    />
+                    <>
+                      <iframe src={embedUrl} title={form.clinic_video_title || "Clinic Setup Video"} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full" />
+
+                      {/* Remove Preview Button */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            clinic_video_link: "",
+                          }))
+                        }
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
+                      >
+                        ✕
+                      </button>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-                      Paste a valid YouTube link to preview
-                    </div>
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">Paste a valid YouTube link to preview</div>
                   )}
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={saving || loading}
-                className="px-5 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 transition disabled:opacity-50"
-              >
+              <button type="submit" disabled={saving || loading} className="px-5 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 transition disabled:opacity-50">
                 {saving ? "Saving..." : "Save Video"}
               </button>
             </div>
