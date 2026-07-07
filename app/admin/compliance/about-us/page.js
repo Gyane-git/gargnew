@@ -19,6 +19,7 @@ export default function AddAboutUs() {
   const [storyName, setStoryName] = useState("Umesh Agrawal");
   const [storyDesignation, setStoryDesignation] = useState("Managing Director");
   const [introVideo, setIntroVideo] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
 
   // State to hold the rich text editor values
@@ -84,6 +85,51 @@ export default function AddAboutUs() {
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Failed to save About Us.");
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm("Delete About Us content?");
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+
+      const response = await fetch("/api/v1/compliance/about-us", {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      setTitle("About Garg Dental");
+      setYoutubeLink("");
+      setAboutUsContent(DEFAULT_ABOUT_US);
+      setStoryTitle("Our Story");
+      setStoryName("Umesh Agrawal");
+      setStoryDesignation("Managing Director");
+      setStoryDescription(DEFAULT_STORY_DESCRIPTION);
+      setStoryImage(null);
+      setIntroVideo(null);
+
+      if (storyPreview) {
+        URL.revokeObjectURL(storyPreview);
+        setStoryPreview("");
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      toast.success(data.message || "About Us content deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Failed to delete About Us.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -282,6 +328,9 @@ export default function AddAboutUs() {
 
               {/* Submit Button */}
               <div className="flex justify-center pt-4 pb-4">
+                <button type="button" onClick={handleDelete} disabled={deleting} className="mr-4 bg-[#dc3545] hover:bg-red-700 text-white px-6 py-2.5 rounded text-sm font-medium transition-colors disabled:opacity-60">
+                  {deleting ? "Deleting..." : "Delete About Us"}
+                </button>
                 <button type="submit" className="bg-[#198754] hover:bg-green-700 text-white px-6 py-2.5 rounded text-sm font-medium transition-colors">
                   Submit About Us Details
                 </button>
