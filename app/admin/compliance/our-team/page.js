@@ -1,34 +1,41 @@
 "use client";
 import React, { useState } from "react";
-import { ChevronUp, ChevronDown, Image as ImageIcon, ArrowUp } from "lucide-react";
-
-// Sample data - expanded slightly to properly demonstrate pagination
-const teamMembers = [
-  { sn: 1, name: "Aarju Adhikari", role: "Sr. Officer-Marketing & Education", linkedin: "", email: "aarju.adhikari@gargdental.com", status: true },
-  { sn: 2, name: "Anil Kumar Shah", role: "Sr. Officer-Sales & Marketing", linkedin: "", email: "anil.shah@gargdental.com", status: true },
-  { sn: 3, name: "Balkrishna Shrestha", role: "Deputy Manager-", linkedin: "", email: "balkrishna.shrestha@gargdental.com", status: true },
-  { sn: 4, name: "Bikash Tamang", role: "Officer - Sales", linkedin: "", email: "bikash@gargdental.com", status: false },
-  { sn: 5, name: "Dipendra Thapa", role: "Marketing Executive", linkedin: "", email: "dipendra@gargdental.com", status: true },
-  { sn: 6, name: "Hari Bahadur", role: "Support Staff", linkedin: "", email: "hari@gargdental.com", status: true },
-  { sn: 7, name: "Santosh Kuikel", role: "Sr. Manager - Sales & Support", linkedin: "", email: "santosh.kuikel@gargdental.com", status: true },
-  { sn: 8, name: "Shital Gautam", role: "Coordinator-Sales & Marketing", linkedin: "https://linkedin.com/in/shital", email: "shital.gautam@gargdental.com", status: true },
-  { sn: 9, name: "Sunil Kumar Pandit Chhetri", role: "Sr. Officer-Sales & Marketing", linkedin: "", email: "sunil.pandit@gargdental.com", status: true },
-  { sn: 10, name: "Tika Hang Limbu", role: "Manager-Marketing", linkedin: "", email: "tika.limbu@gargdental.com", status: true },
-];
+import { ChevronUp, ChevronDown, Image as ImageIcon, ArrowUp, Edit2, Edit, SquarePen, Trash, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { teamMembers } from "@/lib/teamMembers";
 
 export default function OurTeam() {
+  const [members, setMembers] = useState(teamMembers);
+  const [deleteId, setDeleteId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const router = useRouter();
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [entriesPerPage, setEntriesPerPage] = useState(5); // Defaulted to 5 as requested
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+
+  const filteredMembers = members.filter((member) => {
+    if (statusFilter === "All") return true;
+    if (statusFilter === "Active") return member.status;
+    if (statusFilter === "Inactive") return !member.status;
+    return true;
+  });
+
+  const deleteMember = () => {
+    setMembers((prevMembers) => prevMembers.filter((member) => member.id !== deleteId));
+
+    setDeleteId(null);
+  };
 
   // Pagination Logic Calculations
-  const totalEntries = teamMembers.length;
+  const totalEntries = filteredMembers.length;
+  10;
   const totalPages = Math.ceil(totalEntries / entriesPerPage);
 
   // Get current entries slice
   const startIndex = (currentPage - 1) * entriesPerPage;
   const endIndex = Math.min(startIndex + entriesPerPage, totalEntries);
-  const currentData = teamMembers.slice(startIndex, endIndex);
+  const currentData = filteredMembers.slice(startIndex, endIndex);
 
   // Handlers
   const handlePageChange = (pageNumber) => {
@@ -36,8 +43,8 @@ export default function OurTeam() {
   };
 
   const handleEntriesChange = (e) => {
-    setEntriesPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page when changing entries count
+    setEntriesPerPage(parseInt(e.target.value));
+    setCurrentPage(1);
   };
 
   return (
@@ -58,26 +65,43 @@ export default function OurTeam() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex justify-between items-center p-5 border-b border-gray-100">
             <h2 className="text-lg font-semibold text-[#003399]">Our Team Members</h2>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Add New</button>
+            <button onClick={() => router.push(`/admin/compliance/our-team/create`)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+              Add New
+            </button>
           </div>
 
           <div className="p-5">
             {/* Filters and Controls */}
             <div className="mb-4">
               <label className="block text-sm mb-1 text-gray-600">Filter by Status</label>
-              <select className="border border-gray-300 rounded px-3 py-1.5 text-sm w-48 outline-none focus:border-blue-500 bg-white">
-                <option>All</option>
-                <option>Active</option>
-                <option>Inactive</option>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm w-48 outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="All">All</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
               </select>
             </div>
 
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>Show</span>
-                <input type="number" value={entriesPerPage} onChange={handleEntriesChange} min="1" max={totalEntries} className="border border-gray-300 rounded px-2 py-1 mx-2 w-16 text-center outline-none focus:border-blue-500" />
+
+                <select value={entriesPerPage} onChange={handleEntriesChange} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+
                 <span>entries</span>
               </div>
+
               <div className="flex items-center text-sm text-gray-600">
                 <label className="mr-2">Search:</label>
                 <input type="text" className="border border-gray-300 rounded px-3 py-1.5 outline-none focus:border-blue-500 w-48" />
@@ -112,13 +136,14 @@ export default function OurTeam() {
                       </div>
                     </th>
                     <th className="p-3">Status</th>
+                    <th className="p-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* Render currentData instead of the whole array */}
                   {currentData.map((member, index) => (
-                    <tr key={member.sn} className="border-b border-gray-100 hover:bg-slate-50 transition-colors align-top">
-                      <td className="p-3 py-4">{member.sn}</td>
+                    <tr key={member.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors align-top">
+                      <td className="p-3 py-4">{startIndex + index + 1}</td>
                       <td className="p-3 py-4 max-w-[150px] whitespace-normal">{member.name}</td>
                       <td className="p-3 py-4 max-w-[200px] whitespace-normal">{member.role}</td>
                       <td className="p-3 py-4">
@@ -137,6 +162,18 @@ export default function OurTeam() {
                       <td className="p-3 py-4">
                         <ToggleSwitch isActive={member.status} />
                       </td>
+                      {/* Actions */}
+                      <td className="px-3 py-4">
+                        <div className="flex gap-2">
+                          <button onClick={() => router.push(`/admin/compliance/our-team/${member.id}`)} className="w-9 h-9 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100">
+                            <SquarePen size={15} />
+                          </button>
+
+                          <button onClick={() => setDeleteId(member.id)} className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 rounded-xl">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -144,24 +181,35 @@ export default function OurTeam() {
             </div>
 
             {/* Pagination Info & Controls */}
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-              <div>
-                Showing {totalEntries === 0 ? 0 : startIndex + 1} to {endIndex} of {totalEntries} entries
-              </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+              <p className="text-sm text-gray-600">
+                Showing <span className="font-medium">{totalEntries === 0 ? 0 : startIndex + 1}</span> to <span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalEntries}</span> entries
+              </p>
 
-              {/* Dynamic Pagination Buttons */}
-              <div className="flex border border-gray-200 rounded overflow-hidden">
-                <button onClick={() => handlePageChange(Math.max(currentPage - 1, 1))} disabled={currentPage === 1} className={`px-3 py-1.5 transition-colors ${currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white hover:bg-gray-50 text-gray-600"}`}>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-2 rounded-lg border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
                   Previous
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button key={page} onClick={() => handlePageChange(page)} className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${currentPage === page ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-50 text-gray-600"}`}>
-                    {page}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    if (totalPages <= 5) return true;
 
-                <button onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0} className={`px-3 py-1.5 border-l border-gray-200 transition-colors ${currentPage === totalPages || totalPages === 0 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white hover:bg-gray-50 text-gray-600"}`}>
+                    if (page === 1 || page === totalPages) return true;
+
+                    return page >= currentPage - 1 && page <= currentPage + 1;
+                  })
+                  .map((page, index, array) => (
+                    <React.Fragment key={page}>
+                      {index > 0 && page - array[index - 1] > 1 && <span className="px-2 text-gray-400">...</span>}
+
+                      <button onClick={() => handlePageChange(page)} className={`w-10 h-10 rounded-lg text-sm font-medium transition ${currentPage === page ? "bg-blue-600 text-white" : "border border-gray-300 hover:bg-gray-50"}`}>
+                        {page}
+                      </button>
+                    </React.Fragment>
+                  ))}
+
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-4 py-2 rounded-lg border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
                   Next
                 </button>
               </div>
@@ -179,6 +227,27 @@ export default function OurTeam() {
           <ArrowUp size={20} />
         </button>
       </footer>
+
+      {/* DELETE CONFIRM MODAL */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash size={22} className="text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Delete Barand?</h3>
+            <p className="text-sm text-gray-400 mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button onClick={deleteMember} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
