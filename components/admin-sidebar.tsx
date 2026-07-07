@@ -191,7 +191,7 @@ const EducationSidebar = () => {
       {/* Logo */}
 
       {/* Scrollable Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
+      <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2 mb-10 border-b-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path) && !item.expandable;
