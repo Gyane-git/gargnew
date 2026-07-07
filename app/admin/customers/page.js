@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Users, Trash2, Eye, X, Search, ShieldCheck, ShieldOff } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { Trash2, Info, X, ShieldCheck, ShieldOff, LayoutDashboard, ArrowUpDown } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function CustomersPage() {
@@ -10,6 +11,10 @@ export default function CustomersPage() {
   const [deleteId, setDeleteId] = useState(null);
   const [viewItem, setViewItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const fetchCustomers = async () => {
     try {
@@ -30,10 +35,13 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
-  // Search filter
   useEffect(() => {
     const q = search.toLowerCase();
-    setFiltered(customers.filter((c) => (c.name || "").toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q)));
+
+    const result = customers.filter((c) => (c.full_name || "").toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q));
+
+    setFiltered(result);
+    setCurrentPage(1);
   }, [search, customers]);
 
   const deleteCustomer = async () => {
@@ -62,52 +70,115 @@ export default function CustomersPage() {
         })
       : "—";
 
-  const activeCount = customers.filter((c) => c.is_active !== false).length;
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const sortedData = [...filtered].sort((a, b) => {
+    if (!sortField) return 0;
+
+    let valA = a[sortField] ?? "";
+    let valB = b[sortField] ?? "";
+
+    if (typeof valA === "string") valA = valA.toLowerCase();
+    if (typeof valB === "string") valB = valB.toLowerCase();
+
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const totalEntries = sortedData.length;
+  const totalPages = Math.ceil(totalEntries / entriesPerPage);
+
+  const startIndex = (currentPage - 1) * entriesPerPage;
+  const endIndex = Math.min(startIndex + entriesPerPage, totalEntries);
+
+  const currentData = sortedData.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleEntriesChange = (e) => {
+    setEntriesPerPage(parseInt(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const SortableHeader = ({ label, field }) => (
+    <th className="px-5 py-3.5 font-bold text-gray-800 text-sm cursor-pointer select-none" onClick={() => handleSort(field)}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown size={12} className="text-gray-400" />
+      </span>
+    </th>
+  );
 
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      {/* PAGE HEADER */}
+      <div className="bg-[#eef2fb] px-6 py-5 border-b border-gray-200 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#1a3a6b]">Customers</h1>
-          <p className="text-gray-500 mt-1 text-sm">All registered customer accounts</p>
-        </div>
-
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search by name, email..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b] transition" />
+          <h1 className="text-2xl font-bold text-[#1a3a6b]">Customers</h1>
+          <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+            <LayoutDashboard size={14} className="text-gray-400" />
+            <Link href="/dashboard" className="hover:underline">
+              Dashboard
+            </Link>
+            <span>/</span>
+            <span className="text-gray-500">Customers</span>
+          </div>
         </div>
       </div>
 
-      {/* STAT PILLS */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <span className="bg-blue-50 text-blue-600 border border-blue-100 text-xs font-bold rounded-full px-3 py-1">Total: {customers.length}</span>
-        <span className="bg-green-50 text-green-600 border border-green-100 text-xs font-bold rounded-full px-3 py-1">Active: {activeCount}</span>
-        <span className="bg-slate-100 text-gray-500 border border-gray-200 text-xs font-bold rounded-full px-3 py-1">Showing: {filtered.length}</span>
-      </div>
+      {/* CARD */}
+      <div className="bg-white">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-[#1a3a6b]">Customers</h2>
+        </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* SHOW ENTRIES + SEARCH */}
+        <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <span>Show</span>
+            <select value={entriesPerPage} onChange={handleEntriesChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span>customers</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <span>Search:</span>
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm w-48 outline-none focus:border-[#1a3a6b]" />
+          </div>
+        </div>
+
+        {/* TABLE */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[750px]">
+          <table className="w-full text-sm min-w-[750px] border-t border-gray-200">
             <thead>
-              <tr className="border-b bg-slate-50 text-left">
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">S.N.</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Name</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Email</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Phone</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Status</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Joined</th>
-                <th className="px-5 py-3.5 font-bold text-gray-500 text-xs uppercase tracking-wide">Actions</th>
+              <tr className="text-left border-b border-gray-200">
+                <SortableHeader label="S.N." field="id" />
+                <SortableHeader label="Name" field="full_name" />
+                <SortableHeader label="Email" field="email" />
+                <SortableHeader label="Phone" field="phone" />
+                <th className="px-5 py-3.5 font-bold text-gray-800 text-sm">Action</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b">
-                    {Array.from({ length: 7 }).map((__, j) => (
+                  <tr key={i} className="border-b border-gray-100">
+                    {Array.from({ length: 5 }).map((__, j) => (
                       <td key={j} className="px-5 py-4">
                         <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? "2rem" : "80%" }} />
                       </td>
@@ -116,76 +187,64 @@ export default function CustomersPage() {
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-16 text-gray-400">
-                    <Users size={32} className="mx-auto mb-3 text-gray-300" />
+                  <td colSpan="5" className="text-center py-16 text-gray-400">
                     <p className="text-sm font-medium">No customers found</p>
                   </td>
                 </tr>
               ) : (
-                filtered.map((item, index) => {
-                  const isActive = item.is_active !== false;
-                  return (
-                    <tr key={item.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors">
-                      {/* S.N */}
-                      <td className="px-5 py-4 text-gray-400 font-mono text-xs">#{index + 1}</td>
-
-                      {/* NAME */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-[#1a3a6b] flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-white">{(item.full_name || "?").charAt(0).toUpperCase()}</span>
-                          </div>
-                          <span className="font-semibold text-gray-800">{item.full_name || "NA"}</span>
-                        </div>
-                      </td>
-
-                      {/* EMAIL */}
-                      <td className="px-5 py-4 text-gray-500 font-semibold text-xs">{item.email}</td>
-
-                      {/* PHONE */}
-                      <td className="px-5 py-4">
-                        <span className="text-gray-600 text-xs">{item.phone || <span className="text-gray-300 italic">—</span>}</span>
-                      </td>
-
-                      {/* STATUS */}
-                      <td className="px-5 py-4">
-                        {isActive ? (
-                          <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-600 border border-green-100 text-xs font-bold rounded-full px-2.5 py-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-500 border border-red-100 text-xs font-bold rounded-full px-2.5 py-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                            Inactive
-                          </span>
-                        )}
-                      </td>
-
-                      {/* DATE */}
-                      <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(item.created_at)}</td>
-
-                      {/* ACTIONS */}
-                      <td className="px-5 py-4">
-                        <div className="flex gap-2">
-                          <button onClick={() => setViewItem(item)} className="w-8 h-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors" title="View">
-                            <Eye size={14} />
-                          </button>
-                          <button onClick={() => setDeleteId(item.id)} className="w-8 h-8 flex items-center justify-center text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors" title="Delete">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                currentData.map((item, index) => (
+                  <tr key={item.id} className="border-b border-gray-100 last:border-0 hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-4 text-gray-700">{startIndex + index + 1}</td>
+                    <td className="px-5 py-4 text-gray-700">{item.full_name || "NA"}</td>
+                    <td className="px-5 py-4 text-gray-700">{item.email}</td>
+                    <td className="px-5 py-4 text-gray-700">{item.phone || "—"}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setViewItem(item)} className="w-8 h-8 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 transition-colors" title="View">
+                          <Info size={15} />
+                        </button>
+                        <button onClick={() => setDeleteId(item.id)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors" title="Delete">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
 
-        <div className="px-5 py-3.5 border-t text-xs text-gray-400">
-          Showing {filtered.length} of {customers.length} entries
+        {/* PAGINATION */}
+        <div className="px-5 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-medium">{totalEntries === 0 ? 0 : startIndex + 1}</span> to <span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalEntries}</span> entries
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-2 rounded-lg border border-gray-300 text-sm disabled:opacity-50">
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((page) => {
+                if (totalPages <= 5) return true;
+                if (page === 1 || page === totalPages) return true;
+                return page >= currentPage - 1 && page <= currentPage + 1;
+              })
+              .map((page, index, array) => (
+                <React.Fragment key={page}>
+                  {index > 0 && page - array[index - 1] > 1 && <span className="px-2 text-gray-400">...</span>}
+                  <button onClick={() => handlePageChange(page)} className={`w-10 h-10 rounded-lg text-sm font-medium ${currentPage === page ? "bg-[#1a3a6b] text-white" : "border border-gray-300 hover:bg-gray-50"}`}>
+                    {page}
+                  </button>
+                </React.Fragment>
+              ))}
+
+            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-2 rounded-lg border border-gray-300 text-sm disabled:opacity-50">
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
@@ -193,7 +252,6 @@ export default function CustomersPage() {
       {viewItem && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-[#1a3a6b] flex items-center justify-center">
@@ -209,9 +267,7 @@ export default function CustomersPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="px-6 py-5 space-y-4">
-              {/* Status Badge */}
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Status</p>
                 {viewItem.is_active !== false ? (
@@ -227,19 +283,16 @@ export default function CustomersPage() {
                 )}
               </div>
               <div className="flex justify-between">
-                {/* Phone */}
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Phone</p>
                   <p className="text-sm font-semibold text-gray-800">{viewItem.phone || <span className="text-gray-400 font-normal italic">Not provided</span>}</p>
                 </div>
 
-                {/* Gender */}
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Gender</p>
                   <p className="text-sm text-center font-semibold text-gray-800">{viewItem.gender || <span className="text-gray-400 font-normal italic">N/A</span>}</p>
                 </div>
               </div>
-              {/* Address */}
               {viewItem.address && (
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Address</p>
