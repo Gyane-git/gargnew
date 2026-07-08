@@ -231,13 +231,7 @@ export default function AddBannerPage() {
 
           {/* IS OFFER + STATUS - 2 columns */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-1.5">Products</label>
-              <select name="is_offer" value={form.is_offer} onChange={handleChange} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition">
-                <option value={0}>Select Products</option>
-                
-              </select>
-            </div>
+            
             
           </div>
 
