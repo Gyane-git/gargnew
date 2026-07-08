@@ -4,6 +4,14 @@ import { apiRequest } from "@/utils/ApiSafeCalls";
 import { Mail } from "lucide-react"; // Email icon
 import Link from "next/link";
 
+const resolveTeamImage = (member) => {
+  if (member.team_image_full_url) return member.team_image_full_url;
+  if (!member.team_image) return "/default-team.png";
+  if (member.team_image.startsWith("http")) return member.team_image;
+  if (member.team_image.startsWith("/")) return member.team_image;
+  return `/${String(member.team_image).replace(/^\/+/, "")}`;
+};
+
 export default function TeamSection() {
   const [team, setTeam] = useState([]);
 
@@ -39,7 +47,7 @@ export default function TeamSection() {
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-8">
             {team.map((member) => (
               <div key={member.id} className="text-center relative">
-                <img src={`https://gargdental.omsok.com/storage/app/public/${member.team_image}`} alt={member.team_name} className="w-32 h-32 rounded-full mx-auto object-cover shadow" />
+                <img src={resolveTeamImage(member)} alt={member.team_name} className="w-32 h-32 rounded-full mx-auto object-cover shadow" />
 
                 <Link href={`mailto:${member.team_email}`} className="absolute top-0 right-0 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center transform translate-x-4 translate-y-20 hover:bg-red-700 transition">
                   <Mail className="text-white w-4 h-4" />
