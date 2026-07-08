@@ -6,8 +6,8 @@ import { Info, SquarePen, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
-export default function OfferBannerList() {
-  const [offerBanners, setOfferBanners] = useState([]);
+export default function OfferList() {
+  const [offers, setOffers] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const router = useRouter();
 
@@ -15,26 +15,26 @@ export default function OfferBannerList() {
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchOfferBanners = async () => {
+  const fetchOffers = async () => {
     try {
-      const res = await fetch("/api/v1/banners");
+      const res = await fetch("/api/v1/offers");
       const data = await res.json();
+
       if (data.success) {
-        // Filter only offer banners (is_offer === 1)
-        setOfferBanners(data.banners.filter((b) => b.is_offer === 1));
+        setOffers(data.offers);
       }
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error(err);
     }
   };
 
-  const deleteOfferBanner = async () => {
+  const deleteOffer = async () => {
     try {
-      const res = await fetch(`/api/v1/banners/${deleteId}`, { method: "DELETE" });
+      const res = await fetch(`/api/v1/offer/${deleteId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        toast.success("Offer banner deleted successfully");
-        fetchOfferBanners();
+        toast.success("Offer deleted successfully");
+        fetchOffers();
       } else {
         toast.error("Failed to delete offer banner");
       }
@@ -46,15 +46,15 @@ export default function OfferBannerList() {
     }
   };
 
-  const handleEdit = (id) => router.push(`/admin/offer-banners/edit/${id}`);
+  const handleEdit = (id) => router.push(`/admin/offer-banner/edit/${id}`);
 
-  const handleInfo = (banner) => {
-    toast.success(`ID: ${banner.id} | ${banner.product_code}`);
+  const handleInfo = (offer) => {
+    toast.success(`ID: ${offer.id} | ${offer.title}`);
   };
 
   const handleToggleStatus = async (id, newStatus) => {
     try {
-      const res = await fetch(`/api/v1/banners/${id}`, {
+      const res = await fetch(`/api/v1/offers/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export default function OfferBannerList() {
       const data = await res.json();
 
       if (data.success) {
-        fetchOfferBanners();
+        fetchOffers();
         toast.success("Status updated successfully");
       } else {
         toast.error(data.message || "Failed to update status");
@@ -78,23 +78,31 @@ export default function OfferBannerList() {
     }
   };
 
-  const getImage = (banner) => {
-    if (banner.file_path) return banner.file_path.startsWith("http") ? banner.file_path : `/uploads/carousel/${banner.file_path}`;
-    if (banner.mobile_file_path) return `/uploads/carousel/${banner.mobile_file_path}`;
+  const getImage = (offer) => {
+    if (offer.image_full_url) return offer.image_full_url;
+
+    if (offer.offer_image) {
+      return `/uploads/offers/${offer.offer_image}`;
+    }
+
     return "/no-image.png";
   };
 
   useEffect(() => {
-    fetchOfferBanners();
+    fetchOffers();
   }, []);
 
-  const filteredOfferBanners = offerBanners.filter((banner) => banner.product_code?.toLowerCase().includes(search.toLowerCase()));
+  const formatDate = (date) => {
+    if (!date) return "-";
+    return new Date(date).toISOString().split("T")[0];
+  };
 
-  const totalEntries = filteredOfferBanners.length;
+  const filteredOffers = offers.filter((offer) => offer.title?.toLowerCase().includes(search.toLowerCase()));
+  const totalEntries = filteredOffers.length;
 
   const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
 
-  const paginatedOfferBanners = filteredOfferBanners.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+  const paginatedOffers = filteredOffers.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
   const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
 
@@ -104,8 +112,8 @@ export default function OfferBannerList() {
     <div className="p-6">
       {/* HEADER */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#1a3a6b]">Offer Banner Management</h1>
-        <p className="text-gray-500 mt-1 text-sm">Manage your offer banner collection</p>
+        <h1 className="text-3xl font-bold text-[#1a3a6b]">Offer</h1>
+        <p className="text-gray-500 mt-1 text-sm">Manage your offer banner collections</p>
       </div>
 
       <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3">
@@ -127,7 +135,7 @@ export default function OfferBannerList() {
             ))}
           </select>
 
-          <span>entries</span>
+          <span>offer banners</span>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -151,59 +159,67 @@ export default function OfferBannerList() {
           <thead>
             <tr className="text-left border-b font-bold">
               <th className="px-3 py-3">S.N.</th>
-              <th className="px-3 py-3">Image</th>
               <th className="px-3 py-3">ID</th>
-              <th className="px-3 py-3">Product Code</th>
+              <th>Title</th>
+              <th className="px-3 py-3">Image</th>
+              <th className="px-3 py-3">Start</th>
+              <th className="px-3 py-3">End</th>
               <th className="px-3 py-3">Status</th>
               <th className="px-3 py-3">Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {paginatedOfferBanners.length === 0 ? (
+            {paginatedOffers.length === 0 ? (
               <tr>
                 <td colSpan="6" className="text-center py-10 text-gray-400">
                   No offer banners available
                 </td>
               </tr>
             ) : (
-              paginatedOfferBanners.map((banner, index) => (
-                <tr key={banner.id} className="border-b hover:bg-gray-50">
+              paginatedOffers.map((offer, index) => (
+                <tr key={offer.id} className="border-b hover:bg-gray-50">
                   {/* S.N */}
                   <td className="px-3 py-4">{(currentPage - 1) * entriesPerPage + index + 1}</td>
+
+                  {/* ID */}
+                  <td className="px-3 py-4 font-mono text-xs text-gray-500">{offer.id}</td>
+
+                  {/* TITLE */}
+                  <td className="px-3 py-4 font-semibold">{offer.title}</td>
 
                   {/* IMAGE */}
                   <td className="px-3 py-4">
                     <div className="w-12 h-12 relative">
-                      <Image src={getImage(banner)} alt={banner.product_code} width={48} height={48} className="w-full h-full object-cover rounded-lg border border-gray-200" />
+                      <Image src={getImage(offer)} alt={offer.title} width={48} height={48} className="w-full h-full object-cover rounded-lg border border-gray-200" />
                     </div>
                   </td>
 
-                  {/* ID */}
-                  <td className="px-3 py-4 font-mono text-xs text-gray-500">{banner.id}</td>
+                  {/* START */}
+                  <td className="px-3 py-4 font-semibold">{formatDate(offer.start_date)}</td>
 
-                  {/* PRODUCT CODE */}
-                  <td className="px-3 py-4 font-semibold text-gray-800">{banner.product_code}</td>
+                  {/* END */}
+                  <td className="px-3 py-4 font-semibold">{formatDate(offer.end_date)}</td>
 
                   {/* STATUS TOGGLE */}
                   <td className="px-3 py-4">
-                    <button onClick={() => handleToggleStatus(banner.id, banner.status !== 1)} className={`relative inline-flex h-6 w-11 items-center rounded-full ${banner.status === 1 ? "bg-blue-600" : "bg-gray-300"}`}>
-                      <span className={`inline-block h-4 w-4 bg-white rounded-full shadow transform transition ${banner.status === 1 ? "translate-x-6" : "translate-x-1"}`} />
+                    <button onClick={() => handleToggleStatus(offer.id, offer.status !== 1)} className={`relative inline-flex h-6 w-11 items-center rounded-full ${offer.is_active === 1 ? "bg-blue-600" : "bg-gray-300"}`}>
+                      <span className={`inline-block h-4 w-4 bg-white rounded-full shadow transform transition ${offer.is_active === 1 ? "translate-x-6" : "translate-x-1"}`} />
                     </button>
                   </td>
 
                   {/* ACTIONS */}
                   <td className="px-3 py-4">
                     <div className="flex gap-2">
-                      <button onClick={() => handleInfo(banner)} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 rounded-xl">
+                      <button onClick={() => handleInfo(offer)} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 rounded-xl">
                         <Info size={15} />
                       </button>
 
-                      <button onClick={() => handleEdit(banner.id)} className="w-9 h-9 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl">
+                      <button onClick={() => handleEdit(offer.id)} className="w-9 h-9 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl">
                         <SquarePen size={14} />
                       </button>
 
-                      <button onClick={() => setDeleteId(banner.id)} className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 rounded-xl">
+                      <button onClick={() => setDeleteId(offer.id)} className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 rounded-xl">
                         <Trash size={15} />
                       </button>
                     </div>
@@ -250,7 +266,7 @@ export default function OfferBannerList() {
               <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
-              <button onClick={deleteOfferBanner} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">
+              <button onClick={deleteOffer} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">
                 Delete
               </button>
             </div>

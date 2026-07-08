@@ -1,20 +1,36 @@
-import { NextResponse } from "next/server";
 import pool from "@/utils/db";
+import { formatBanner } from "@/utils/apiFormatters";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
-export async function GET() {
+// GET ALL BANNERS
+export async function GET(req) {
   try {
-    const [rows] = await pool.query("SELECT * FROM offers ORDER BY id DESC LIMIT 5");
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get("include_inactive") === "1";
+    const onlyOffer = searchParams.get("is_offer");
 
-    return NextResponse.json({
+    const conditions = [];
+    const params = [];
+
+    if (!includeInactive) {
+      conditions.push("status = 1");
+    }
+
+    if (onlyOffer !== null) {
+      conditions.push("is_offer = ?");
+      params.push(onlyOffer);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    // const [rows] = await pool.query(`SELECT * FROM offers ${where} ORDER BY id DESC`, params);
+    const [rows] = await pool.query(`SELECT * FROM offers ORDER BY id DESC LIMIT 5`);
+
+    return Response.json({
       success: true,
-      offers: rows.map((offer) => ({
-        ...offer,
-        offer_image_full_url: offer.offer_image_full_url || offer.image_url || offer.image ? `/uploads/offers/${offer.image}` : null,
-      })),
+      offers: rows.map(formatBanner),
     });
   } catch (error) {
-    console.error("GET OFFERS ERROR:", error);
-    // If the table doesn't exist, just return an empty array to prevent 404s/crashes
-    return NextResponse.json({ success: true, offers: [] });
+    return Response.json({ success: false, message: error.message }, { status: 500 });
   }
 }
