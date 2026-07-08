@@ -289,8 +289,7 @@ export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true);
   const [offerImage, setOfferImage] = useState(null);
 
-  
-  return (useEffect(() => {
+  useEffect(() => {
     // Fetch offer image from API
     fetch("/api/v1/offers")
       .then((res) => res.json())
@@ -309,6 +308,7 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  return (
     <>
       {/* MAIN WEBSITE */}
       <main className="p-6">
