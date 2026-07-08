@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
@@ -16,10 +16,33 @@ export default function AddBannerPage() {
   const [desktopFile, setDesktopFile] = useState(null);
   const [mobileFile, setMobileFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [products, setProducts] = useState([]);
   const [previewDesktop, setPreviewDesktop] = useState(null);
   const [previewMobile, setPreviewMobile] = useState(null);
   // const [imageDesktop, setImageDesktop] = useState(null);
   // const [imageMobile, setImageMobile] = useState(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/v1/products/all?include_inactive=1");
+        const data = await res.json();
+        if (data.success) {
+          setProducts(Array.isArray(data.products) ? data.products : []);
+        } else {
+          toast.error(data.message || "Failed to load products");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load products");
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // HANDLE INPUT
   const handleChange = (e) => {
@@ -83,6 +106,12 @@ export default function AddBannerPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
+
+    if (!form.product_code) {
+      toast.error("Please select a product.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -131,15 +160,29 @@ export default function AddBannerPage() {
         <h1 className="text-2xl font-bold text-[#1a3a6b] mb-1">Add Banner</h1>
         <p className="text-sm text-gray-400 mb-7">Fill in the details to add a new banner</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
           {/* PRODUCT CODE */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1.5">
-              Banner Name <span className="text-red-500">*</span>
-            </label>
-            <input type="text" name="product_code" placeholder="Enter banner name" value={form.product_code} onChange={handleChange} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition" required />
+            <label className="block text-gray-700 font-medium mb-1.5">Product</label>
+            <select
+              name="product_code"
+              value={form.product_code}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+              disabled={productsLoading}
+            >
+              <option value="">Select Product</option>
+              {products.map((product) => (
+                <option key={product.product_code} value={product.product_code}>
+                  {product.product_name} ({product.product_code})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Choose the product this carousel banner belongs to.
+            </p>
           </div>
-
+          
           {/* DESKTOP IMAGE */}
           <div>
             <label className="block text-gray-700 font-medium mb-1.5">Desktop Image</label>
@@ -189,19 +232,13 @@ export default function AddBannerPage() {
           {/* IS OFFER + STATUS - 2 columns */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1.5">Type</label>
+              <label className="block text-gray-700 font-medium mb-1.5">Products</label>
               <select name="is_offer" value={form.is_offer} onChange={handleChange} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition">
-                <option value={0}>Normal</option>
-                <option value={1}>Offer</option>
+                <option value={0}>Select Products</option>
+                
               </select>
             </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-1.5">Status</label>
-              <select name="status" value={form.status} onChange={handleChange} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition">
-                <option value={1}>Active</option>
-                <option value={0}>Inactive</option>
-              </select>
-            </div>
+            
           </div>
 
           {/* BUTTONS */}

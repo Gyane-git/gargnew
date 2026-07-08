@@ -39,12 +39,16 @@ export async function POST(req) {
   try {
     const formData = await req.formData();
 
-    const product_code = formData.get("product_code");
+    const product_code = String(formData.get("product_code") || "").trim();
     const is_offer = formData.get("is_offer") || 0;
     const status = formData.get("status") || 1;
 
     const file = formData.get("file");
     const mobileFile = formData.get("mobile_file");
+
+    if (!product_code) {
+      return Response.json({ success: false, message: "Product is required" }, { status: 400 });
+    }
 
     let file_path = null;
     let mobile_file_path = null;
