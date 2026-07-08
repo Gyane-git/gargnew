@@ -1,278 +1,180 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import { Info, SquarePen, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
-export default function OfferList() {
-  const [offers, setOffers] = useState([]);
-  const [deleteId, setDeleteId] = useState(null);
+export default function OfferBannerPage() {
   const router = useRouter();
 
-  const [search, setSearch] = useState("");
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [formData, setFormData] = useState({
+    title: "",
+    start_date: "",
+    end_date: "",
+    is_active: 1,
+    is_offer: 1,
+  });
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const fetchOffers = async () => {
-    try {
-      const res = await fetch("/api/v1/offers");
-      const data = await res.json();
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
-      if (data.success) {
-        setOffers(data.offers);
-      }
-    } catch (err) {
-      console.error(err);
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
+    }));
+  };
+
+  const handleImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImage(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    if (!image) {
+      toast.error("Offer image is required.");
+      return;
     }
-  };
 
-  const deleteOffer = async () => {
-    try {
-      const res = await fetch(`/api/v1/offer/${deleteId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Offer deleted successfully");
-        fetchOffers();
-      } else {
-        toast.error("Failed to delete offer banner");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong");
-    } finally {
-      setDeleteId(null);
+    if (!formData.title.trim()) {
+      toast.error("Title is required.");
+      return;
     }
-  };
 
-  const handleEdit = (id) => router.push(`/admin/offer-banner/edit/${id}`);
+    setLoading(true);
 
-  const handleInfo = (offer) => {
-    toast.success(`ID: ${offer.id} | ${offer.title}`);
-  };
-
-  const handleToggleStatus = async (id, newStatus) => {
     try {
-      const res = await fetch(`/api/v1/offers/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: newStatus ? 1 : 0,
-        }),
+      const payload = new FormData();
+      payload.append("title", formData.title);
+      payload.append("start_date", formData.start_date);
+      payload.append("end_date", formData.end_date);
+      payload.append("is_active", formData.is_active);
+      payload.append("is_offer", formData.is_offer);
+      payload.append("offer_image", image);
+
+      const res = await fetch("/api/v1/offers", {
+        method: "POST",
+        body: payload,
       });
 
       const data = await res.json();
 
       if (data.success) {
-        fetchOffers();
-        toast.success("Status updated successfully");
+        toast.success("Offer saved successfully!");
+        router.push("/admin/dashboard");
       } else {
-        toast.error(data.message || "Failed to update status");
+        toast.error(data.message || "Failed to save offer.");
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
     }
   };
-
-  const getImage = (offer) => {
-    if (offer.image_full_url) return offer.image_full_url;
-
-    if (offer.offer_image) {
-      return `/uploads/offers/${offer.offer_image}`;
-    }
-
-    return "/no-image.png";
-  };
-
-  useEffect(() => {
-    fetchOffers();
-  }, []);
-
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toISOString().split("T")[0];
-  };
-
-  const filteredOffers = offers.filter((offer) => offer.title?.toLowerCase().includes(search.toLowerCase()));
-  const totalEntries = filteredOffers.length;
-
-  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
-
-  const paginatedOffers = filteredOffers.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
-
-  const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
-
-  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
 
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#1a3a6b]">Offer</h1>
-        <p className="text-gray-500 mt-1 text-sm">Manage your offer banner collections</p>
-      </div>
+    <div className="min-h-screen bg-slate-100 p-8">
+      <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-lg font-medium mb-2">Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full h-14 border rounded-lg px-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter offer title"
+            />
+          </div>
 
-      <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Show</span>
+          <div>
+            <label className="block text-lg font-medium mb-2">Offer Image</label>
+            <input
+              type="file"
+              name="offer_image"
+              accept="image/*"
+              onChange={handleImage}
+              className="w-full border rounded-lg p-2"
+            />
 
-          <select
-            value={entriesPerPage}
-            onChange={(e) => {
-              setEntriesPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-          >
-            {[10, 25, 50, 100].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-
-          <span>offer banners</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Search:</span>
-
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-          />
-        </div>
-      </div>
-
-      {/* LIST */}
-      <div className="px-4 sm:px-6 py-5 overflow-x-auto">
-        <table className="w-full text-sm min-w-[650px] border-t">
-          <thead>
-            <tr className="text-left border-b font-bold">
-              <th className="px-3 py-3">S.N.</th>
-              <th className="px-3 py-3">ID</th>
-              <th>Title</th>
-              <th className="px-3 py-3">Image</th>
-              <th className="px-3 py-3">Start</th>
-              <th className="px-3 py-3">End</th>
-              <th className="px-3 py-3">Status</th>
-              <th className="px-3 py-3">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {paginatedOffers.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="text-center py-10 text-gray-400">
-                  No offer banners available
-                </td>
-              </tr>
-            ) : (
-              paginatedOffers.map((offer, index) => (
-                <tr key={offer.id} className="border-b hover:bg-gray-50">
-                  {/* S.N */}
-                  <td className="px-3 py-4">{(currentPage - 1) * entriesPerPage + index + 1}</td>
-
-                  {/* ID */}
-                  <td className="px-3 py-4 font-mono text-xs text-gray-500">{offer.id}</td>
-
-                  {/* TITLE */}
-                  <td className="px-3 py-4 font-semibold">{offer.title}</td>
-
-                  {/* IMAGE */}
-                  <td className="px-3 py-4">
-                    <div className="w-12 h-12 relative">
-                      <Image src={getImage(offer)} alt={offer.title} width={48} height={48} className="w-full h-full object-cover rounded-lg border border-gray-200" />
-                    </div>
-                  </td>
-
-                  {/* START */}
-                  <td className="px-3 py-4 font-semibold">{formatDate(offer.start_date)}</td>
-
-                  {/* END */}
-                  <td className="px-3 py-4 font-semibold">{formatDate(offer.end_date)}</td>
-
-                  {/* STATUS TOGGLE */}
-                  <td className="px-3 py-4">
-                    <button onClick={() => handleToggleStatus(offer.id, offer.status !== 1)} className={`relative inline-flex h-6 w-11 items-center rounded-full ${offer.is_active === 1 ? "bg-blue-600" : "bg-gray-300"}`}>
-                      <span className={`inline-block h-4 w-4 bg-white rounded-full shadow transform transition ${offer.is_active === 1 ? "translate-x-6" : "translate-x-1"}`} />
-                    </button>
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td className="px-3 py-4">
-                    <div className="flex gap-2">
-                      <button onClick={() => handleInfo(offer)} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 rounded-xl">
-                        <Info size={15} />
-                      </button>
-
-                      <button onClick={() => handleEdit(offer.id)} className="w-9 h-9 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl">
-                        <SquarePen size={14} />
-                      </button>
-
-                      <button onClick={() => setDeleteId(offer.id)} className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 rounded-xl">
-                        <Trash size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+            {preview && (
+              <img
+                src={preview}
+                alt="Offer Preview"
+                className="mt-4 w-56 h-28 object-cover rounded border"
+              />
             )}
-          </tbody>
-        </table>
+          </div>
 
-        <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3 border-t border-gray-100">
-          <p className="text-sm text-gray-500">
-            Showing {startEntry} to {endEntry} of {totalEntries} entries
-          </p>
+          <div>
+            <label className="block text-lg font-medium mb-2">Start Date</label>
+            <input
+              type="date"
+              name="start_date"
+              value={formData.start_date}
+              onChange={handleChange}
+              className="w-full h-14 border rounded-lg px-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-          <div className="flex items-center gap-1">
-            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
-              Previous
+          <div>
+            <label className="block text-lg font-medium mb-2">End Date</label>
+            <input
+              type="date"
+              name="end_date"
+              value={formData.end_date}
+              onChange={handleChange}
+              className="w-full h-14 border rounded-lg px-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                name="is_active"
+                checked={Number(formData.is_active) === 1}
+                onChange={handleChange}
+                className="peer sr-only"
+              />
+              <div className="peer h-7 w-14 rounded-full bg-gray-300 peer-checked:bg-blue-600 transition-all"></div>
+              <div className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-all peer-checked:translate-x-7"></div>
+            </label>
+            <span className="text-xl">Active</span>
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-xl font-medium disabled:opacity-60"
+            >
+              {loading ? "Saving..." : "Save Offer"}
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 text-sm rounded border transition-colors ${page === currentPage ? "bg-blue-500 text-white border-blue-500" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}>
-                {page}
-              </button>
-            ))}
-
-            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
-              Next
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="bg-gray-500 text-white px-8 py-3 rounded-lg text-xl font-medium"
+            >
+              Cancel
             </button>
           </div>
-        </div>
+        </form>
       </div>
-
-      {/* DELETE CONFIRM MODAL */}
-      {deleteId && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash size={22} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-1">Delete Offer Banner?</h3>
-            <p className="text-sm text-gray-400 mb-6">This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={deleteOffer} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

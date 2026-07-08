@@ -289,9 +289,10 @@ export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true);
   const [offerImage, setOfferImage] = useState(null);
 
-  useEffect(() => {
+  
+  return (useEffect(() => {
     // Fetch offer image from API
-    fetch("https://gargdental.omsok.com/api/v1/offers")
+    fetch("/api/v1/offers")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.offers?.length > 0) {
@@ -308,7 +309,6 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  return (
     <>
       {/* MAIN WEBSITE */}
       <main className="p-6">

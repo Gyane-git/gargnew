@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 
+const SETTINGS_CACHE_TTL_MS = 30000;
+let cachedSettings = null;
+let cachedSettingsAt = 0;
+
 export async function GET() {
   try {
+    if (cachedSettings && Date.now() - cachedSettingsAt < SETTINGS_CACHE_TTL_MS) {
+      return NextResponse.json({
+        success: true,
+        settings: cachedSettings,
+      });
+    }
+
     const [rows] = await pool.query("SELECT * FROM system_settings");
     
     // Transform rows into an object key-value pair
@@ -17,6 +28,9 @@ export async function GET() {
         settingsObj[row.key] = { value: row.value };
       }
     });
+
+    cachedSettings = settingsObj;
+    cachedSettingsAt = Date.now();
 
     return NextResponse.json({
       success: true,

@@ -1,36 +1,99 @@
-import pool from "@/utils/db";
-import { formatBanner } from "@/utils/apiFormatters";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { NextResponse } from "next/server";
+import { deleteOffer, fetchOffers, saveOffer } from "@/utils/offers";
 
-// GET ALL BANNERS
+const OFFERS_CACHE_TTL_MS = 15000;
+let cachedOffers = {
+  activeOnly: null,
+  includeInactive: null,
+  at: 0,
+};
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const includeInactive = searchParams.get("include_inactive") === "1";
-    const onlyOffer = searchParams.get("is_offer");
+    const limit = searchParams.get("limit");
+    const cacheKey = includeInactive ? "includeInactive" : "activeOnly";
 
-    const conditions = [];
-    const params = [];
-
-    if (!includeInactive) {
-      conditions.push("status = 1");
+    if (
+      cachedOffers[cacheKey] &&
+      Date.now() - cachedOffers.at < OFFERS_CACHE_TTL_MS &&
+      (limit ? cachedOffers[cacheKey].limit === Number(limit) : true)
+    ) {
+      return NextResponse.json({
+        success: true,
+        offers: cachedOffers[cacheKey].data,
+      });
     }
 
-    if (onlyOffer !== null) {
-      conditions.push("is_offer = ?");
-      params.push(onlyOffer);
-    }
+    const offers = await fetchOffers({
+      activeOnly: !includeInactive,
+      limit: limit ? Number(limit) : null,
+    });
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    // const [rows] = await pool.query(`SELECT * FROM offers ${where} ORDER BY id DESC`, params);
-    const [rows] = await pool.query(`SELECT * FROM offers ORDER BY id DESC LIMIT 5`);
+    cachedOffers[cacheKey] = {
+      data: offers,
+      limit: limit ? Number(limit) : null,
+    };
+    cachedOffers.at = Date.now();
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
-      offers: rows.map(formatBanner),
+      offers,
     });
   } catch (error) {
-    return Response.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  try {
+    const contentType = request.headers.get("content-type") || "";
+    let body = {};
+    let file = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      body = {
+        title: formData.get("title"),
+        start_date: formData.get("start_date"),
+        end_date: formData.get("end_date"),
+        is_active: formData.get("is_active"),
+        is_offer: formData.get("is_offer"),
+      };
+      file = formData.get("offer_image");
+    } else {
+      body = await request.json();
+    }
+
+    const result = await saveOffer({ body, file });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, message: result.message },
+        { status: result.status || 400 },
+      );
+    }
+
+    invalidateOffersCache();
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Offer saved successfully.",
+        id: result.id,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message || "Internal server error." }, { status: 500 });
+  }
+}
+
+export const invalidateOffersCache = () => {
+  cachedOffers = {
+    activeOnly: null,
+    includeInactive: null,
+    at: 0,
+  };
+};

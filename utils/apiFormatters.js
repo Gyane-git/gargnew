@@ -55,6 +55,12 @@ export const formatBanner = (banner) => ({
   mobile_file_path_full_url: assetUrl(banner.mobile_file_path, "uploads/carousel"),
 });
 
+export const formatOffer = (offer) => ({
+  ...offer,
+  offer_image_full_url: assetUrl(offer.offer_image || offer.file_path || offer.image, "uploads/offers"),
+  offer_image_url: assetUrl(offer.offer_image || offer.file_path || offer.image, "uploads/offers"),
+});
+
 export const formatBrand = (brand) => ({
   ...brand,
   image_full_url: assetUrl(brand.image, "uploads/brands"),
