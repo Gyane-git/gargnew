@@ -70,6 +70,12 @@ export default function CustomersPage() {
         })
       : "—";
 
+  const getStatusLabel = (value) => {
+    if (value === 1 || value === "1" || value === true) return "Active";
+    if (value === 0 || value === "0" || value === false) return "Inactive";
+    return value || "—";
+  };
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -170,6 +176,8 @@ export default function CustomersPage() {
                 <SortableHeader label="Name" field="full_name" />
                 <SortableHeader label="Email" field="email" />
                 <SortableHeader label="Phone" field="phone" />
+                <SortableHeader label="Status" field="status" />
+                <SortableHeader label="Created" field="created_at" />
                 <th className="px-5 py-3.5 font-bold text-gray-800 text-sm">Action</th>
               </tr>
             </thead>
@@ -178,7 +186,7 @@ export default function CustomersPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-gray-100">
-                    {Array.from({ length: 5 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <td key={j} className="px-5 py-4">
                         <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? "2rem" : "80%" }} />
                       </td>
@@ -187,7 +195,7 @@ export default function CustomersPage() {
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-16 text-gray-400">
+                  <td colSpan="7" className="text-center py-16 text-gray-400">
                     <p className="text-sm font-medium">No customers found</p>
                   </td>
                 </tr>
@@ -198,6 +206,8 @@ export default function CustomersPage() {
                     <td className="px-5 py-4 text-gray-700">{item.full_name || "NA"}</td>
                     <td className="px-5 py-4 text-gray-700">{item.email}</td>
                     <td className="px-5 py-4 text-gray-700">{item.phone || "—"}</td>
+                    <td className="px-5 py-4 text-gray-700">{getStatusLabel(item.status)}</td>
+                    <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{formatDate(item.created_at)}</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <button onClick={() => setViewItem(item)} className="w-8 h-8 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 transition-colors" title="View">
@@ -270,7 +280,7 @@ export default function CustomersPage() {
             <div className="px-6 py-5 space-y-4">
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Status</p>
-                {viewItem.is_active !== false ? (
+                {viewItem.status !== 0 && viewItem.status !== "0" && viewItem.status !== false ? (
                   <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-600 border border-green-100 text-xs font-bold rounded-full px-2.5 py-1">
                     <ShieldCheck size={12} />
                     Active Account

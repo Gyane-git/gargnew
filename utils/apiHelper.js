@@ -790,9 +790,10 @@ export const getCancelledOrders = async (status) => {
 // Submit grievance form
 export const submitGrievance = async (formData) => {
   try {
+    const { document, documents, returnFiles, ...safeFormData } = formData || {};
     const response = await apiRequest("/customer/grievance", true, {
       method: "POST",
-      body: JSON.stringify(formData),
+      body: JSON.stringify(safeFormData),
     });
     if (response.success) {
       // Optionally show a toast here if you want

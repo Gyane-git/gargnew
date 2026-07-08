@@ -77,8 +77,6 @@ const Complains = () => {
       phone: formData.phone,
       city: formData.city,
       remarks: formData.remarks,
-      document: formData.returnFiles,
-      // File upload not sent yet
     };
     // console.log("Submitting grievance:", payload);
     const res = await submitGrievance(payload);
