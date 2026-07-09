@@ -113,8 +113,8 @@ const menuItems = [
     path: "#",
     expandable: true,
     children: [
-      { name: "Add User", path: "/admin/System-user/add-user", icon: Settings },
-      { name: "Manage Users Permissions", path: "/admin/System-user/manage-permission", icon: MapPin },
+      { name: "Add User", path: "/admin/system-users", icon: Settings },
+      { name: "Manage Users Permissions", path: "/admin/system-users/manage-permission", icon: MapPin },
     ],
   },
   {
