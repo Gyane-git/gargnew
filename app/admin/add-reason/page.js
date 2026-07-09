@@ -76,40 +76,24 @@ export default function AddReasonPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-lg p-8">
-        <h3 className="text-4xl font-bold text-center text-blue-900 mb-10">
-          Add Reason
-        </h3>
+        <h3 className="text-4xl font-bold text-center text-blue-900 mb-10">Add Reason</h3>
 
         <form onSubmit={handleSubmit} className="space-y-7">
           {/* Reason Name */}
           <div>
-            <label className="block text-xl font-medium text-gray-800 mb-3">
-              Reason Name
-            </label>
+            <label className="block text-xl font-medium text-gray-800 mb-3">Reason Name</label>
 
-            <input
-              type="text"
-              name="reasonName"
-              value={formData.reasonName}
-              onChange={handleChange}
-              placeholder="Enter Reason "
-              className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input type="text" name="reasonName" value={formData.reasonName} onChange={handleChange} placeholder="Enter Reason " className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
 
           {/* Reason Type */}
           <div>
-            <label className="block text-xl font-medium text-gray-800 mb-3">
-              Reason Type
-            </label>
+            <label className="block text-xl font-medium text-gray-800 mb-3">Reason Type</label>
 
-            <select
-              name="reasonType"
-              value={formData.reasonType}
-              onChange={handleChange}
-              className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select</option>
+            <select name="reasonType" value={formData.reasonType} onChange={handleChange} className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="" disabled>
+                Select
+              </option>
               <option value="Return">Return</option>
               <option value="Cancel">Cancel</option>
             </select>
@@ -117,17 +101,12 @@ export default function AddReasonPage() {
 
           {/* Reason For */}
           <div>
-            <label className="block text-xl font-medium text-gray-800 mb-3">
-              Reason For
-            </label>
+            <label className="block text-xl font-medium text-gray-800 mb-3">Reason For</label>
 
-            <select
-              name="reasonFor"
-              value={formData.reasonFor}
-              onChange={handleChange}
-              className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select</option>
+            <select name="reasonFor" value={formData.reasonFor} onChange={handleChange} className="w-full h-14 rounded-lg border border-gray-300 px-4 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="" disabled>
+                Select
+              </option>
               <option value="Supplier">Supplier</option>
               <option value="Customer">Customer</option>
             </select>
@@ -135,19 +114,11 @@ export default function AddReasonPage() {
 
           {/* Buttons */}
           <div className="flex items-center justify-center gap-8 pt-5">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white text-xl font-semibold px-10 py-3 rounded-lg transition"
-            >
+            <button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white text-xl font-semibold px-10 py-3 rounded-lg transition">
               {loading ? "Saving..." : "Add Reason Detail"}
             </button>
 
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold px-10 py-3 rounded-lg transition"
-            >
+            <button type="button" onClick={handleCancel} className="bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold px-10 py-3 rounded-lg transition">
               Cancel
             </button>
           </div>

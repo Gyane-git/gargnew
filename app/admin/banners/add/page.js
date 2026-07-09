@@ -20,8 +20,6 @@ export default function AddBannerPage() {
   const [products, setProducts] = useState([]);
   const [previewDesktop, setPreviewDesktop] = useState(null);
   const [previewMobile, setPreviewMobile] = useState(null);
-  // const [imageDesktop, setImageDesktop] = useState(null);
-  // const [imageMobile, setImageMobile] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -81,16 +79,6 @@ export default function AddBannerPage() {
       setPreviewMobile(URL.createObjectURL(selected));
     }
   };
-
-  // const handleRemoveImageDesktop = () => {
-  //   setImageDesktop(null);
-  //   setPreviewDesktop(null);
-  // };
-
-  // const handleRemoveImageMobile = () => {
-  //   setImageMobile(null);
-  //   setPreviewMobile(null);
-  // };
 
   const handleRemoveImageDesktop = () => {
     setDesktopFile(null);
@@ -160,17 +148,11 @@ export default function AddBannerPage() {
         <h1 className="text-2xl font-bold text-[#1a3a6b] mb-1">Add Banner</h1>
         <p className="text-sm text-gray-400 mb-7">Fill in the details to add a new banner</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* PRODUCT CODE */}
           <div>
             <label className="block text-gray-700 font-medium mb-1.5">Product</label>
-            <select
-              name="product_code"
-              value={form.product_code}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
-              disabled={productsLoading}
-            >
+            <select name="product_code" value={form.product_code} onChange={handleChange} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white transition" disabled={productsLoading}>
               <option value="">Select Product</option>
               {products.map((product) => (
                 <option key={product.product_code} value={product.product_code}>
@@ -178,11 +160,9 @@ export default function AddBannerPage() {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-gray-400">
-              Choose the product this carousel banner belongs to.
-            </p>
+            <p className="mt-1 text-xs text-gray-400">Choose the product this carousel banner belongs to.</p>
           </div>
-          
+
           {/* DESKTOP IMAGE */}
           <div>
             <label className="block text-gray-700 font-medium mb-1.5">Desktop Image</label>
@@ -230,10 +210,7 @@ export default function AddBannerPage() {
           </div>
 
           {/* IS OFFER + STATUS - 2 columns */}
-          <div className="grid grid-cols-2 gap-4">
-            
-            
-          </div>
+          <div className="grid grid-cols-2 gap-4"></div>
 
           {/* BUTTONS */}
           <div className="flex items-center justify-between pt-3">

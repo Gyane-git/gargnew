@@ -101,11 +101,11 @@ export default function AddSystemUserPage() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-medium mb-2">Account Type</label>
-                <select value={accountType} onChange={(e) => setAccountType(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-4 py-2">
-                  <option value={SuperAdmin}>Super Admin</option>
-                  <option value={Admin}>Admin</option>
-                  <option value={Staff}>Staff</option>
-                  <option value={Manager}>Manager</option>
+                <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2">
+                  <option value="SuperAdmin">Super Admin</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Manager">Manager</option>
                 </select>
               </div>
             </div>
