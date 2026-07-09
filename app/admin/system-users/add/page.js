@@ -13,7 +13,7 @@ export default function AddSystemUserPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [country, setCountry] = useState("");
-  const [accountType, setAccountType] = useState(0);
+  const [accountType, setAccountType] = useState("SuperAdmin");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -102,10 +102,10 @@ export default function AddSystemUserPage() {
               <div>
                 <label className="block text-gray-700 font-medium mb-2">Account Type</label>
                 <select value={accountType} onChange={(e) => setAccountType(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-4 py-2">
-                  <option value={0}>Super Admin</option>
-                  <option value={1}>Admin</option>
-                  <option value={2}>Staff</option>
-                  <option value={3}>Manager</option>
+                  <option value={SuperAdmin}>Super Admin</option>
+                  <option value={Admin}>Admin</option>
+                  <option value={Staff}>Staff</option>
+                  <option value={Manager}>Manager</option>
                 </select>
               </div>
             </div>

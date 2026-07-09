@@ -127,7 +127,7 @@ const menuItems = [
   {
     icon: Settings,
     label: "Audit Logs",
-    path: "/admin/audit-log",
+    path: "/admin/audit-logs",
   },
   {
     icon: Settings,
