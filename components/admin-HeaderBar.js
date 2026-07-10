@@ -15,7 +15,7 @@ const profileMenuItems = [
   { icon: CreditCard, label: "Poster Card", href: "/admin/poster" },
   { icon: RefreshCw, label: "Clear System Optimization", href: "/admin/clear-cache" },
   { icon: Folder, label: "Upload Image Folder", href: "/admin/image-folder" },
-  { icon: LogOut, label: "Logout", href: "/admin/logout", danger: true },
+  { icon: LogOut, label: "Logout", danger: true },
 ];
 
 export default function AdminHeaderBar({ onToggleSidebar }) {
@@ -26,16 +26,15 @@ export default function AdminHeaderBar({ onToggleSidebar }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
-    // Clear auth data
-    localStorage.removeItem("token");
-    localStorage.removeItem("admin");
-
-    // Close modal
     setShowLogoutModal(false);
+    setTimeout(() => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("admin");
 
-    // Redirect to login
-    router.push("/admin/login");
+      router.push("/admin/login");
+    }, 350);
   };
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e) {
@@ -82,21 +81,6 @@ export default function AdminHeaderBar({ onToggleSidebar }) {
 
                 {/* Menu Items */}
                 <div className="py-1">
-                  {/* {profileMenuItems.map(({ icon: Icon, label, href, danger }) => (
-                    <Link
-                      key={label}
-                      href={href}
-                      onClick={() => setProfileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                        danger
-                          ? "text-red-600 hover:bg-red-50"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 flex-shrink-0 opacity-70" />
-                      {label}
-                    </Link>
-                  ))} */}
                   <div className="py-1">
                     {profileMenuItems.map(({ icon: Icon, label, href, danger }) => {
                       if (label === "Logout") {
