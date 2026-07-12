@@ -51,9 +51,6 @@ export default function ChangePassword() {
 
     console.log(formData);
 
-    // TODO:
-    // axios.put("/api/change-password", formData)
-
     alert("Password changed successfully!");
 
     setFormData({

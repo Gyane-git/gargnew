@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const profileMenuItems = [
   { icon: User, label: "My Profile", href: "/admin/profile" },
-  { icon: Upload, label: "Upload Product & Images", href: "/admin/upload" },
+  { icon: Upload, label: "Upload Product & Images", href: "/admin/upload-product-images" },
   { icon: Settings, label: "Ecommerce Settings", href: "/admin/settings" },
   { icon: ImageIcon, label: "Carousel", href: "/admin/carousel" },
   { icon: CreditCard, label: "Promotion Image", href: "/admin/promotion" },

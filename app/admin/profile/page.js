@@ -16,8 +16,8 @@ export default function ProfilePage() {
     fullName: "Scilent Knight",
     country: "Nepal",
     address: "Kathmandu, Nepal",
-    phone: "982121223",
-    email: "gyane.globaltech@gmail.com",
+    phone: "9861252006",
+    email: "scilentknight512@gmail.com",
     accountType: "Admin",
   });
 
