@@ -1,6 +1,7 @@
 import pool from "@/utils/db";
 
 const TABLE = "audit_logs";
+let auditSchemaPromise = null;
 
 const SOURCE_TABLES = [
   { table: "order_shipped", module: "orders", model: "Order", action: "Shipped", labelFields: ["order_id", "tracking_number"] },
@@ -73,8 +74,75 @@ const selectColumn = (columns, candidates, fallback = "NULL") => {
   return fallback;
 };
 
+const normalizeFilterValue = (value) => String(value ?? "").trim();
+
+const buildAuditWhereClause = (filters = {}) => {
+  const clauses = [];
+  const values = [];
+
+  if (filters.startDate) {
+    clauses.push("DATE(COALESCE(created_at, updated_at)) >= ?");
+    values.push(filters.startDate);
+  }
+
+  if (filters.endDate) {
+    clauses.push("DATE(COALESCE(created_at, updated_at)) <= ?");
+    values.push(filters.endDate);
+  }
+
+  if (filters.role) {
+    clauses.push("role = ?");
+    values.push(filters.role);
+  }
+
+  if (filters.admin) {
+    clauses.push("admin_name = ?");
+    values.push(filters.admin);
+  }
+
+  if (filters.module) {
+    clauses.push("module = ?");
+    values.push(filters.module);
+  }
+
+  if (filters.model) {
+    clauses.push("model = ?");
+    values.push(filters.model);
+  }
+
+  if (filters.action) {
+    clauses.push("action = ?");
+    values.push(filters.action);
+  }
+
+  if (filters.search) {
+    clauses.push(
+      `LOWER(CONCAT_WS(' ', COALESCE(admin_name, ''), COALESCE(role, ''), COALESCE(action, ''), COALESCE(module, ''), COALESCE(model, ''), COALESCE(record_id, ''), COALESCE(summary, ''), COALESCE(ip_address, ''), COALESCE(metadata, ''))) LIKE ?`,
+    );
+    values.push(`%${filters.search.toLowerCase()}%`);
+  }
+
+  return {
+    whereSql: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "",
+    values,
+  };
+};
+
+const normalizeAuditFilters = (filters = {}) => ({
+  startDate: normalizeFilterValue(filters.startDate),
+  endDate: normalizeFilterValue(filters.endDate),
+  role: normalizeFilterValue(filters.role),
+  admin: normalizeFilterValue(filters.admin),
+  module: normalizeFilterValue(filters.module),
+  model: normalizeFilterValue(filters.model),
+  action: normalizeFilterValue(filters.action),
+  search: normalizeFilterValue(filters.search),
+});
+
 const ensureAuditLogsTable = async (db = pool) => {
-  await db.execute(`
+  if (!auditSchemaPromise) {
+    auditSchemaPromise = (async () => {
+      await db.execute(`
     CREATE TABLE IF NOT EXISTS ${TABLE} (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
       admin_name VARCHAR(191) NOT NULL DEFAULT 'System',
@@ -96,27 +164,34 @@ const ensureAuditLogsTable = async (db = pool) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  const requiredColumns = [
-    ["admin_name", "VARCHAR(191) NOT NULL DEFAULT 'System' AFTER id"],
-    ["role", "VARCHAR(100) NOT NULL DEFAULT 'System' AFTER admin_name"],
-    ["action", "VARCHAR(50) NOT NULL DEFAULT 'Update' AFTER role"],
-    ["module", "VARCHAR(191) NOT NULL DEFAULT 'system' AFTER action"],
-    ["module_type", "VARCHAR(191) NULL AFTER action"],
-    ["model", "VARCHAR(191) NULL AFTER module"],
-    ["record_id", "VARCHAR(191) NULL AFTER model"],
-    ["summary", "VARCHAR(255) NULL AFTER record_id"],
-    ["ip_address", "VARCHAR(100) NULL AFTER summary"],
-    ["metadata", "LONGTEXT NULL AFTER ip_address"],
-    ["created_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER metadata"],
-    ["updated_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at"],
-  ];
+      const requiredColumns = [
+        ["admin_name", "VARCHAR(191) NOT NULL DEFAULT 'System' AFTER id"],
+        ["role", "VARCHAR(100) NOT NULL DEFAULT 'System' AFTER admin_name"],
+        ["action", "VARCHAR(50) NOT NULL DEFAULT 'Update' AFTER role"],
+        ["module", "VARCHAR(191) NOT NULL DEFAULT 'system' AFTER action"],
+        ["module_type", "VARCHAR(191) NULL AFTER action"],
+        ["model", "VARCHAR(191) NULL AFTER module"],
+        ["record_id", "VARCHAR(191) NULL AFTER model"],
+        ["summary", "VARCHAR(255) NULL AFTER record_id"],
+        ["ip_address", "VARCHAR(100) NULL AFTER summary"],
+        ["metadata", "LONGTEXT NULL AFTER ip_address"],
+        ["created_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER metadata"],
+        ["updated_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at"],
+      ];
 
-  for (const [column, definition] of requiredColumns) {
-    const [rows] = await db.query(`SHOW COLUMNS FROM ${TABLE} LIKE ?`, [column]);
-    if (!rows.length) {
-      await db.query(`ALTER TABLE ${TABLE} ADD COLUMN ${column} ${definition}`);
-    }
+      for (const [column, definition] of requiredColumns) {
+        const [rows] = await db.query(`SHOW COLUMNS FROM ${TABLE} LIKE ?`, [column]);
+        if (!rows.length) {
+          await db.query(`ALTER TABLE ${TABLE} ADD COLUMN ${column} ${definition}`);
+        }
+      }
+    })().catch((error) => {
+      auditSchemaPromise = null;
+      throw error;
+    });
   }
+
+  return auditSchemaPromise;
 };
 
 const normalizeStoredLog = (row) => {
@@ -180,7 +255,54 @@ const normalizeDerivedLog = (source, row) => {
   };
 };
 
-const fetchDerivedLogs = async (db, limit = 200) => {
+const matchesDerivedFilters = (log, filters = {}) => {
+  if (filters.startDate && log.rawDate && log.rawDate < filters.startDate) {
+    return false;
+  }
+
+  if (filters.endDate && log.rawDate && log.rawDate > filters.endDate) {
+    return false;
+  }
+
+  if (filters.role && log.role !== filters.role) {
+    return false;
+  }
+
+  if (filters.admin && log.admin !== filters.admin) {
+    return false;
+  }
+
+  if (filters.module && log.module !== filters.module) {
+    return false;
+  }
+
+  if (filters.model && log.model !== filters.model) {
+    return false;
+  }
+
+  if (filters.action && log.action !== filters.action) {
+    return false;
+  }
+
+  if (filters.search) {
+    const haystack = `${log.ip} ${log.admin} ${log.role} ${log.module} ${log.model} ${log.action} ${log.summary || ""} ${JSON.stringify(log.details || {})}`.toLowerCase();
+    if (!haystack.includes(filters.search.toLowerCase())) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const buildAuditMeta = (logs = []) => ({
+  admins: Array.from(new Set(logs.map((log) => log.admin).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })),
+  roles: Array.from(new Set(logs.map((log) => log.role).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })),
+  modules: Array.from(new Set(logs.map((log) => log.module).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })),
+  models: Array.from(new Set(logs.map((log) => log.model).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })),
+  actions: Array.from(new Set(logs.map((log) => log.action).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })),
+});
+
+const fetchDerivedLogs = async (db, limit = 200, filters = {}) => {
   const collected = [];
 
   for (const source of SOURCE_TABLES) {
@@ -210,7 +332,15 @@ const fetchDerivedLogs = async (db, limit = 200) => {
     return bTime - aTime;
   });
 
-  return collected.slice(0, limit).map(({ created_at, ...rest }) => rest);
+  const normalizedFilters = normalizeAuditFilters(filters);
+  const filtered = collected.filter((log) => matchesDerivedFilters(log, normalizedFilters));
+  const paged = filtered.slice(filters.offset || 0, (filters.offset || 0) + limit);
+
+  return {
+    logs: paged.map(({ created_at, ...rest }) => rest),
+    count: filtered.length,
+    meta: buildAuditMeta(filtered),
+  };
 };
 
 export const recordAuditLog = async (db, payload = {}) => {
@@ -256,9 +386,10 @@ export const recordAuditLog = async (db, payload = {}) => {
   );
 };
 
-export const fetchAuditLogs = async (db = pool, { limit = 200 } = {}) => {
+export const fetchAuditLogs = async (db = pool, { limit = 200, offset = 0, filters = {}, includeMeta = false } = {}) => {
   await ensureAuditLogsTable(db);
 
+  const normalizedFilters = normalizeAuditFilters(filters);
   const columns = await getColumns(db, TABLE);
   const adminExpr = selectColumn(columns, ["admin_name", "admin", "user_name", "name"], "'System'");
   const roleExpr = selectColumn(columns, ["role", "user_role"], "'System'");
@@ -272,29 +403,66 @@ export const fetchAuditLogs = async (db = pool, { limit = 200 } = {}) => {
   const createdExpr = selectColumn(columns, ["created_at"], "NULL");
   const updatedExpr = selectColumn(columns, ["updated_at"], "NULL");
 
+  const baseQuery = `
+    SELECT
+      id,
+      ${adminExpr} AS admin_name,
+      ${roleExpr} AS role,
+      ${actionExpr} AS action,
+      ${moduleExpr} AS module,
+      ${modelExpr} AS model,
+      ${recordIdExpr} AS record_id,
+      ${summaryExpr} AS summary,
+      ${ipExpr} AS ip_address,
+      ${metadataExpr} AS metadata,
+      ${createdExpr} AS created_at,
+      ${updatedExpr} AS updated_at
+    FROM ${TABLE}
+  `;
+  const { whereSql, values } = buildAuditWhereClause(normalizedFilters);
+  const limitValue = Number.isFinite(Number(limit)) ? Math.max(1, Number(limit)) : 200;
+  const offsetValue = Number.isFinite(Number(offset)) ? Math.max(0, Number(offset)) : 0;
+
+  const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM (${baseQuery}) AS audit_base ${whereSql}`, values);
+  const totalCount = Number(countRows?.[0]?.total || 0);
+
   const [rows] = await db.query(
-    `SELECT
-       id,
-       ${adminExpr} AS admin_name,
-       ${roleExpr} AS role,
-       ${actionExpr} AS action,
-       ${moduleExpr} AS module,
-       ${modelExpr} AS model,
-       ${recordIdExpr} AS record_id,
-       ${summaryExpr} AS summary,
-       ${ipExpr} AS ip_address,
-       ${metadataExpr} AS metadata,
-       ${createdExpr} AS created_at,
-       ${updatedExpr} AS updated_at
-     FROM ${TABLE}
+    `SELECT * FROM (${baseQuery}) AS audit_base
+     ${whereSql}
      ORDER BY created_at DESC, id DESC
-     LIMIT ?`,
-    [limit],
+     LIMIT ? OFFSET ?`,
+    [...values, limitValue, offsetValue],
   );
 
   if (rows.length > 0) {
-    return rows.map(normalizeStoredLog);
+    const logs = rows.map(normalizeStoredLog);
+    let meta;
+
+    if (includeMeta) {
+      const [metaRows] = await db.query(
+        `SELECT * FROM (${baseQuery}) AS audit_base
+         ${whereSql}
+         ORDER BY created_at DESC, id DESC`,
+        values,
+      );
+
+      meta = buildAuditMeta(metaRows.map(normalizeStoredLog));
+    }
+
+    return {
+      logs,
+      count: totalCount,
+      meta,
+    };
   }
 
-  return fetchDerivedLogs(db, limit);
+  if (totalCount > 0) {
+    return {
+      logs: [],
+      count: 0,
+      meta: includeMeta ? buildAuditMeta([]) : undefined,
+    };
+  }
+
+  return fetchDerivedLogs(db, limitValue, { ...normalizedFilters, offset: offsetValue });
 };

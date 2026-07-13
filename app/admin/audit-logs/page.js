@@ -17,17 +17,78 @@ const DEFAULT_FILTERS = {
   search: "",
 };
 
-const humanize = (value) =>
-  String(value || "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+const MODULE_LABELS = {
+  admins: "Admin Users",
+  admin_roles: "Roles & Permissions",
+  audit_logs: "Audit Logs",
+  orders: "Orders",
+  order_shipped: "Order Shipped",
+  order_delivered: "Order Delivered",
+  order_cancel: "Order Cancelled",
+  order_returns: "Order Returns",
+  order_retuns: "Order Returns",
+  order_payments: "Order Payments",
+  offers: "Offers",
+  shipping_carriers: "Shipping Carriers",
+  carousel_images: "Carousel Images",
+  set_shipping: "Set Shipping",
+  address_zone: "Address Zones",
+  our_team: "Our Team",
+  grievances: "Grievances",
+  inquiries: "Inquiries",
+  newsletter_subscribers: "Newsletter Subscribers",
+  compliances: "Compliances",
+  clinic_setup_requests: "Clinic Setup Requests",
+  brands: "Brands",
+  categories: "Categories",
+  products: "Products",
+};
+
+const sortAlpha = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
+
+const isDefaultFilters = (filters) =>
+  Object.keys(DEFAULT_FILTERS).every((key) => filters[key] === DEFAULT_FILTERS[key]);
+
+const buildQueryString = (filters, limit, offset, includeMeta = false) => {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+
+  if (includeMeta) {
+    params.set("includeMeta", "1");
+  }
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value && value !== DEFAULT_FILTERS[key]) {
+      params.set(key, value);
+    }
+  });
+
+  return params.toString();
+};
+
+const mergeUnique = (...groups) => Array.from(new Set(groups.flat().filter(Boolean))).sort(sortAlpha);
+
+const normalizeGroupName = (role) => role?.groupName || role?.group_name || role?.name || role?.role_name || role?.title || "";
+
+const emptyCatalog = {
+  admins: [],
+  roles: [],
+  modules: [],
+  models: [],
+  actions: [],
+};
 
 export default function AuditLogsPage() {
   const [draft, setDraft] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
+  const [catalog, setCatalog] = useState(emptyCatalog);
   const [logs, setLogs] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const updateDraft = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
 
@@ -39,22 +100,54 @@ export default function AuditLogsPage() {
       setError("");
 
       try {
-        const response = await fetch("/api/v1/admin/audit-logs?limit=500", {
-          cache: "no-store",
-        });
-        const data = await response.json();
+        const offset = (currentPage - 1) * entriesPerPage;
+        const shouldLoadMeta = currentPage === 1 && isDefaultFilters(appliedFilters);
+        const query = buildQueryString(appliedFilters, entriesPerPage, offset, shouldLoadMeta);
 
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Failed to load audit logs.");
+        const [logsResponse, groupsResponse] = await Promise.all([
+          fetch(`/api/v1/admin/audit-logs?${query}`, { cache: "no-store" }),
+          shouldLoadMeta ? fetch("/api/system-users/groups", { cache: "no-store" }) : Promise.resolve(null),
+        ]);
+
+        const logsData = await logsResponse.json();
+        const groupsData = groupsResponse ? await groupsResponse.json() : null;
+
+        if (!logsResponse.ok || !logsData.success) {
+          throw new Error(logsData.message || "Failed to load audit logs.");
         }
 
-        if (!cancelled) {
-          setLogs(Array.isArray(data.logs) ? data.logs : []);
+        if (cancelled) {
+          return;
+        }
+
+        const rows = Array.isArray(logsData.logs) ? logsData.logs : [];
+        setLogs(rows);
+        setTotalCount(Number(logsData.count || 0));
+
+        if (shouldLoadMeta) {
+          const groupRoles = groupsData?.success && Array.isArray(groupsData.groups) ? groupsData.groups : [];
+          const meta = logsData.meta || {};
+
+          setCatalog({
+            admins: mergeUnique(meta.admins || [], rows.map((log) => log.admin)),
+            roles: mergeUnique(
+              meta.roles || [],
+              groupRoles.map(normalizeGroupName),
+              rows.map((log) => log.role),
+            ),
+            modules: mergeUnique(meta.modules || [], rows.map((log) => log.module)),
+            models: mergeUnique(meta.models || [], rows.map((log) => log.model)),
+            actions: mergeUnique(meta.actions || [], rows.map((log) => log.action)),
+          });
         }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Failed to load audit logs.");
           setLogs([]);
+          setTotalCount(0);
+          if (isDefaultFilters(appliedFilters)) {
+            setCatalog(emptyCatalog);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -68,42 +161,41 @@ export default function AuditLogsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appliedFilters, currentPage, entriesPerPage]);
 
-  // --- Quick date range helpers (these update the draft immediately) ---
-  const formatDate = (d) => d.toISOString().split("T")[0];
+  const formatDate = (date) => date.toISOString().split("T")[0];
 
   const setToday = () => {
     const today = new Date();
-    setDraft((p) => ({ ...p, startDate: formatDate(today), endDate: formatDate(today) }));
+    setDraft((prev) => ({ ...prev, startDate: formatDate(today), endDate: formatDate(today) }));
   };
 
-  const setLastNDays = (n) => {
+  const setLastNDays = (days) => {
     const end = new Date();
     const start = new Date();
-    start.setDate(start.getDate() - (n - 1));
-    setDraft((p) => ({ ...p, startDate: formatDate(start), endDate: formatDate(end) }));
+    start.setDate(start.getDate() - (days - 1));
+    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(end) }));
   };
 
   const setThisMonth = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    setDraft((p) => ({ ...p, startDate: formatDate(start), endDate: formatDate(now) }));
+    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
   };
 
-  const setLastNMonths = (n) => {
+  const setLastNMonths = (months) => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - n, now.getDate());
-    setDraft((p) => ({ ...p, startDate: formatDate(start), endDate: formatDate(now) }));
+    const start = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
   };
 
   const setThisYear = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
-    setDraft((p) => ({ ...p, startDate: formatDate(start), endDate: formatDate(now) }));
+    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
   };
 
-  const clearDates = () => setDraft((p) => ({ ...p, startDate: "", endDate: "" }));
+  const clearDates = () => setDraft((prev) => ({ ...prev, startDate: "", endDate: "" }));
 
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
@@ -125,45 +217,16 @@ export default function AuditLogsPage() {
     { label: "This Year", onClick: setThisYear },
   ];
 
-  const adminOptions = useMemo(() => Array.from(new Set(logs.map((l) => l.admin).filter(Boolean))), [logs]);
-  const roleOptions = useMemo(() => Array.from(new Set(logs.map((l) => l.role).filter(Boolean))), [logs]);
-  const moduleOptions = useMemo(() => Array.from(new Set(logs.map((l) => l.module).filter(Boolean))), [logs]);
-  const modelOptions = useMemo(() => Array.from(new Set(logs.map((l) => l.model).filter(Boolean))), [logs]);
-  const actionOptions = useMemo(() => Array.from(new Set(logs.map((l) => l.action).filter(Boolean))), [logs]);
+  const adminOptions = useMemo(() => catalog.admins, [catalog.admins]);
+  const roleOptions = useMemo(() => catalog.roles, [catalog.roles]);
+  const moduleOptions = useMemo(() => catalog.modules, [catalog.modules]);
+  const modelOptions = useMemo(() => catalog.models, [catalog.models]);
+  const actionOptions = useMemo(() => catalog.actions, [catalog.actions]);
 
-  const filteredLogs = useMemo(() => {
-    const f = appliedFilters;
-    const searchTerm = f.search.trim().toLowerCase();
-
-    return logs.filter((log) => {
-      if (f.startDate && log.rawDate && log.rawDate < f.startDate) return false;
-      if (f.endDate && log.rawDate && log.rawDate > f.endDate) return false;
-
-      if (f.role !== "allRoles" && log.role !== f.role) return false;
-      if (f.admin !== "allAdmins" && log.admin !== f.admin) return false;
-      if (f.module !== "allModules" && log.module !== f.module) return false;
-      if (f.model !== "allModels" && log.model !== f.model) return false;
-      if (f.action !== "allActions" && log.action !== f.action) return false;
-
-      if (searchTerm) {
-        const haystack = `${log.ip} ${log.admin} ${log.module} ${log.model} ${log.action} ${log.role} ${log.summary || ""}`.toLowerCase();
-        if (!haystack.includes(searchTerm)) return false;
-      }
-
-      return true;
-    });
-  }, [logs, appliedFilters]);
-
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalEntries = filteredLogs.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
-
-  const startIndex = (currentPage - 1) * entriesPerPage;
-  const currentItems = filteredLogs.slice(startIndex, startIndex + entriesPerPage);
-
-  const startEntry = totalEntries === 0 ? 0 : startIndex + 1;
-  const endEntry = Math.min(startIndex + entriesPerPage, totalEntries);
+  const totalPages = Math.max(1, Math.ceil(totalCount / entriesPerPage));
+  const startIndex = totalCount === 0 ? 0 : (currentPage - 1) * entriesPerPage;
+  const startEntry = totalCount === 0 ? 0 : startIndex + 1;
+  const endEntry = Math.min(startIndex + logs.length, totalCount);
 
   const actionBadgeStyles = {
     Update: "bg-cyan-50 text-cyan-600 border border-cyan-200",
@@ -177,38 +240,49 @@ export default function AuditLogsPage() {
   };
 
   const handleViewChanges = (log) => {
-    // Hook this up to open a modal or navigate to a details view
     console.log("View changes for log", log.id);
   };
 
-  const exportExcel = () => {
-    const exportData = filteredLogs.map((log, index) => ({
-      "S.N.": index + 1,
-      Admin: log.admin,
-      Role: log.role,
-      Action: log.action,
-      Module: log.module,
-      Model: log.model,
-      "IP Address": log.ip,
-      Date: log.date,
-      Time: log.time,
-      Summary: log.summary || "",
-    }));
+  const exportExcel = async () => {
+    try {
+      const query = buildQueryString(appliedFilters, 2000, 0, false);
+      const response = await fetch(`/api/v1/admin/audit-logs?${query}`, { cache: "no-store" });
+      const data = await response.json();
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Logs");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const file = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
-    });
-    saveAs(file, `audit-logs-${Date.now()}.xlsx`);
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to export audit logs.");
+      }
+
+      const exportRows = Array.isArray(data.logs) ? data.logs : [];
+      const exportData = exportRows.map((log, index) => ({
+        "S.N.": index + 1,
+        Admin: log.admin,
+        Role: log.role,
+        Action: log.action,
+        Module: log.module,
+        Model: log.model,
+        "IP Address": log.ip,
+        Date: log.date,
+        Time: log.time,
+        Summary: log.summary || "",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Logs");
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const file = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+      });
+      saveAs(file, `audit-logs-${Date.now()}.xlsx`);
+    } catch (err) {
+      setError(err.message || "Failed to export audit logs.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 p-3 sm:p-6">
-        {/* Breadcrumb */}
         <div className="mb-1">
           <h1 className="text-xl sm:text-2xl font-normal text-gray-900">Audit Logs</h1>
           <p className="flex items-center gap-1 text-sm text-gray-500 mt-1">
@@ -220,25 +294,38 @@ export default function AuditLogsPage() {
             <span>Audit Logs</span>
           </p>
         </div>
+
         <div className="mb-6">
           <h1 className="flex items-center gap-1 text-xl text-gray-500 mt-1">Track all administrative actions across the system.</h1>
         </div>
 
-        {/* Filters Card */}
         <div className="bg-white rounded-lg p-5 shadow-sm space-y-5">
-          {/* Date Range */}
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Date Range</p>
             <div className="flex items-center gap-2 flex-wrap mb-3">
-              <input type="date" value={draft.startDate} onChange={(e) => updateDraft("startDate", e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm text-gray-700" />
+              <input
+                type="date"
+                value={draft.startDate}
+                onChange={(e) => updateDraft("startDate", e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              />
               <span className="text-sm text-gray-500">to</span>
-              <input type="date" value={draft.endDate} onChange={(e) => updateDraft("endDate", e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm text-gray-700" />
+              <input
+                type="date"
+                value={draft.endDate}
+                onChange={(e) => updateDraft("endDate", e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              />
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {dateShortcuts.map((s) => (
-                <button key={s.label} onClick={s.onClick} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
-                  {s.label}
+              {dateShortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.label}
+                  onClick={shortcut.onClick}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+                >
+                  {shortcut.label}
                 </button>
               ))}
               <button onClick={clearDates} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
@@ -247,15 +334,18 @@ export default function AuditLogsPage() {
             </div>
           </div>
 
-          {/* Dropdown filters row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Role</label>
-              <select value={draft.role} onChange={(e) => updateDraft("role", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
+              <select
+                value={draft.role}
+                onChange={(e) => updateDraft("role", e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              >
                 <option value="allRoles">All Roles</option>
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
-                    {humanize(role)}
+                    {role}
                   </option>
                 ))}
               </select>
@@ -263,7 +353,11 @@ export default function AuditLogsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Admin</label>
-              <select value={draft.admin} onChange={(e) => updateDraft("admin", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
+              <select
+                value={draft.admin}
+                onChange={(e) => updateDraft("admin", e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              >
                 <option value="allAdmins">All Admins</option>
                 {adminOptions.map((name) => (
                   <option key={name} value={name}>
@@ -275,26 +369,33 @@ export default function AuditLogsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Module</label>
-              <select value={draft.module} onChange={(e) => updateDraft("module", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
+              <select
+                value={draft.module}
+                onChange={(e) => updateDraft("module", e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              >
                 <option value="allModules">All Modules</option>
                 {moduleOptions.map((module) => (
                   <option key={module} value={module}>
-                    {humanize(module)}
+                    {MODULE_LABELS[module] || module}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Dropdown filters row 2 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Model</label>
-              <select value={draft.model} onChange={(e) => updateDraft("model", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
+              <select
+                value={draft.model}
+                onChange={(e) => updateDraft("model", e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              >
                 <option value="allModels">All Models</option>
                 {modelOptions.map((model) => (
                   <option key={model} value={model}>
-                    {humanize(model)}
+                    {model}
                   </option>
                 ))}
               </select>
@@ -302,11 +403,15 @@ export default function AuditLogsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Action</label>
-              <select value={draft.action} onChange={(e) => updateDraft("action", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
+              <select
+                value={draft.action}
+                onChange={(e) => updateDraft("action", e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              >
                 <option value="allActions">All Actions</option>
                 {actionOptions.map((action) => (
                   <option key={action} value={action}>
-                    {humanize(action)}
+                    {action}
                   </option>
                 ))}
               </select>
@@ -314,11 +419,16 @@ export default function AuditLogsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Search</label>
-              <input type="text" value={draft.search} onChange={(e) => updateDraft("search", e.target.value)} placeholder="Search IP, details..." className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700" />
+              <input
+                type="text"
+                value={draft.search}
+                onChange={(e) => updateDraft("search", e.target.value)}
+                placeholder="Search IP, details..."
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700"
+              />
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex flex-wrap gap-3 pt-1">
             <button onClick={applyFilters} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
               Apply Filters
@@ -332,7 +442,6 @@ export default function AuditLogsPage() {
           </div>
         </div>
 
-        {/* Results Table Card */}
         <div className="bg-white rounded-lg shadow-sm mt-6 overflow-hidden">
           <div className="flex items-center justify-between flex-wrap gap-2 px-5 sm:px-6 py-5">
             <select
@@ -349,9 +458,9 @@ export default function AuditLogsPage() {
               <option value={100}>100</option>
             </select>
 
-            <h2 className="text-lg font-bold text-blue-950">Audit Logs ({totalEntries} records)</h2>
+            <h2 className="text-lg font-bold text-blue-950">Audit Logs ({totalCount} records)</h2>
             <p className="text-sm text-gray-500">
-              Showing {startEntry} to {endEntry} of {totalEntries} entries
+              Showing {startEntry} to {endEntry} of {totalCount} entries
             </p>
           </div>
 
@@ -383,22 +492,28 @@ export default function AuditLogsPage() {
                       {error}
                     </td>
                   </tr>
-                ) : currentItems.length === 0 ? (
+                ) : logs.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-10 text-center text-gray-400">
                       No audit logs match your filters.
                     </td>
                   </tr>
                 ) : (
-                  currentItems.map((log, index) => (
+                  logs.map((log, index) => (
                     <tr key={log.id} className="border-b last:border-b-0 hover:bg-gray-50">
                       <td className="px-5 sm:px-6 py-4 text-blue-600 font-medium">{startIndex + index + 1}</td>
                       <td className="px-5 py-4 text-gray-800">{log.admin}</td>
                       <td className="px-5 py-4 text-gray-800">{log.role}</td>
                       <td className="px-5 py-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${actionBadgeStyles[log.action] || "bg-gray-50 text-gray-600 border border-gray-200"}`}>{log.action}</span>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                            actionBadgeStyles[log.action] || "bg-gray-50 text-gray-600 border border-gray-200"
+                          }`}
+                        >
+                          {log.action}
+                        </span>
                       </td>
-                      <td className="px-5 py-4 text-gray-800 font-mono text-[13px]">{log.module}</td>
+                      <td className="px-5 py-4 text-gray-800 font-mono text-[13px]">{MODULE_LABELS[log.module] || log.module}</td>
                       <td className="px-5 py-4 text-pink-500 font-mono text-[13px]">{log.ip}</td>
                       <td className="px-5 py-4 text-gray-800">
                         <div>{log.date}</div>
@@ -406,7 +521,10 @@ export default function AuditLogsPage() {
                         {log.summary ? <div className="text-gray-500 text-xs mt-1">{log.summary}</div> : null}
                       </td>
                       <td className="px-5 py-4">
-                        <button onClick={() => handleViewChanges(log)} className="px-4 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium hover:bg-blue-50">
+                        <button
+                          onClick={() => handleViewChanges(log)}
+                          className="px-4 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium hover:bg-blue-50"
+                        >
                           View
                         </button>
                       </td>
@@ -417,24 +535,37 @@ export default function AuditLogsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
           <div className="px-5 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3 border-t">
             <span className="text-sm text-gray-500">
-              Showing {startEntry} to {endEntry} of {totalEntries} entries
+              Showing {startEntry} to {endEntry} of {totalCount} entries
             </span>
 
             <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border rounded disabled:opacity-40">
+              <button
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border rounded disabled:opacity-40"
+              >
                 Previous
               </button>
 
-              {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((page) => (
-                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded border text-sm ${currentPage === page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-100"}`}>
+              {Array.from({ length: Math.min(totalPages, 10) }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded border text-sm ${
+                    currentPage === page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
                   {page}
                 </button>
               ))}
 
-              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border rounded disabled:opacity-40">
+              <button
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-sm border rounded disabled:opacity-40"
+              >
                 Next
               </button>
             </div>
@@ -442,7 +573,6 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="py-5 text-center text-sm text-gray-500 border-t">
         Copyright © 2026 <span className="font-bold">Global Tech Nepal Pvt. Ltd.</span>
       </footer>

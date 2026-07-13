@@ -3,6 +3,7 @@ import pool from "@/utils/db";
 
 const USERS_TABLE = "admins";
 const ROLES_TABLE = "admin_roles";
+let adminSchemaPromise = null;
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const normalizeString = (value) => String(value || "").trim();
@@ -130,8 +131,17 @@ const roleLabel = (roleRow) => {
 };
 
 export const ensureAdminUsersSchema = async (db = pool) => {
-  await ensureUsersTable(db);
-  await ensureRolesTable(db);
+  if (!adminSchemaPromise) {
+    adminSchemaPromise = (async () => {
+      await ensureUsersTable(db);
+      await ensureRolesTable(db);
+    })().catch((error) => {
+      adminSchemaPromise = null;
+      throw error;
+    });
+  }
+
+  return adminSchemaPromise;
 };
 
 export const fetchAdminRoles = async (db = pool) => {
