@@ -14,23 +14,24 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (email && password) {
-        console.log("Login attempt:", { email, password });
+    try {
+      setTimeout(() => {
+        if (email && password) {
+          console.log("Login attempt:", { email, password });
 
-        // 🚀 Redirecting after successful login
-        router.push("/admin");
-      } else {
-        setError("Please fill in all fields");
-      }
+          router.replace("/admin/dashboard");
+        } else {
+          setError("Please fill in all fields");
+        }
 
-      router.replace("/admin/dashboard");
+        setIsLoading(false);
+      }, 2000);
     } catch (err) {
       setError(err.message || "Login failed.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -95,7 +96,7 @@ export default function LoginPage() {
             <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
