@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function ChangePassword() {
+export default function ChangePassword({ onSubmit, saving = false }) {
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -23,7 +23,7 @@ export default function ChangePassword() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     let validation = {};
@@ -49,9 +49,7 @@ export default function ChangePassword() {
       return;
     }
 
-    console.log(formData);
-
-    alert("Password changed successfully!");
+    await onSubmit?.(formData);
 
     setFormData({
       currentPassword: "",
@@ -97,8 +95,8 @@ export default function ChangePassword() {
 
       {/* Button */}
       <div className="flex justify-center pt-2">
-        <button type="submit" className="rounded-md bg-[#4154f1] px-8 py-2.5 text-white font-medium hover:bg-[#3145e5] transition">
-          Change Password
+        <button type="submit" disabled={saving} className="rounded-md bg-[#4154f1] px-8 py-2.5 text-white font-medium hover:bg-[#3145e5] transition disabled:opacity-60 disabled:cursor-not-allowed">
+          {saving ? "Updating..." : "Change Password"}
         </button>
       </div>
     </form>

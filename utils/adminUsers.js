@@ -37,6 +37,7 @@ const ensureUsersTable = async (db = pool) => {
       password VARCHAR(255) NOT NULL,
       address VARCHAR(255) NULL,
       country VARCHAR(100) NULL,
+      profile_photo_path VARCHAR(255) NULL,
       role_id BIGINT UNSIGNED NULL,
       account_type VARCHAR(191) NULL,
       status TINYINT(1) NOT NULL DEFAULT 1,
@@ -57,6 +58,7 @@ const ensureUsersTable = async (db = pool) => {
     ["password", "VARCHAR(255) NOT NULL AFTER phone"],
     ["address", "VARCHAR(255) NULL AFTER password"],
     ["country", "VARCHAR(100) NULL AFTER address"],
+    ["profile_photo_path", "VARCHAR(255) NULL AFTER country"],
     ["role_id", "BIGINT UNSIGNED NULL AFTER country"],
     ["account_type", "VARCHAR(191) NULL AFTER role_id"],
     ["status", "TINYINT(1) NOT NULL DEFAULT 1 AFTER account_type"],
@@ -193,6 +195,7 @@ export const fetchAdminUsers = async (db = pool) => {
        a.phone,
        a.address,
        a.country,
+       a.profile_photo_path,
        a.role_id,
        ${accountTypeExpr} AS account_type,
        a.status,
@@ -211,6 +214,7 @@ export const fetchAdminUsers = async (db = pool) => {
     phone: row.phone || "",
     address: row.address || "",
     country: row.country || "",
+    profilePhotoPath: row.profile_photo_path || null,
     roleId: row.role_id || null,
     accountType: row.account_type || "Staff",
     status: Number(row.status) === 0 ? 0 : 1,
@@ -240,6 +244,7 @@ export const saveAdminUser = async (db = pool, { id = null, body = {} } = {}) =>
   const roleId = body.role_id !== undefined && body.role_id !== null && String(body.role_id).trim() !== "" ? Number(body.role_id) : null;
   const accountType = normalizeString(body.accountType || body.account_type || body.role_name);
   const status = normalizeStatus(body.status);
+  const profilePhotoPath = normalizeString(body.profile_photo_path);
 
   if (!fullName) {
     return { success: false, status: 422, message: "Name is required." };
@@ -269,6 +274,7 @@ export const saveAdminUser = async (db = pool, { id = null, body = {} } = {}) =>
     phone: phone || null,
     address: address || null,
     country: country || null,
+    profile_photo_path: profilePhotoPath || null,
     role_id: roleId,
     account_type: resolvedRoleName,
     status,
