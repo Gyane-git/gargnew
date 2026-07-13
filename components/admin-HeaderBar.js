@@ -10,7 +10,7 @@ const profileMenuItems = [
   { icon: User, label: "My Profile", href: "/admin/profile" },
   { icon: Upload, label: "Upload Product & Images", href: "/admin/upload-product-images" },
   { icon: Settings, label: "Ecommerce Settings", href: "/admin/website" },
-  { icon: ImageIcon, label: "Carousel", href: "/admin/carousel" },
+  // { icon: ImageIcon, label: "Carousel", href: "/admin/carousel" },
   { icon: CreditCard, label: "Promotion Image", href: "/admin/website-promotion" },
   { icon: CreditCard, label: "Poster Card", href: "/admin/poster-card" },
   { icon: RefreshCw, label: "Clear System Optimization", href: "/admin/clear-cache" },
