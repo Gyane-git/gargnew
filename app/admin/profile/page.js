@@ -65,7 +65,6 @@ export default function ProfilePage() {
             </div>
 
             {/* Tab Content */}
-
             {activeTab === "overview" && <ProfileOverview profile={profile} />}
 
             {activeTab === "edit" && <EditProfile profile={profile} setProfile={setProfile} />}
@@ -77,7 +76,7 @@ export default function ProfilePage() {
 
       {/* Footer */}
 
-      <div className="mt-12 border-t pt-6 text-center text-[17px]">
+      <div className="mt-12 border-t border-gray-300 pt-6 text-center text-[17px]">
         Copyright © 2026 <span className="font-bold text-[#012970]">Global Tech Nepal Pvt. Ltd.</span>
       </div>
     </div>
