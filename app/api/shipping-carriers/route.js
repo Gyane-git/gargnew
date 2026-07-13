@@ -1,5 +1,7 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
+import { getAuthUser } from "@/utils/authUser";
+import { recordAuditLog } from "@/utils/auditLogs";
 
 const TABLE = "shipping_carriers";
 
@@ -65,6 +67,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const { hasStatus } = await ensureTable();
+    const authUser = getAuthUser(req);
 
     const body = await req.json();
     const name = String(body.name || "").trim();
@@ -93,6 +96,25 @@ export async function POST(req) {
       `INSERT INTO ${TABLE} (${columns.join(", ")}) VALUES (${placeholders})`,
       values,
     );
+
+    await recordAuditLog(pool, {
+      admin_name: authUser?.name || authUser?.full_name || authUser?.email || "System",
+      role: authUser?.role || authUser?.user_role || "System",
+      action: "Create",
+      module: "shipping_carriers",
+      model: "Shipping Carrier",
+      record_id: result.insertId,
+      summary: name.slice(0, 255),
+      ip_address: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "",
+      metadata: {
+        carrier_id: result.insertId,
+        name,
+        address: address || null,
+        phone: phone || null,
+        type,
+        publish,
+      },
+    });
 
     return NextResponse.json({
       success: true,

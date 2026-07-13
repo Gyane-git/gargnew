@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Edit2, X, Check } from "lucide-react";
+import { LayoutDashboard, Edit2, X, Check, Trash2 } from "lucide-react";
 
 const GROUPS_API = "/api/system-users/groups";
 const PERMISSIONS_API = "/api/system-users/permissions";
@@ -265,11 +265,28 @@ export default function ManagePermissions() {
     }
   };
 
+  const handleDeleteGroup = async (group) => {
+    const confirmed = window.confirm(`Delete permission group "${group.groupName}"?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${PERMISSIONS_API}/${group.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGroups((prev) => prev.filter((g) => g.id !== group.id));
+      }
+    } catch (err) {
+      console.error("Failed to delete group:", err);
+    }
+  };
+
   // Table filtering and pagination
   const filteredGroups = groups.filter(
     (g) =>
       g.groupName.toLowerCase().includes(search.toLowerCase()) ||
-      g.permissions.toLowerCase().includes(search.toLowerCase())
+      String(g.permissions || "").toLowerCase().includes(search.toLowerCase())
   );
   const totalEntries = filteredGroups.length;
   const totalPages = Math.ceil(totalEntries / entriesPerPage);
@@ -436,14 +453,22 @@ export default function ManagePermissions() {
                           {formatDate(group.createdAt)}
                         </td>
                         <td className="px-3 py-4">
-                          <button
-                            onClick={() => openEdit(group)}
-                            className="p-1.5 rounded border border-blue-600 text-blue-600
-                                       hover:bg-blue-600 hover:text-white transition"
-                            title="Edit"
-                          >
-                            <Edit2 size={15} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openEdit(group)}
+                              className="p-1.5 rounded border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition"
+                              title="Edit"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteGroup(group)}
+                              className="p-1.5 rounded border border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition"
+                              title="Delete"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

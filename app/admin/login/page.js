@@ -26,29 +26,31 @@ export default function LoginPage() {
       } else {
         setError("Please fill in all fields");
       }
+
+      router.replace("/admin/dashboard");
+    } catch (err) {
+      setError(err.message || "Login failed.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to your account</p>
+            <p className="text-gray-600">Sign in to your admin account</p>
           </div>
 
           {/* Error Message */}
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
 
-          {/* Login Form */}
-          <div onSubmit={handleSubmit}>
-            {/* Email Field */}
+          <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -61,7 +63,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password Field */}
             <div className="mb-6">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password

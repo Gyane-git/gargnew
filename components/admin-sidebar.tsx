@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { canAccessAdminPath } from "@/utils/adminAccess";
 
 import { ChevronDown, Megaphone, ChevronRight, LayoutDashboard, GraduationCap, Users, FileText, Calendar, Globe, Award, MessageSquare, UserCog, BarChart3, Mail, Phone, BookOpen, DollarSign, CheckCircle, XCircle, Clock, Send, Download, Settings, Shield, HelpCircle, LogOut, Bell, Star, TrendingUp, MapPin, Briefcase, CreditCard, PieChart, UserPlus, Eye, ThumbsUp, Plus, Video } from "lucide-react";
 
@@ -173,7 +174,7 @@ const menuItems = [
   },
 ];
 
-const EducationSidebar = () => {
+const EducationSidebar = ({ adminRole = "" }) => {
   const [expandedItems, setExpandedItems] = useState({
     "Student Management": true,
     "Application Processing": true,
@@ -185,6 +186,13 @@ const EducationSidebar = () => {
   };
 
   const isActive = (path) => pathname === path;
+  const canShowItem = (item) => {
+    if (item.expandable && item.children) {
+      return item.children.some((child) => canAccessAdminPath(child.path, adminRole));
+    }
+
+    return canAccessAdminPath(item.path, adminRole);
+  };
 
   return (
     <aside className="w-64 bg-white h-full border-r border-gray-200 flex flex-col overflow-hidden shadow-sm">
@@ -192,11 +200,12 @@ const EducationSidebar = () => {
 
       {/* Scrollable Nav */}
       <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2 mb-10 border-b-1">
-        {menuItems.map((item) => {
+        {menuItems.filter(canShowItem).map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path) && !item.expandable;
           const expanded = expandedItems[item.label];
-          const hasNotification = item.children?.some((c) => c.count);
+          const visibleChildren = item.children?.filter((child) => canAccessAdminPath(child.path, adminRole));
+          const hasNotification = visibleChildren?.some((c) => c.count);
 
           return (
             <div key={item.label}>
@@ -217,9 +226,9 @@ const EducationSidebar = () => {
               </div>
 
               {/* Children */}
-              {item.expandable && expanded && item.children && (
+              {item.expandable && expanded && visibleChildren && visibleChildren.length > 0 && (
                 <div className="ml-4 pl-3 border-l border-gray-200 mt-0.5 mb-1 space-y-0.5">
-                  {item.children.map((child) => {
+                  {visibleChildren.map((child) => {
                     const ChildIcon = child.icon;
                     const childActive = isActive(child.path);
                     return (

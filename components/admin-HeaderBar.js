@@ -18,21 +18,28 @@ const profileMenuItems = [
   { icon: LogOut, label: "Logout", danger: true },
 ];
 
-export default function AdminHeaderBar({ onToggleSidebar }) {
+export default function AdminHeaderBar({ onToggleSidebar, admin = null }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [adminName, setAdminName] = useState("Gyanendra");
+  const [adminName, setAdminName] = useState(admin?.full_name || admin?.email || "Admin");
   const profileRef = useRef(null);
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = () => {
-    setShowLogoutModal(false);
-    setTimeout(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("admin");
+  useEffect(() => {
+    setAdminName(admin?.full_name || admin?.email || "Admin");
+  }, [admin]);
 
-      router.push("/admin/login");
-    }, 350);
+  const handleLogout = async () => {
+    setShowLogoutModal(false);
+    try {
+      await fetch("/api/v1/admin/auth/logout", { method: "POST" });
+    } catch {}
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("admin");
+    sessionStorage.removeItem("token");
+
+    router.push("/admin/login");
   };
 
   // Close dropdown on outside click
@@ -76,7 +83,7 @@ export default function AdminHeaderBar({ onToggleSidebar }) {
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                   <p className="text-sm font-semibold text-gray-800">{adminName}</p>
-                  <p className="text-xs text-gray-500">Super Admin</p>
+                  <p className="text-xs text-gray-500">{admin?.role || "Admin"}</p>
                 </div>
 
                 {/* Menu Items */}
