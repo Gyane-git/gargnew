@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
@@ -12,19 +12,53 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAlreadyLoggedIn = async () => {
+      try {
+        const res = await fetch("/api/v1/admin/auth/me", { cache: "no-store" });
+        const data = await res.json().catch(() => null);
+
+        if (!cancelled && res.ok && data?.success && data?.admin) {
+          router.replace("/admin/dashboard");
+        }
+      } catch {
+        // Stay on login page.
+      }
+    };
+
+    checkAlreadyLoggedIn();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (email && password) {
-        console.log("Login attempt:", { email, password });
-
-        // 🚀 Redirecting after successful login
-        router.push("/admin");
-      } else {
+    try {
+      if (!email || !password) {
         setError("Please fill in all fields");
+        return;
+      }
+
+      const res = await fetch("/api/v1/admin/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Login failed.");
       }
 
       router.replace("/admin/dashboard");
@@ -92,10 +126,10 @@ export default function LoginPage() {
             </div>
 
             {/* Submit Button */}
-            <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="submit" disabled={isLoading} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
