@@ -1,6 +1,8 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 import { fetchAdminOrderById, upsertOrderPaymentHistory, upsertOrderStatusHistory } from "@/utils/adminOrders";
+import { getAuthUser } from "@/utils/authUser";
+import { recordAuditLog } from "@/utils/auditLogs";
 
 const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
 
@@ -42,6 +44,7 @@ export async function PATCH(request, context) {
   try {
     connection = await pool.getConnection();
     const { id } = await context.params;
+    const authUser = getAuthUser(request);
     const order = await fetchAdminOrderById(connection, id);
 
     if (!order) {
@@ -130,6 +133,24 @@ export async function PATCH(request, context) {
     } catch (historyError) {
       console.error("Order history insert failed:", historyError);
     }
+
+    await recordAuditLog(connection, {
+      admin_name: authUser?.name || authUser?.full_name || authUser?.email || "System",
+      role: authUser?.role || authUser?.user_role || "System",
+      action: "Update",
+      module: "orders",
+      model: "Order",
+      record_id: order.order_id,
+      summary: `Order ${order.order_id} updated to ${nextOrderStatus || "processing"}`,
+      ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
+      metadata: {
+        order_id: order.order_id,
+        order_status: nextOrderStatus,
+        payment_status: nextPaymentStatus,
+        payment_method: nextPaymentMethod,
+        body,
+      },
+    });
 
     return NextResponse.json({
       success: true,

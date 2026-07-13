@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
+import pool from "@/utils/db";
 import { deleteOffer, fetchOffers, saveOffer } from "@/utils/offers";
+import { getAuthUser } from "@/utils/authUser";
+import { recordAuditLog } from "@/utils/auditLogs";
+import { getOffersCache, invalidateOffersCache, setOffersCache } from "@/utils/offersCache";
 
 const OFFERS_CACHE_TTL_MS = 15000;
-let cachedOffers = {
-  activeOnly: null,
-  includeInactive: null,
-  at: 0,
-};
 
 export async function GET(req) {
   try {
@@ -14,6 +13,7 @@ export async function GET(req) {
     const includeInactive = searchParams.get("include_inactive") === "1";
     const limit = searchParams.get("limit");
     const cacheKey = includeInactive ? "includeInactive" : "activeOnly";
+    const cachedOffers = getOffersCache();
 
     if (
       cachedOffers[cacheKey] &&
@@ -31,11 +31,12 @@ export async function GET(req) {
       limit: limit ? Number(limit) : null,
     });
 
-    cachedOffers[cacheKey] = {
+    setOffersCache({
+      ...cachedOffers,
       data: offers,
       limit: limit ? Number(limit) : null,
-    };
-    cachedOffers.at = Date.now();
+      at: Date.now(),
+    });
 
     return NextResponse.json({
       success: true,
@@ -77,6 +78,24 @@ export async function POST(request) {
 
     invalidateOffersCache();
 
+    const authUser = getAuthUser(request);
+    await recordAuditLog(pool, {
+      admin_name: authUser?.name || authUser?.full_name || authUser?.email || "System",
+      role: authUser?.role || authUser?.user_role || "System",
+      action: "Create",
+      module: "offers",
+      model: "Offer",
+      record_id: result.id,
+      summary: String(body.title || "Offer").slice(0, 255),
+      ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
+      metadata: {
+        offer_id: result.id,
+        title: body.title || null,
+        is_active: body.is_active ?? null,
+        is_offer: body.is_offer ?? null,
+      },
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -89,11 +108,3 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: error.message || "Internal server error." }, { status: 500 });
   }
 }
-
-export const invalidateOffersCache = () => {
-  cachedOffers = {
-    activeOnly: null,
-    includeInactive: null,
-    at: 0,
-  };
-};
