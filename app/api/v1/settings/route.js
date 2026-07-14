@@ -1,36 +1,37 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 
-const SETTINGS_CACHE_TTL_MS = 30000;
-let cachedSettings = null;
-let cachedSettingsAt = 0;
+const normalizeStoredUrl = (value, folder = "system-settings") => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/uploads/")) return raw;
+  if (raw.startsWith("uploads/")) return `/${raw}`;
+  if (raw.startsWith("/public/")) return raw.replace(/^\/public/, "");
+  if (raw.startsWith("public/")) return `/${raw.replace(/^public\//, "")}`;
+  return raw.startsWith("/") ? raw : `/uploads/${folder}/${raw}`;
+};
 
 export async function GET() {
   try {
-    if (cachedSettings && Date.now() - cachedSettingsAt < SETTINGS_CACHE_TTL_MS) {
-      return NextResponse.json({
-        success: true,
-        settings: cachedSettings,
-      });
-    }
-
     const [rows] = await pool.query("SELECT * FROM system_settings");
-    
-    // Transform rows into an object key-value pair
+
     const settingsObj = {};
-    rows.forEach(row => {
-      // For images, the frontend expects specific keys like header_logo_full_url
-      if (row.key === 'company_logo_header') {
-        settingsObj[row.key] = { header_logo_full_url: '/assets/logo.png' };
-      } else if (row.key === 'company_logo_footer') {
-        settingsObj[row.key] = { footer_logo_full_url: '/assets/logo.png' };
+    rows.forEach((row) => {
+      if (row.key === "company_logo_header") {
+        settingsObj[row.key] = {
+          value: row.value || "",
+          header_logo_full_url: normalizeStoredUrl(row.value),
+        };
+      } else if (row.key === "company_logo_footer") {
+        settingsObj[row.key] = {
+          value: row.value || "",
+          footer_logo_full_url: normalizeStoredUrl(row.value),
+        };
       } else {
         settingsObj[row.key] = { value: row.value };
       }
     });
-
-    cachedSettings = settingsObj;
-    cachedSettingsAt = Date.now();
 
     return NextResponse.json({
       success: true,
