@@ -10,10 +10,7 @@ export default function ProfileOverview({ profile }) {
         </h5>
 
         <p className="text-[15px] leading-7 text-gray-600">
-          Sunt est soluta temporibus accusantium neque nam maiores cumque
-          temporibus. Tempora libero non est unde veniam est qui dolor. Ut sunt
-          iure rerum quae quisquam autem eveniet perspiciatis odit. Fuga sequi
-          sed ea saepe at unde.
+          {profile.fullName || "Admin"} is managing the dashboard account for {profile.accountType || "the system"}.
         </p>
       </div>
 

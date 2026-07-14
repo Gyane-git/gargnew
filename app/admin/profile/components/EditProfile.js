@@ -2,9 +2,8 @@
 
 import { useRef } from "react";
 import { Upload, Trash2 } from "lucide-react";
-import Image from "next/image";
 
-export default function EditProfile({ profile, setProfile }) {
+export default function EditProfile({ profile, setProfile, onSubmit, saving = false }) {
   const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
@@ -26,6 +25,7 @@ export default function EditProfile({ profile, setProfile }) {
     setProfile((prev) => ({
       ...prev,
       image: imageUrl,
+      profilePhotoFile: file,
     }));
   };
 
@@ -33,13 +33,14 @@ export default function EditProfile({ profile, setProfile }) {
     setProfile((prev) => ({
       ...prev,
       image: "/images/profile.png",
+      profilePhotoPath: "",
+      profilePhotoFile: null,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    console.log(profile);
+    await onSubmit?.(profile);
   };
 
   return (
@@ -50,7 +51,7 @@ export default function EditProfile({ profile, setProfile }) {
 
         <div className="col-span-12 md:col-span-9">
           {/* profile image preview */}
-          <Image src={profile.image} alt="Profile" width={120} height={120} className="w-32 h-32 rounded-lg object-cover border" />
+          <img src={profile.image || "/images/profile.png"} alt="Profile" className="w-32 h-32 rounded-lg object-cover border" />
 
           <div className="flex gap-3 mt-3">
             <button type="button" onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-md bg-[#4154f1] text-white flex items-center justify-center hover:bg-[#2d43ea]">
@@ -126,8 +127,8 @@ export default function EditProfile({ profile, setProfile }) {
 
       {/* Button */}
       <div className="flex justify-center pt-3">
-        <button type="submit" className="bg-[#4154f1] hover:bg-[#3347e6] text-white px-8 py-2.5 rounded-md font-medium transition">
-          Save Changes
+        <button type="submit" disabled={saving} className="bg-[#4154f1] hover:bg-[#3347e6] disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-md font-medium transition">
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </form>
