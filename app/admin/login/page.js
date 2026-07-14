@@ -61,9 +61,9 @@ export default function LoginPage() {
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || "Login failed.");
       }
-      // On success, redirect to dashboard
-      router.replace("/admin/dashboard");
+
       setIsLoading(false);
+      router.replace("/admin/dashboard");
     } catch (err) {
       setError(err.message || "Login failed.");
       setIsLoading(false);

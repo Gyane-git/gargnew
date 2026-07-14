@@ -197,11 +197,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {(message || error) && (
-                <div className={`mb-5 rounded-md px-4 py-3 text-sm ${error ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
-                  {error || message}
-                </div>
-              )}
+              {(message || error) && <div className={`mb-5 rounded-md px-4 py-3 text-sm ${error ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>{error || message}</div>}
 
               {activeTab === "overview" && <ProfileOverview profile={profile} />}
 
