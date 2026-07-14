@@ -5,22 +5,22 @@ import { ChevronDown, LogOut, User, Upload, Settings, Image as ImageIcon, Refres
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "react-toastify";
 
 const profileMenuItems = [
   { icon: User, label: "My Profile", href: "/admin/profile" },
   { icon: Upload, label: "Upload Product & Images", href: "/admin/upload-product-images" },
   { icon: Settings, label: "Ecommerce Settings", href: "/admin/website" },
-  // { icon: ImageIcon, label: "Carousel", href: "/admin/carousel" },
   { icon: CreditCard, label: "Promotion Image", href: "/admin/website-promotion" },
   { icon: CreditCard, label: "Poster Card", href: "/admin/poster-card" },
-  { icon: RefreshCw, label: "Clear System Optimization", href: "/admin/clear-cache" },
-  { icon: Folder, label: "Upload Image Folder", href: "/admin/image-folder" },
+  { icon: RefreshCw, label: "Clear System Optimization" },
+  { icon: Folder, label: "Upload Image Folder", href: "/admin/upload-image-folder" },
   { icon: LogOut, label: "Logout", danger: true },
 ];
 
 export default function AdminHeaderBar({ onToggleSidebar, admin = null }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [adminName, setAdminName] = useState(admin?.full_name || admin?.email || "Admin");
+  const [adminName, setAdminName] = useState("Scilent Knight");
   const profileRef = useRef(null);
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -40,6 +40,37 @@ export default function AdminHeaderBar({ onToggleSidebar, admin = null }) {
     sessionStorage.removeItem("token");
 
     router.push("/admin/login");
+  };
+
+  const handleClearCache = async () => {
+    setProfileOpen(false);
+
+    const loadingToast = toast.loading("Clearing system cache...");
+
+    try {
+      const res = await fetch("/api/v1/clear-cache", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      setTimeout(() => {
+        toast.dismiss(loadingToast);
+        toast.success("Cache cleared successfully.", {
+          position: "top-center",
+        });
+      }, 3000);
+
+      if (!res.ok) {
+        toast.error(data.message || "Failed to clear cache.");
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+
+      toast.dismiss(loadingToast);
+      toast.error("Something went wrong.");
+    }
   };
 
   // Close dropdown on outside click
@@ -100,6 +131,15 @@ export default function AdminHeaderBar({ onToggleSidebar, admin = null }) {
                             }}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
+                            <Icon className="w-4 h-4 flex-shrink-0 opacity-70" />
+                            {label}
+                          </button>
+                        );
+                      }
+
+                      if (label === "Clear System Optimization") {
+                        return (
+                          <button key={label} onClick={handleClearCache} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left">
                             <Icon className="w-4 h-4 flex-shrink-0 opacity-70" />
                             {label}
                           </button>

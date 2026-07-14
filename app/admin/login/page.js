@@ -37,6 +37,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
     setIsLoading(true);
 
@@ -61,10 +62,10 @@ export default function LoginPage() {
         throw new Error(data?.message || "Login failed.");
       }
 
+      setIsLoading(false);
       router.replace("/admin/dashboard");
     } catch (err) {
       setError(err.message || "Login failed.");
-    } finally {
       setIsLoading(false);
     }
   };

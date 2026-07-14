@@ -3,7 +3,20 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, Upload, X, Package, Tag, DollarSign, Boxes, Info, Zap, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  X,
+  Package,
+  Tag,
+  DollarSign,
+  Boxes,
+  Info,
+  Zap,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 
 // ─── section wrapper ──────────────────────────────────────────────────────────
@@ -14,7 +27,9 @@ function Section({ icon: Icon, title, children }) {
         <span className="p-2 bg-blue-50 rounded-lg text-blue-600">
           <Icon size={16} />
         </span>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">{title}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+          {title}
+        </h2>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -40,7 +55,8 @@ const inputCls =
   "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent " +
   "placeholder:text-gray-300 transition";
 
-const toggleCls = (on) => `relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer ${on ? "bg-blue-600" : "bg-gray-200"}`;
+const toggleCls = (on) =>
+  `relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer ${on ? "bg-blue-600" : "bg-gray-200"}`;
 
 const emptyForm = {
   product_code: "",
@@ -53,7 +69,6 @@ const emptyForm = {
   category_id: "",
   brand_id: "",
   delivery_target_days: "",
-  discount: "",
   actual_price: "",
   sell_price: "",
   available_quantity: "",
@@ -102,15 +117,14 @@ export default function EditProductPage() {
     setForm((f) => ({ ...f, slug }));
   }, [form.product_name]);
 
-  // ── auto-calculate sell_price ─────────────────────────────────────────────
-  useEffect(() => {
-    const price = parseFloat(form.actual_price);
-    const disc = parseFloat(form.discount);
-    if (!isNaN(price) && !isNaN(disc)) {
-      const sell = (price - (price * disc) / 100).toFixed(2);
-      setForm((f) => ({ ...f, sell_price: sell }));
-    }
-  }, [form.actual_price, form.discount]);
+  const discountPercentage =
+    Number(form.actual_price) > 0 && Number(form.sell_price) >= 0
+      ? (
+          ((Number(form.actual_price) - Number(form.sell_price)) /
+            Number(form.actual_price)) *
+          100
+        ).toFixed(2)
+      : "0.00";
 
   // ── recursive category <option> renderer ─────────────────────────────────
   const renderCategoryOptions = (nodes, level = 0) =>
@@ -118,7 +132,9 @@ export default function EditProductPage() {
       <option key={cat.id} value={cat.id}>
         {"— ".repeat(level) + cat.category_name}
       </option>,
-      ...(cat.children?.length ? renderCategoryOptions(cat.children, level + 1) : []),
+      ...(cat.children?.length
+        ? renderCategoryOptions(cat.children, level + 1)
+        : []),
     ]);
 
   // ── fetch categories, brands, and product data ────────────────────────────
@@ -166,7 +182,6 @@ export default function EditProductPage() {
           category_id: p.category_id ?? "",
           brand_id: p.brand_id ?? "",
           delivery_target_days: p.delivery_target_days || "",
-          discount: p.discount ?? "",
           actual_price: p.actual_price ?? "",
           sell_price: p.sell_price ?? "",
           available_quantity: p.available_quantity ?? "",
@@ -192,7 +207,8 @@ export default function EditProductPage() {
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const toggle = (key) => setForm((f) => ({ ...f, [key]: f[key] === 1 ? 0 : 1 }));
+  const toggle = (key) =>
+    setForm((f) => ({ ...f, [key]: f[key] === 1 ? 0 : 1 }));
 
   const handleImage = (e) => {
     const file = e.target.files?.[0];
@@ -222,8 +238,10 @@ export default function EditProductPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.product_name.trim()) return showToast("error", "Product name is required.");
-    if (!form.product_code.trim()) return showToast("error", "Product code is required.");
+    if (!form.product_name.trim())
+      return showToast("error", "Product name is required.");
+    if (!form.product_code.trim())
+      return showToast("error", "Product code is required.");
 
     setSubmitting(true);
     try {
@@ -237,7 +255,10 @@ export default function EditProductPage() {
       if (imageFile) fd.append("main_image", imageFile);
       if (catalogueFile) fd.append("product_catalogue", catalogueFile);
 
-      const res = await fetch(`/api/v1/products/${id}`, { method: "PUT", body: fd });
+      const res = await fetch(`/api/v1/products/${id}`, {
+        method: "PUT",
+        body: fd,
+      });
       const data = await res.json();
 
       if (data.success) {
@@ -267,7 +288,8 @@ export default function EditProductPage() {
     return "/no-image.png";
   }
 
-  const displayImage = imagePreview || (existingImage ? getImage(existingImage) : null);
+  const displayImage =
+    imagePreview || (existingImage ? getImage(existingImage) : null);
 
   if (loading) {
     return (
@@ -288,7 +310,11 @@ export default function EditProductPage() {
           className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-medium transition-all
             ${toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`}
         >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+          {toast.type === "success" ? (
+            <CheckCircle size={16} />
+          ) : (
+            <AlertCircle size={16} />
+          )}
           {toast.msg}
         </div>
       )}
@@ -296,16 +322,24 @@ export default function EditProductPage() {
       {/* ── Top bar ── */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
-          <Link href="/admin/products" className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition">
+          <Link
+            href="/admin/products"
+            className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition"
+          >
             <ArrowLeft size={20} />
           </Link>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Edit Product</h1>
-            <p className="text-xs text-gray-400 truncate max-w-xs">{form.product_name || "—"}</p>
+            <p className="text-xs text-gray-400 truncate max-w-xs">
+              {form.product_name || "—"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/admin/products" className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition">
+          <Link
+            href="/admin/products"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
+          >
             Cancel
           </Link>
           <button
@@ -313,7 +347,11 @@ export default function EditProductPage() {
             disabled={submitting}
             className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition"
           >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <CheckCircle size={16} />
+            )}
             {submitting ? "Saving…" : "Save Changes"}
           </button>
         </div>
@@ -327,10 +365,20 @@ export default function EditProductPage() {
           <Section icon={Package} title="Basic Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Field label="Product Name" required>
-                <input value={form.product_name} onChange={set("product_name")} placeholder="e.g. Wireless Noise-Cancelling Headphones" className={inputCls} />
+                <input
+                  value={form.product_name}
+                  onChange={set("product_name")}
+                  placeholder="e.g. Wireless Noise-Cancelling Headphones"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Product Code" required hint="Must be unique">
-                <input value={form.product_code} onChange={set("product_code")} placeholder="e.g. SKU-00123" className={inputCls} />
+                <input
+                  value={form.product_code}
+                  onChange={set("product_code")}
+                  placeholder="e.g. SKU-00123"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Slug">
                 <input
@@ -344,16 +392,29 @@ export default function EditProductPage() {
                 />
               </Field>
               <Field label="Delivery Target Days">
-                <input value={form.delivery_target_days} onChange={set("delivery_target_days")} placeholder="e.g. 3-5" className={inputCls} />
+                <input
+                  value={form.delivery_target_days}
+                  onChange={set("delivery_target_days")}
+                  placeholder="e.g. 3-5"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Category">
-                <select value={form.category_id} onChange={set("category_id")} className={inputCls}>
+                <select
+                  value={form.category_id}
+                  onChange={set("category_id")}
+                  className={inputCls}
+                >
                   <option value="">— Select category —</option>
                   {renderCategoryOptions(categories)}
                 </select>
               </Field>
               <Field label="Brand">
-                <select value={form.brand_id} onChange={set("brand_id")} className={inputCls}>
+                <select
+                  value={form.brand_id}
+                  onChange={set("brand_id")}
+                  className={inputCls}
+                >
                   <option value="">— Select brand —</option>
                   {brands.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -363,13 +424,24 @@ export default function EditProductPage() {
                 </select>
               </Field>
               <Field label="Product Location">
-                <input value={form.product_location} onChange={set("product_location")} placeholder="e.g. Warehouse A, Shelf 3" className={inputCls} />
+                <input
+                  value={form.product_location}
+                  onChange={set("product_location")}
+                  placeholder="e.g. Warehouse A, Shelf 3"
+                  className={inputCls}
+                />
               </Field>
             </div>
 
             <div className="mt-5">
               <Field label="Product Description">
-                <textarea value={form.product_description} onChange={set("product_description")} rows={4} placeholder="Write a detailed product description…" className={inputCls + " resize-none"} />
+                <textarea
+                  value={form.product_description}
+                  onChange={set("product_description")}
+                  rows={4}
+                  placeholder="Write a detailed product description…"
+                  className={inputCls + " resize-none"}
+                />
               </Field>
             </div>
           </Section>
@@ -377,7 +449,10 @@ export default function EditProductPage() {
           {/* Specs / Packaging / Warranty */}
           <Section icon={Info} title="Details & Specifications">
             <div className="flex flex-col gap-5">
-              <Field label="Key Specifications" hint="Technical specs, features, dimensions…">
+              <Field
+                label="Key Specifications"
+                hint="Technical specs, features, dimensions…"
+              >
                 <textarea
                   value={form.key_specifications}
                   onChange={set("key_specifications")}
@@ -387,10 +462,21 @@ export default function EditProductPage() {
                 />
               </Field>
               <Field label="Packaging">
-                <textarea value={form.packaging} onChange={set("packaging")} rows={2} placeholder="e.g. 1x Headphone, 1x USB-C Cable, 1x Carry Pouch" className={inputCls + " resize-none"} />
+                <textarea
+                  value={form.packaging}
+                  onChange={set("packaging")}
+                  rows={2}
+                  placeholder="e.g. 1x Headphone, 1x USB-C Cable, 1x Carry Pouch"
+                  className={inputCls + " resize-none"}
+                />
               </Field>
               <Field label="Warranty">
-                <input value={form.warranty} onChange={set("warranty")} placeholder="e.g. 1 Year Manufacturer Warranty" className={inputCls} />
+                <input
+                  value={form.warranty}
+                  onChange={set("warranty")}
+                  placeholder="e.g. 1 Year Manufacturer Warranty"
+                  className={inputCls}
+                />
               </Field>
             </div>
           </Section>
@@ -399,13 +485,37 @@ export default function EditProductPage() {
           <Section icon={DollarSign} title="Pricing">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <Field label="Actual Price (Rs.)" required>
-                <input type="number" min="0" step="0.01" value={form.actual_price} onChange={set("actual_price")} placeholder="0.00" className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.actual_price}
+                  onChange={set("actual_price")}
+                  placeholder="0.00"
+                  className={inputCls}
+                />
               </Field>
-              <Field label="Discount (%)" hint="Auto-calculates sell price">
+              {/* <Field label="Discount (%)" hint="Auto-calculates sell price">
                 <input type="number" min="0" max="100" step="0.01" value={form.discount} onChange={set("discount")} placeholder="0" className={inputCls} />
+              </Field> */}
+              <Field label="Discount (%)" hint="Calculated automatically">
+                <input
+                  type="text"
+                  value={`${discountPercentage}%`}
+                  readOnly
+                  className={`${inputCls} bg-gray-100 cursor-not-allowed`}
+                />
               </Field>
               <Field label="Sell Price (Rs.)" hint="Auto-calculated">
-                <input type="number" min="0" step="0.01" value={form.sell_price} onChange={set("sell_price")} placeholder="0.00" className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.sell_price}
+                  onChange={set("sell_price")}
+                  placeholder="0.00"
+                  className={inputCls}
+                />
               </Field>
             </div>
           </Section>
@@ -414,10 +524,24 @@ export default function EditProductPage() {
           <Section icon={Boxes} title="Inventory">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Field label="Available Quantity" required>
-                <input type="number" min="0" value={form.available_quantity} onChange={set("available_quantity")} placeholder="0" className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  value={form.available_quantity}
+                  onChange={set("available_quantity")}
+                  placeholder="0"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Stock Quantity" required>
-                <input type="number" min="0" value={form.stock_quantity} onChange={set("stock_quantity")} placeholder="0" className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  value={form.stock_quantity}
+                  onChange={set("stock_quantity")}
+                  placeholder="0"
+                  className={inputCls}
+                />
               </Field>
             </div>
           </Section>
@@ -435,8 +559,16 @@ export default function EditProductPage() {
               {displayImage ? (
                 <div className="relative w-full aspect-square">
                   {/* <Image src={displayImage} alt="Product" fill className="object-cover rounded-xl" /> */}
-                  <Image src={displayImage} alt="Product" fill className="object-cover rounded-xl" />
-                  <button onClick={handleRemoveImage} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow text-gray-600 hover:text-red-500 transition">
+                  <Image
+                    src={displayImage}
+                    alt="Product"
+                    fill
+                    className="object-cover rounded-xl"
+                  />
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow text-gray-600 hover:text-red-500 transition"
+                  >
                     <X size={14} />
                   </button>
                 </div>
@@ -444,13 +576,21 @@ export default function EditProductPage() {
                 <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-400">
                   <Upload size={28} className="text-gray-300" />
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-500">Click to upload</p>
+                    <p className="text-sm font-medium text-gray-500">
+                      Click to upload
+                    </p>
                     <p className="text-xs">PNG, JPG, WEBP up to 5MB</p>
                   </div>
                 </div>
               )}
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImage}
+            />
           </Section>
 
           {/* Product Catalogue */}
@@ -460,8 +600,18 @@ export default function EditProductPage() {
               className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition p-5 flex flex-col items-center gap-2 text-gray-400"
             >
               <Upload size={22} className="text-gray-300" />
-              <p className="text-sm font-medium text-gray-500 text-center">{catalogueFile ? catalogueFile.name : existingCatalogue ? "Replace catalogue (PDF)" : "Upload catalogue (PDF)"}</p>
-              {existingCatalogue && !catalogueFile && <p className="text-xs text-blue-500 truncate max-w-full">Current: {existingCatalogue.split("/").pop()}</p>}
+              <p className="text-sm font-medium text-gray-500 text-center">
+                {catalogueFile
+                  ? catalogueFile.name
+                  : existingCatalogue
+                    ? "Replace catalogue (PDF)"
+                    : "Upload catalogue (PDF)"}
+              </p>
+              {existingCatalogue && !catalogueFile && (
+                <p className="text-xs text-blue-500 truncate max-w-full">
+                  Current: {existingCatalogue.split("/").pop()}
+                </p>
+              )}
             </div>
             {(catalogueFile || existingCatalogue) && (
               <button
@@ -474,7 +624,13 @@ export default function EditProductPage() {
                 <X size={12} /> Remove
               </button>
             )}
-            <input ref={catalogueRef} type="file" accept=".pdf" className="hidden" onChange={handleCatalogue} />
+            <input
+              ref={catalogueRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={handleCatalogue}
+            />
           </Section>
 
           {/* Promotions & Flags */}
@@ -489,8 +645,16 @@ export default function EditProductPage() {
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">{label}</span>
-                  <button type="button" onClick={() => toggle(key)} className={toggleCls(form[key] === 1)} aria-checked={form[key] === 1} role="switch">
-                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form[key] === 1 ? "translate-x-6" : "translate-x-1"}`} />
+                  <button
+                    type="button"
+                    onClick={() => toggle(key)}
+                    className={toggleCls(form[key] === 1)}
+                    aria-checked={form[key] === 1}
+                    role="switch"
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form[key] === 1 ? "translate-x-6" : "translate-x-1"}`}
+                    />
                   </button>
                 </div>
               ))}
@@ -502,10 +666,20 @@ export default function EditProductPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-700">Active</p>
-                <p className="text-xs text-gray-400">Product will be visible in store</p>
+                <p className="text-xs text-gray-400">
+                  Product will be visible in store
+                </p>
               </div>
-              <button type="button" onClick={() => toggle("status")} className={toggleCls(form.status === 1)} role="switch" aria-checked={form.status === 1}>
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.status === 1 ? "translate-x-6" : "translate-x-1"}`} />
+              <button
+                type="button"
+                onClick={() => toggle("status")}
+                className={toggleCls(form.status === 1)}
+                role="switch"
+                aria-checked={form.status === 1}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.status === 1 ? "translate-x-6" : "translate-x-1"}`}
+                />
               </button>
             </div>
           </Section>

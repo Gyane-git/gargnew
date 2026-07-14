@@ -197,11 +197,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {(message || error) && (
-                <div className={`mb-5 rounded-md px-4 py-3 text-sm ${error ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
-                  {error || message}
-                </div>
-              )}
+              {(message || error) && <div className={`mb-5 rounded-md px-4 py-3 text-sm ${error ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>{error || message}</div>}
 
               {activeTab === "overview" && <ProfileOverview profile={profile} />}
 
@@ -215,7 +211,7 @@ export default function ProfilePage() {
 
       {/* Footer */}
 
-      <div className="mt-12 border-t pt-6 text-center text-[17px]">
+      <div className="mt-12 border-t border-gray-300 pt-6 text-center text-[17px]">
         Copyright © 2026 <span className="font-bold text-[#012970]">Global Tech Nepal Pvt. Ltd.</span>
       </div>
     </div>

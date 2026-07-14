@@ -61,6 +61,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, [isLoginPage, pathname, router]);
 
+  // useEffect(() => {
+  //   if (isLoginPage) {
+  //     setChecking(false);
+  //     return;
+  //   }
+
+  //   // Skip authentication
+  //   setAdmin({
+  //     role: "Super Admin",
+  //     name: "Developer",
+  //   });
+
+  //   setChecking(false);
+  // }, [isLoginPage]);
+
   if (isLoginPage) {
     return <>{children}</>;
   }
