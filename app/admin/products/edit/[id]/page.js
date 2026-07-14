@@ -35,10 +35,7 @@ function Field({ label, required, hint, children }) {
   );
 }
 
-const inputCls =
-  "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm " +
-  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent " +
-  "placeholder:text-gray-300 transition";
+const inputCls = "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm " + "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent " + "placeholder:text-gray-300 transition";
 
 const toggleCls = (on) => `relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer ${on ? "bg-blue-600" : "bg-gray-200"}`;
 
@@ -308,11 +305,7 @@ export default function EditProductPage() {
           <Link href="/admin/products" className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition">
             Cancel
           </Link>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition"
-          >
+          <button onClick={handleSubmit} disabled={submitting} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition">
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
             {submitting ? "Saving…" : "Save Changes"}
           </button>
@@ -378,13 +371,7 @@ export default function EditProductPage() {
           <Section icon={Info} title="Details & Specifications">
             <div className="flex flex-col gap-5">
               <Field label="Key Specifications" hint="Technical specs, features, dimensions…">
-                <textarea
-                  value={form.key_specifications}
-                  onChange={set("key_specifications")}
-                  rows={3}
-                  placeholder="e.g. Battery: 30hr | Driver: 40mm | Weight: 250g"
-                  className={inputCls + " resize-none"}
-                />
+                <textarea value={form.key_specifications} onChange={set("key_specifications")} rows={3} placeholder="e.g. Battery: 30hr | Driver: 40mm | Weight: 250g" className={inputCls + " resize-none"} />
               </Field>
               <Field label="Packaging">
                 <textarea value={form.packaging} onChange={set("packaging")} rows={2} placeholder="e.g. 1x Headphone, 1x USB-C Cable, 1x Carry Pouch" className={inputCls + " resize-none"} />
@@ -455,10 +442,7 @@ export default function EditProductPage() {
 
           {/* Product Catalogue */}
           <Section icon={Tag} title="Product Catalogue">
-            <div
-              onClick={() => catalogueRef.current?.click()}
-              className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition p-5 flex flex-col items-center gap-2 text-gray-400"
-            >
+            <div onClick={() => catalogueRef.current?.click()} className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition p-5 flex flex-col items-center gap-2 text-gray-400">
               <Upload size={22} className="text-gray-300" />
               <p className="text-sm font-medium text-gray-500 text-center">{catalogueFile ? catalogueFile.name : existingCatalogue ? "Replace catalogue (PDF)" : "Upload catalogue (PDF)"}</p>
               {existingCatalogue && !catalogueFile && <p className="text-xs text-blue-500 truncate max-w-full">Current: {existingCatalogue.split("/").pop()}</p>}
