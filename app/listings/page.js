@@ -24,7 +24,8 @@ const DentalSuppliesListing = () => {
   // const [products, setProducts] = useState([]);
   const { products, loading, error, fetchProducts } = useProductStore();
 
-  const { categories, loadingcategory, errorcategory, fetchCategories } = useCategoryStore();
+  const { categories, loadingcategory, errorcategory, fetchCategories } =
+    useCategoryStore();
   const [loadings, setLoading] = useState(false);
   // const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,7 +96,7 @@ const DentalSuppliesListing = () => {
 
   const router = useRouter();
   const setSelectedProduct = useSelectedProductStore(
-    (state) => state.setSelectedProduct
+    (state) => state.setSelectedProduct,
   );
 
   const handleCardClick = (product) => {
@@ -239,7 +240,7 @@ const DentalSuppliesListing = () => {
       let matchesPrice = true;
       if (filters.priceRange) {
         const priceRange = priceRanges.find(
-          (range) => range.label === filters.priceRange
+          (range) => range.label === filters.priceRange,
         );
         const price = parseFloat(product.sell_price);
         matchesPrice =
@@ -284,9 +285,8 @@ const DentalSuppliesListing = () => {
       brand: "",
       priceRange: "",
     });
-    setSelectedCategory(null); 
+    setSelectedCategory(null);
   };
- 
 
   const formatPrice = (price) => {
     return `Rs.${parseFloat(price).toFixed(2)}`;
@@ -346,7 +346,7 @@ const DentalSuppliesListing = () => {
 
             {/* Category Filter */}
             {/* <div className="relative w-full sm:w-auto"> */}
-              {/* <select
+            {/* <select
             value={filters.category}
             onChange={(e) => handleFilterChange("category", e.target.value)}
             className="appearance-none border border-gray-300 rounded-lg px-3 sm:px-4 py-2 pr-6 sm:pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-sm w-full sm:w-auto"
@@ -358,9 +358,7 @@ const DentalSuppliesListing = () => {
               renderCategoryOptions(categories)
             )}
           </select> */}
-          <div className="relative w-full sm:w-auto flex flex-row  border-gray-300 rounded border-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent ">
-
-
+            <div className="relative w-full sm:w-auto flex flex-row  border-gray-300 rounded border-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent ">
               {/* <MultiLevelDropdown
                 categories={categories}
                onSelect={(cat) => {
@@ -370,15 +368,15 @@ const DentalSuppliesListing = () => {
                 selectedValue={filters.category} // Pass the current filter value
                 placeholder="All Categories"
               /> */}
-              
-                <MultiLevelDropdown
-                  categories={categories}
-                  value={selectedCategory?.id || null} // Pass the selected category ID
-                  onSelect={(cat) => {
-                    setSelectedCategory(cat); // set selected category state
-                    handleFilterChange("category", cat.id); // apply your filter
-                  }}
-                />
+
+              <MultiLevelDropdown
+                categories={categories}
+                value={selectedCategory?.id || null} // Pass the selected category ID
+                onSelect={(cat) => {
+                  setSelectedCategory(cat); // set selected category state
+                  handleFilterChange("category", cat.id); // apply your filter
+                }}
+              />
               {/* <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" /> */}
             </div>
 
@@ -431,9 +429,24 @@ const DentalSuppliesListing = () => {
         </div>
 
         {(loading || loadings || loadingcategory) && (
-          <div className="flex justify-center items-center h-48">
-            <Loader2 className="flex justify-center self-center h-4 w-4 animate-spin" />
-            <span className="ml-2">Loading products...</span>
+          <div className="min-h-100 flex items-center justify-center bg-gray-50">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex gap-2">
+                <span className="h-6 w-6 rounded-full bg-indigo-600 animate-bounce"></span>
+                <span
+                  className="h-6 w-6 rounded-full bg-orange-600 animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></span>
+                <span
+                  className="h-6 w-6 rounded-full bg-indigo-600 animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></span>
+              </div>
+
+              <p className="text-gray-600 text-sm font-medium">
+                Loading Products
+              </p>
+            </div>
           </div>
         )}
 
@@ -454,19 +467,17 @@ const DentalSuppliesListing = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 sm-gap-x-6 gap-x-4 gap-y-4 ">
                   {filteredAndSortedProducts
                     .slice(0, visibleCount)
-                    .map((product, index) =>
-                      // product.has_variations ? null : 
-                    (
-                        <ProductCardMain
-                          key={product.id || index}
-                          product={product}
-                          showDiscount={
-                            parseFloat(product.actual_price) >
-                            parseFloat(product.sell_price)
-                          }
-                        />
-                      )
-                    )}
+                    .map((product, index) => (
+                      // product.has_variations ? null :
+                      <ProductCardMain
+                        key={product.id || index}
+                        product={product}
+                        showDiscount={
+                          parseFloat(product.actual_price) >
+                          parseFloat(product.sell_price)
+                        }
+                      />
+                    ))}
                 </div>
               </div>
 

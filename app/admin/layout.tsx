@@ -6,7 +6,6 @@ import AdminHeaderBar from "@/components/admin-HeaderBar";
 import SideHeaderBar from "@/components/admin-sidebar";
 import { ToastContainer } from "react-toastify";
 import { canAccessAdminPath, getAdminLandingPath } from "@/utils/adminAccess";
-import { Loader2 } from "lucide-react";
 
 export default function AdminLayout({
   children,
@@ -107,24 +106,24 @@ export default function AdminLayout({
     );
   }
 
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
-        <div className="rounded-2xl bg-white/80 backdrop-blur-md shadow-xl px-10 py-8 flex flex-col items-center gap-5">
-          <div className="h-16 w-16 rounded-full border-[5px] border-indigo-100 border-t-indigo-600 animate-spin"></div>
+  // if (checking) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
+  //       <div className="rounded-2xl bg-white/80 backdrop-blur-md shadow-xl px-10 py-8 flex flex-col items-center gap-5">
+  //         <div className="h-16 w-16 rounded-full border-[5px] border-indigo-100 border-t-indigo-600 animate-spin"></div>
 
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Verifying Access
-            </h2>
-            <p className="text-sm text-gray-500 mt-1 animate-pulse">
-              Please wait a moment...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  //         <div className="text-center">
+  //           <h2 className="text-lg font-semibold text-gray-800">
+  //             Verifying Access
+  //           </h2>
+  //           <p className="text-sm text-gray-500 mt-1 animate-pulse">
+  //             Please wait a moment...
+  //           </p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex flex-col h-screen">

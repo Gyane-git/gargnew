@@ -1,8 +1,5 @@
-// "use client";
-
 import React from "react";
 import { AddToCart } from "@/components/addtocartbutton";
-// import MainTopBar from "@/components/mainTopbar";
 import ProductTabs from "@/components/ProductTabsDes";
 import OverViewProject from "./OverViewProject";
 import CatalogButton from "./Catalog";
@@ -18,8 +15,6 @@ const getProductByCode = async (code) => {
     const res = await fetch(`${baseUrl}/products/details/${code}`);
 
     if (!res.ok) {
-      // console.log("Failed to fetch product:", res.status);
-      // toast.error()
       return null;
     }
 
@@ -28,7 +23,6 @@ const getProductByCode = async (code) => {
     const product = data.product || null;
     if (!product) return null;
 
-    // Transform it to match your desired structure
     return {
       id: product.id,
       average_rating: product.average_rating,
@@ -53,7 +47,7 @@ const getProductByCode = async (code) => {
       image_url:
         product.image_full_url ||
         product.main_image_full_url ||
-         product.main_image ||
+        product.main_image ||
         "/assets/logo.png",
       description: product.product_description,
       available_quantity: product.available_quantity,
@@ -63,22 +57,14 @@ const getProductByCode = async (code) => {
       files_full_url: product.files_full_url,
     };
   } catch (error) {
-    // console.log("API fetch error:", error.message);
     return null;
   }
 };
 
 export default async function ProductPage({ params }) {
   params = await params;
-  // console.log("Server-side params:", params.code);
-  // console.info("Data fetch started");
-  // console.warn(`(Link) : ${baseUrl}/products/details/${params.code}`);
 
-  // 1const quantity = useQuantityStore((state) => state.quantity);
-  // console.log("quantity", quantity);
   const product = await getProductByCode(params.code);
-  // const product = transformProduct(saampledata);
-  // console.warn(`Server-side product: ${JSON.stringify(product)}`);
 
   if (!product) {
     return (
@@ -91,8 +77,9 @@ export default async function ProductPage({ params }) {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-5 h-5 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-          }`}
+        className={`w-5 h-5 ${
+          i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+        }`}
       />
     ));
   };
@@ -108,7 +95,6 @@ export default async function ProductPage({ params }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 origin-top">
           {/* Product Image */}
           <OverViewProject product={product} />
-          {/* <ProductImageZoomSeparate product={product} /> */}
 
           {/* Product Details */}
           <div>
@@ -129,20 +115,21 @@ export default async function ProductPage({ params }) {
             </div>
             <div className="flex items-baseline space-x-4 mb-2">
               <span className="text-2xl font-semibold text-red-600">
-                Rs. {Number(product.sell_price).toLocaleString("en-IN", {
+                Rs.{" "}
+                {Number(product.sell_price).toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </span>
               {parseFloat(product.actual_price) >
                 parseFloat(product.sell_price) && (
-                  <span className="text-sm text-gray-500 line-through">
-                    {Number(product.actual_price).toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                )}
+                <span className="text-sm text-gray-500 line-through">
+                  {Number(product.actual_price).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              )}
             </div>
 
             {product.catalogue_url && <CatalogButton product={product} />}
