@@ -32,6 +32,10 @@ const pickAssetPath = (value, folder = "") => {
 
   const filename = normalizedValue.split("/").filter(Boolean).pop() || normalizedValue;
   const candidates = uniqueCandidates([
+    normalizedValue.startsWith("storage/app/public/backend/")
+      ? `/${normalizedValue.replace(/^storage\/app\/public\//, "")}`
+      : null,
+    normalizedValue.startsWith("backend/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("uploads/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("storage/") ? `/${normalizedValue}` : null,
     normalizedFolder ? `${normalizedFolder}/${filename}` : null,

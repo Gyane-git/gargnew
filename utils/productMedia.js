@@ -4,6 +4,9 @@ const normalizeImageUrl = (value, fallbackFolder = "uploads/products") => {
   const raw = String(value).trim();
   if (!raw) return null;
   if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("storage/app/public/backend/")) return `/${raw.replace(/^storage\/app\/public\//, "")}`;
+  if (raw.startsWith("backend/")) return `/${raw}`;
+  if (raw.startsWith("storage/app/public/")) return `/${raw.replace(/^storage\/app\/public\//, "")}`;
   if (raw.startsWith("/")) return raw;
   if (raw.startsWith("uploads/")) return `/${raw}`;
   if (raw.startsWith("public/")) return `/${raw.replace(/^public\//, "")}`;
