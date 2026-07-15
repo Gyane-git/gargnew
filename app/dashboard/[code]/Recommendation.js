@@ -7,6 +7,7 @@ import { apiRequest } from "@/utils/ApiSafeCalls";
 import WishListHeart from "@/components/WishListHeart";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { resolveProductImage } from "@/utils/productMedia";
 
 export default function RecommendedProducts({ product }) {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -32,10 +33,7 @@ export default function RecommendedProducts({ product }) {
           sell_price: product.sell_price,
           rating: product.average_rating,
           reviews: product.review_count,
-          image_url:
-            product.main_image_full_url ||
-            product.image_url ||
-            "/assets/logo.png",
+          image_url: resolveProductImage(product),
           description: product.product_description,
           available_quantity: product.available_quantity,
           unit_info: product.stock_quantity,
@@ -205,7 +203,7 @@ const ProductCard = ({ product, showDiscount = false }) => {
 
         <Link href={`/dashboard/${product.product_code}`}>
           <img
-            src={product.image_url}
+            src={product.image_url || "/assets/logo.png"}
             alt={product.product_name}
             className="w-full h-32 object-contain bg-gray-50 rounded hover:scale-105 transition-transform duration-300 cursor-pointer"
           />

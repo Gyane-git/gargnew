@@ -2,6 +2,7 @@ import pool from "@/utils/db";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
+import { formatCategoryRows } from "@/utils/apiFormatters";
 
 export async function GET(req, { params }) {
   try {
@@ -15,7 +16,7 @@ export async function GET(req, { params }) {
 
     return Response.json({
       success: true,
-      category: rows[0],
+      category: formatCategoryRows(rows)[0],
     });
   } catch (err) {
     console.error(err);

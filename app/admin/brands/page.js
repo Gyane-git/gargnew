@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { LayoutDashboard, Info, SquarePen, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import Image from "next/image";
 
 export default function Brands() {
   const [brands, setBrands] = useState([]);
@@ -28,7 +27,7 @@ export default function Brands() {
   };
 
   function getImage(brand) {
-    const img = brand?.image || brand?.main_image;
+    const img = brand?.image_full_url || brand?.image_url || brand?.logo_full_url || brand?.image || brand?.main_image;
 
     if (!img) return "/no-image.png";
 
@@ -218,9 +217,7 @@ export default function Brands() {
 
                     {/* IMAGE */}
                     <td className="px-6 py-4">
-                      <div className="w-12 h-12 relative">
-                        <Image src={getImage(brand)} alt={brand.brand_name} width={48} height={48} className="w-full h-full object-cover rounded-lg border border-gray-200" />
-                      </div>
+                      <img src={getImage(brand)} alt={brand.brand_name} className="w-12 h-12 object-cover rounded-lg border border-gray-200" />
                     </td>
 
                     <td className="px-3 py-4">{brand.brand_name || brand.name || `Brand ${brand.id}`}</td>

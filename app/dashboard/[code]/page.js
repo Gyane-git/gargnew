@@ -11,6 +11,7 @@ import { Star } from "lucide-react";
 import ButtonForShare from "./ButtonForShare";
 import { baseUrl } from "@/utils/config";
 import ProductCardList from "./ProductCardList";
+import { resolveProductImage } from "@/utils/productMedia";
 
 //fetch api data
 const getProductByCode = async (code) => {
@@ -50,11 +51,7 @@ const getProductByCode = async (code) => {
       sell_price: product.sell_price,
       stock_quantity: product.stock_quantity,
       available_quantity: product.available_quantity,
-      image_url:
-        product.image_full_url ||
-        product.main_image_full_url ||
-         product.main_image ||
-        "/assets/logo.png",
+      image_url: resolveProductImage(product),
       description: product.product_description,
       available_quantity: product.available_quantity,
       unit_info: product.unit_info,

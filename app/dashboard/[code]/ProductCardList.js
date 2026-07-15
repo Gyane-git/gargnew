@@ -18,9 +18,8 @@ export default function ProductCardList({ products }) {
     main_image_full_url: v.main_image_full_url || "/assets/logo.png",
   }));
 
-  // If no variations
   if (mappedVariations.length === 0) {
-    return <p>No variations available.</p>;
+    return null;
   }
   return (
     <div className="max-h-[390px] sm:max-h-[390px] max-w-full w-full overflow-y-auto hide-scrollbar">

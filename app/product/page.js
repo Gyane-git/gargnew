@@ -118,7 +118,7 @@ const ProductAPIRequest = () => {
     }
   }, [manufacturerFromUrl, manufacturers]);
 
-  const CACHE_KEY = "productsCache";
+  const CACHE_KEY = "productsCache-v3";
   const CACHE_DURATION = 5 * 60 * 1000;
 
   // Recursive mapper function

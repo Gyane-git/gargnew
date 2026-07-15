@@ -6,10 +6,6 @@ export async function GET() {
     const [rows] = await pool.query("SELECT * FROM categories WHERE status = 1 ORDER BY id ASC");
     const categories = buildCategoryTree(rows, { onlyActive: true }).filter((category) => Number(category.top) === 1);
 
-    if (categories.length === 0) {
-      return Response.json({ success: false, message: "No top categories found" }, { status: 404 });
-    }
-
     return Response.json({
       success: true,
       categories,

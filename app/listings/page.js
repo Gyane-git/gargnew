@@ -39,7 +39,7 @@ const DentalSuppliesListing = () => {
   const [filterON, setfilterON] = useState(false);
   //  const [selected, setSelected] = useState(null);
 
-  const CACHE_KEY = "productsCache";
+  const CACHE_KEY = "productsCache-v3";
   const CACHE_DURATION = 2 * 60 * 1000;
   // console.warn(`Base Api Url: ${baseUrl}`);
 

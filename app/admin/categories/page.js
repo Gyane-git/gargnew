@@ -36,6 +36,17 @@ function CategoryRow({ category, sn, level = 0, onToggleTop, onToggleStatus, onD
         {/* S.N. */}
         <td className="px-4 py-3 text-sm text-gray-700">{sn}</td>
 
+        {/* Category Image */}
+        <td className="px-4 py-3">
+          <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+            {category.image_full_url ? (
+              <img src={category.image_full_url} alt={category.category_name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">No image</div>
+            )}
+          </div>
+        </td>
+
         {/* Category Name with tree indent */}
         <td className="px-4 py-3 text-sm font-medium text-gray-800">
           <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 20}px` }}>
@@ -269,6 +280,7 @@ export default function CategoriesPage() {
                     </svg>
                   </div>
                 </th>
+                <th className="px-4 py-3 text-sm font-semibold text-gray-600">Image</th>
                 <th className="px-4 py-3 text-sm font-semibold text-gray-600">
                   <div className="flex items-center gap-1">
                     Category Name
@@ -286,7 +298,7 @@ export default function CategoriesPage() {
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-400">
+                  <td colSpan={6} className="text-center py-8 text-gray-400">
                     No categories found.
                   </td>
                 </tr>

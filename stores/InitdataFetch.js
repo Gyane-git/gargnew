@@ -1,6 +1,7 @@
 // store/useCategoryStore.js
 import { create } from "zustand";
 import { apiRequest } from "@/utils/ApiSafeCalls";
+import { resolveProductImage } from "@/utils/productMedia";
 
 import { persist } from "zustand/middleware";
 
@@ -19,7 +20,7 @@ const mapCategories = (categories) => categories.map(mapCategory);
 // stores/useProductStore.js
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
-const PRODUCTS_CACHE_VERSION = 2;
+const PRODUCTS_CACHE_VERSION = 3;
 
 export const useProductStore = create((set, get) => ({
     products: [],
@@ -34,7 +35,7 @@ export const useProductStore = create((set, get) => ({
     let expiry = 0;
 
     if (typeof window !== "undefined") {
-    const cached = localStorage.getItem("productsCache");
+    const cached = localStorage.getItem("productsCache-v3");
     if (cached) {
         try {
         const parsed = JSON.parse(cached);
@@ -57,7 +58,7 @@ export const useProductStore = create((set, get) => ({
     // If expired, remove from localStorage
     if (Date.now() >= expiry ) {
       if (typeof window !== "undefined") {
-            localStorage.removeItem("productsCache");
+            localStorage.removeItem("productsCache-v3");
           }
     }
 
@@ -82,10 +83,7 @@ export const useProductStore = create((set, get) => ({
           item_number: `#${product.product_code}`,
           actual_price: product.actual_price,
           sell_price: product.sell_price,
-          image_url:
-            product.main_image_full_url ||
-            product.image_full_url ||
-            `/assets/logo.png`,
+          image_url: resolveProductImage(product),
           description: product.product_description,
           unit_info: product.unit_info,
           flash_sale: product.flash_sale,
@@ -94,7 +92,7 @@ export const useProductStore = create((set, get) => ({
 
       if (typeof window !== "undefined") {
         localStorage.setItem(
-            "productsCache",
+            "productsCache-v3",
             JSON.stringify({
               data: transformedProducts,
               expiry: now + CACHE_DURATION,

@@ -240,7 +240,7 @@ export function CategoriesViews() {
                   >
                     <div className="aspect-w-16 aspect-h-10">
                       <img
-                        src={category.image}
+                        src={category.image_full_url || category.image || "/no-image.png"}
                         alt={category.name}
                         className="w-full h-24 sm:h-28 md:h-32 object-cover rounded-t-lg"
                       />

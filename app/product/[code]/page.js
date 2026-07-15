@@ -18,6 +18,7 @@ import { baseUrl } from "@/utils/config";
 // import HtmlDataConversion from "@/components/HtmlDataConversion";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import ProductImageZoom from "@/components/ProductImageZoom";
+import { resolveProductImage } from "@/utils/productMedia";
 
 import { AddToCart, ViewProducts } from "@/components/addtocartbutton";
 
@@ -51,7 +52,7 @@ import { AddToCart, ViewProducts } from "@/components/addtocartbutton";
 //     return `Rs.${parseFloat(price).toFixed(2)}`;
 //   };
 
-//   const CACHE_KEY = "productsCache";
+//   const CACHE_KEY = "productsCache-v3";
 //   const CACHE_DURATION = 5 * 60 * 1000;
 //   const fetchProducts = async () => {
 //     setLoading(true);
@@ -323,7 +324,7 @@ const ProductRequest = () => {
     (state) => state.setSelectedProduct
   );
 
-  const CACHE_KEY = "productsCache";
+  const CACHE_KEY = "productsCache-v3";
   const CACHE_DURATION = 5 * 60 * 1000;
 
   const fetchProducts = async () => {
@@ -359,10 +360,7 @@ const ProductRequest = () => {
           item_number: `#${product.product_code}`,
           actual_price: product.actual_price,
           sell_price: product.sell_price,
-          image_url:
-            product.main_image_full_url ||
-            product.image_full_url ||
-            `/assets/logo.png`,
+          image_url: resolveProductImage(product),
           description: product.product_description,
           unit_info: product.unit_info,
           flash_sale: product.flash_sale,
