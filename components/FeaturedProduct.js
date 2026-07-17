@@ -7,6 +7,7 @@ import fetchProducts from "@/utils/apiHelper";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import WeeklySpecial from "@/components/WeeklySpecial";
+import { resolveProductImage } from "@/utils/productMedia";
 
 export const ProductCard = ({ product, showDiscount = false }) => {
   const router = useRouter();
@@ -28,7 +29,7 @@ export const ProductCard = ({ product, showDiscount = false }) => {
         onClick={() => router.push(`/dashboard/${product.product_code}`)}
       >
         <img
-          src={product.image_url}
+          src={product.image_url || "/assets/logo.png"}
           alt={product.product_name}
           className="w-full h-20 sm:h-24 lg:h-32 object-contain bg-gray-50 rounded hover:scale-105 transition-transform duration-300"
         />
@@ -141,10 +142,7 @@ export default function ProductShowcase() {
           sell_price: product.sell_price,
           rating: product.average_rating,
           reviews: product.review_count,
-          image_url:
-            product.main_image_full_url ||
-            product.image_url || product.main_image || 
-            "/assets/logo.png",
+          image_url: resolveProductImage(product),
           description: product.product_description,
           available_quantity: product.available_quantity,
           unit_info: product.stock_quantity,

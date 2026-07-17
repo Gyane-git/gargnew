@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useRef } from "react";
+import { resolveProductImage } from "@/utils/productMedia";
 
 const ProductImageZoomSeparate = ({ product }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
 
-  const productImage = product.image_url;
+  const productImage = resolveProductImage(product);
 
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -35,7 +36,7 @@ const ProductImageZoomSeparate = ({ product }) => {
         onMouseLeave={() => setIsHovering(false)}
       >
         <img
-          src={productImage}
+          src={productImage || "/assets/logo.png"}
           alt="Product"
           className="w-full h-full object-cover centre"
         />
@@ -63,7 +64,7 @@ const ProductImageZoomSeparate = ({ product }) => {
         <div
           className="w-full h-full"
           style={{
-            backgroundImage: `url(${productImage})`,
+            backgroundImage: `url(${productImage || "/assets/logo.png"})`,
             backgroundSize: "300%",
             backgroundPosition: `${mousePosition.x}% ${mousePosition.y}%`,
             backgroundRepeat: "no-repeat",

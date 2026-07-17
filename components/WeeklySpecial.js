@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/utils/ApiSafeCalls";
+import { resolveProductImage } from "@/utils/productMedia";
 
 export default function ProductShowcase() {
   const [specials, setSpecials] = useState([]);
@@ -21,10 +22,7 @@ export default function ProductShowcase() {
       brand: product.brand?.brand_name || "No Brand",
       actual_price: product.actual_price,
       sell_price: product.sell_price,
-      image_url:
-          product.main_image_full_url ||
-            product.image_url || product.main_image || 
-            "/assets/logo.png",
+      image_url: resolveProductImage(product),
       flash_sale: product.flash_sale,
       weekly_offer: product.weekly_offer,
       special_offer: product.special_offer,
@@ -73,7 +71,7 @@ export default function ProductShowcase() {
       className="bg-gray-50 rounded-lg shadow-md cursor-pointer hover:shadow-2xl p-3 flex items-center space-x-3 hover:scale-105 transition-transform duration-300"
     >
       <img
-        src={product.image_url}
+        src={product.image_url || "/assets/logo.png"}
         alt={product.product_name}
         className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
       />

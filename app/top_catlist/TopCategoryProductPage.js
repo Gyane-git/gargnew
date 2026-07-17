@@ -6,6 +6,7 @@ import { apiRequest } from "@/utils/ApiSafeCalls";
 import ProductImageZoom from "@/components/ProductImageZoom";
 import { AddToCart, ViewProducts } from "@/components/addtocartbutton";
 import { BuyNow } from "@/components/BuyNow";
+import { resolveProductImage } from "@/utils/productMedia";
 
 function TopCategoryProductPage() {
   const searchParams = useSearchParams();
@@ -38,10 +39,7 @@ function TopCategoryProductPage() {
             item_number: `#${product.product_code}`,
             actual_price: product.actual_price,
             sell_price: product.sell_price,
-            image_url:
-              product.main_image_full_url ||
-              product.image_full_url ||
-              "/assets/logo.png",
+            image_url: resolveProductImage(product),
             description: product.product_description,
             available_quantity: product.available_quantity,
             unit_info: product.unit_info,

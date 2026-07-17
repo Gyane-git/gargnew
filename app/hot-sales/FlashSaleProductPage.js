@@ -4,6 +4,7 @@ import { Package, Loader2, AlertCircle, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import ProductImageZoom from "@/components/ProductImageZoom";
+import { resolveProductImage } from "@/utils/productMedia";
 import { AddToCart, ViewProducts } from "@/components/addtocartbutton";
 import { BuyNow } from "@/components/BuyNow";
 
@@ -46,10 +47,7 @@ function FlashSaleProductPage() {
             item_number: `#${product.product_code}`,
             actual_price: product.actual_price,
             sell_price: product.sell_price,
-            image_url:
-             product.main_image_full_url ||
-              product.image_full_url ||  product.main_image ||
-              "/assets/logo.png",
+            image_url: resolveProductImage(product),
             description: product.product_description,
             available_quantity: product.available_quantity,
             unit_info: product.unit_info,

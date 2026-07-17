@@ -13,6 +13,13 @@ const publicAssetExists = (candidatePath) => {
   return existsSync(localPath);
 };
 
+const asNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : value;
+};
+
+const asFlag = (value) => (Number(value) === 1 ? 1 : 0);
+
 const uniqueCandidates = (candidates) => [...new Set(candidates.filter(Boolean))];
 
 const pickAssetPath = (value, folder = "") => {
@@ -25,6 +32,10 @@ const pickAssetPath = (value, folder = "") => {
 
   const filename = normalizedValue.split("/").filter(Boolean).pop() || normalizedValue;
   const candidates = uniqueCandidates([
+    normalizedValue.startsWith("storage/app/public/backend/")
+      ? `/${normalizedValue.replace(/^storage\/app\/public\//, "")}`
+      : null,
+    normalizedValue.startsWith("backend/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("uploads/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("storage/") ? `/${normalizedValue}` : null,
     normalizedFolder ? `${normalizedFolder}/${filename}` : null,
@@ -70,6 +81,18 @@ export const formatBrand = (brand) => ({
 
 export const formatProduct = (product) => ({
   ...product,
+  has_variations: asFlag(product.has_variations),
+  flash_sale: asFlag(product.flash_sale),
+  weekly_offer: asFlag(product.weekly_offer),
+  special_offer: asFlag(product.special_offer),
+  today_deals: asFlag(product.today_deals),
+  status: asFlag(product.status),
+  actual_price: asNumber(product.actual_price),
+  sell_price: asNumber(product.sell_price),
+  discount: asNumber(product.discount),
+  available_quantity: asNumber(product.available_quantity),
+  stock_quantity: asNumber(product.stock_quantity),
+  delivery_target_days: asNumber(product.delivery_target_days),
   image_full_url: assetUrl(product.main_image, "uploads/products"),
   main_image_full_url: assetUrl(product.main_image, "uploads/products"),
   image_url: assetUrl(product.main_image, "uploads/products"),
@@ -81,22 +104,22 @@ export const formatProduct = (product) => ({
   brand: product.brand_id
     ? {
         id: product.brand_id,
-        brand_name: product.brand_name,
-        image_full_url: assetUrl(product.brand_image, "uploads/brands"),
-        image_url: assetUrl(product.brand_image, "uploads/brands"),
-        top: product.brand_top,
-        status: product.brand_status,
+      brand_name: product.brand_name,
+      image_full_url: assetUrl(product.brand_image, "uploads/brands"),
+      image_url: assetUrl(product.brand_image, "uploads/brands"),
+        top: asFlag(product.brand_top),
+        status: asFlag(product.brand_status),
       }
     : null,
   category: product.category_id
     ? {
         id: product.category_id,
-        category_name: product.category_name,
-        parent_id: product.category_parent_id,
-        image_full_url: assetUrl(product.category_image, "uploads"),
-        image_url: assetUrl(product.category_image, "uploads"),
-        top: product.category_top,
-        status: product.category_status,
+      category_name: product.category_name,
+      parent_id: product.category_parent_id,
+      image_full_url: assetUrl(product.category_image, "uploads"),
+      image_url: assetUrl(product.category_image, "uploads"),
+        top: asFlag(product.category_top),
+        status: asFlag(product.category_status),
       }
     : null,
 });

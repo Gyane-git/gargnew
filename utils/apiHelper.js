@@ -7,6 +7,7 @@ import useCartStore from "@/stores/useCartStore";
 import { toast } from "react-hot-toast";
 import useInfoModalStore from "@/stores/infoModalStore";
 import useWarningModalStore from "@/stores/warningModalStore";
+import { resolveProductImage } from "@/utils/productMedia";
 
 const API_URL = `${baseUrl}/products/latest`;
 
@@ -43,9 +44,7 @@ const fetchProducts = async (count) => {
         item_number: `#${product.product_code}`,
         actual_price: product.actual_price,
         sell_price: product.sell_price,
-        image_url:
-          product.image_full_url ||
-          "https://garg.omsok.com/storage/app/public/backend/productimages/werfas/2025_04_09_67f642c43e68d_removebg_preview_1.png",
+        image_url: resolveProductImage(product),
         description: product.product_description,
         available_quantity: product.available_quantity,
         unit_info: product.unit_info,

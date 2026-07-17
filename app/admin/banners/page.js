@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Info, SquarePen, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -75,7 +74,15 @@ export default function BannerList() {
   };
 
   const getImage = (banner) => {
-    if (banner.file_path) return banner.file_path.startsWith("http") ? banner.file_path : `/uploads/carousel/${banner.file_path}`;
+    const image = banner.image_full_url || banner.image_url || banner.file_path_full_url || banner.file_path || banner.mobile_file_path_full_url || banner.mobile_file_path;
+
+    if (!image) return "/no-image.png";
+    if (image.startsWith("http")) return image;
+    if (image.startsWith("/uploads")) return image;
+    if (image.startsWith("public/")) return `/${image.replace(/^public\//, "")}`;
+    if (image.startsWith("carousel/")) return `/uploads/${image}`;
+
+    if (banner.file_path) return `/uploads/carousel/${banner.file_path}`;
     if (banner.mobile_file_path) return `/uploads/carousel/${banner.mobile_file_path}`;
     return "/no-image.png";
   };
@@ -169,9 +176,7 @@ export default function BannerList() {
 
                   {/* IMAGE */}
                   <td className="px-3 py-4">
-                    <div className="w-12 h-12 relative">
-                      <Image src={getImage(banner)} alt={banner.product_code} width={48} height={48} className="w-full h-full object-cover rounded-lg border border-gray-200" />
-                    </div>
+                    <img src={getImage(banner)} alt={banner.product_code} className="w-12 h-12 object-cover rounded-lg border border-gray-200" />
                   </td>
 
                   {/* ID */}

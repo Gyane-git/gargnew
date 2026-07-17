@@ -40,7 +40,7 @@ const DentalSuppliesListing = () => {
   const [filterON, setfilterON] = useState(false);
   //  const [selected, setSelected] = useState(null);
 
-  const CACHE_KEY = "productsCache";
+  const CACHE_KEY = "productsCache-v3";
   const CACHE_DURATION = 2 * 60 * 1000;
   // console.warn(`Base Api Url: ${baseUrl}`);
 
@@ -309,6 +309,30 @@ const DentalSuppliesListing = () => {
   //         </div>
   //         );
 
+  if (loading || loadings || loadingcategory) {
+    return (
+      <div className="min-h-20 flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-2">
+            <span className="h-3 w-3 rounded-full bg-indigo-600 animate-bounce"></span>
+            <span
+              className="h-3 w-3 rounded-full bg-orange-600 animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            ></span>
+            <span
+              className="h-3 w-3 rounded-full bg-indigo-600 animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            ></span>
+          </div>
+
+          <p className="text-gray-600 text-sm font-medium">
+            Loading Products...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="max-w-7xl mx-auto sm:-ml-8 -my-3 sm:-my-4 lg:-my-6 p-2 sm:p-4 lg:p-6 ">
@@ -336,7 +360,6 @@ const DentalSuppliesListing = () => {
             </div> */}
           </div>
         </div>
-
         {/* Filters */}
         <div className="mb-6 sm:mb-8  pb-4 sm:pb-6 border-b">
           <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 sm:gap-4">
@@ -427,7 +450,6 @@ const DentalSuppliesListing = () => {
             )}
           </div>
         </div>
-
         {(loading || loadings || loadingcategory) && (
           <div className="min-h-100 flex items-center justify-center bg-gray-50">
             <div className="flex flex-col items-center gap-4">
@@ -448,8 +470,8 @@ const DentalSuppliesListing = () => {
               </p>
             </div>
           </div>
-        )}
-
+        )}{" "}
+        */{"}"}
         {!loading &&
           !loadings &&
           !loadingcategory &&

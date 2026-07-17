@@ -108,9 +108,9 @@ export default function CategoryMenu() {
               onClick={(e) => e.stopPropagation()}
             >
               <span className="text-lg">
-                {category.image ? (
+                {category.image_full_url || category.image ? (
                   <img 
-                    src={category.image} 
+                    src={category.image_full_url || category.image} 
                     alt={category.name} 
                     className="w-5 h-5 object-cover rounded" 
                   />

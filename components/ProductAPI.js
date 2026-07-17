@@ -10,6 +10,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { baseUrl } from "@/utils/config";
+import { resolveProductImage } from "@/utils/productMedia";
 
 const ProductAPIRequest = () => {
   const [products, setProducts] = useState([]);
@@ -50,7 +51,7 @@ const ProductAPIRequest = () => {
           item_number: `#${product.product_code}`,
           actual_price: product.actual_price,
           sell_price: product.sell_price,
-          image_url: product.image_full_url,
+          image_url: resolveProductImage(product),
           description: product.product_description,
           available_quantity: product.available_quantity,
           unit_info: product.unit_info,
@@ -179,7 +180,7 @@ const ProductAPIRequest = () => {
               >
                 <div className="relative">
                   <img
-                    src={product.image_url}
+                    src={product.image_url || "/assets/logo.png"}
                     alt={product.product_name}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />
