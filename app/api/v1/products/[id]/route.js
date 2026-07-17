@@ -151,6 +151,30 @@ export async function PUT(req, { params }) {
   }
 }
 
+export async function PATCH(req, { params }) {
+  const { id } = await params;
+
+  try {
+    const body = await req.json();
+    const status = body?.status === 1 || body?.status === "1" ? 1 : 0;
+
+    const [result] = await pool.query("UPDATE products SET status = ?, updated_at = NOW() WHERE id = ?", [status, id]);
+
+    if (!result.affectedRows) {
+      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: status === 1 ? "Product published successfully" : "Product unpublished successfully",
+      status,
+    });
+  } catch (error) {
+    console.error("PATCH PRODUCT STATUS ERROR:", error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req, { params }) {
   const { id } = await params;
 
