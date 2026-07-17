@@ -225,10 +225,19 @@ const fetchShippingCost =async () => {
     const result = await handleOrderBuyNow(orderData);
     // console.log("result", result);
     if (result.success) {
+      toast.success(result.message || "Order placed successfully");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("productsCache-v3");
+        sessionStorage.removeItem("products");
+      }
+
        useInfoModalStore.getState().open({
         title: "Info",
         message: result.message || "Order placed successfully",
       });
+    } else {
+      setIsProcessing(false);
+      return;
     }
     addOrder({
       items: selectedItems,
@@ -237,8 +246,10 @@ const fetchShippingCost =async () => {
       total,
       date: new Date().toISOString(),
     });
+    useCartStore.getState().setSelectedItems([]);
     setTimeout(() => {
       setIsProcessing(false);
+      router.refresh();
       router.push("/product");
     }, 400);
   };
@@ -261,6 +272,15 @@ const fetchShippingCost =async () => {
     };
     // console.log("orderData", orderData);
     const result = await handleOrderBuyNow(orderData);
+    if (!result.success) {
+      setIsProcessing(false);
+      return;
+    }
+    toast.success(result.message || "Order placed successfully");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("productsCache-v3");
+      sessionStorage.removeItem("products");
+    }
     addOrder({
         items: selectedItems,
         address: selectedShippingAddress,
@@ -268,6 +288,8 @@ const fetchShippingCost =async () => {
         total,
         date: new Date().toISOString(),
       });
+    useCartStore.getState().setSelectedItems([]);
+    router.refresh();
 
         const transactionDetails = {
               MERCHANTID,

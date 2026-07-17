@@ -100,6 +100,9 @@ export default function EditProductPage() {
   const [imageFile, setImageFile] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
 
+  const [existingGalleryImages, setExistingGalleryImages] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
+
   const [existingCatalogue, setExistingCatalogue] = useState("");
   const [catalogueFile, setCatalogueFile] = useState(null);
 
@@ -200,6 +203,14 @@ export default function EditProductPage() {
 
         if (p.main_image) setExistingImage(p.main_image);
         if (p.product_catalogue) setExistingCatalogue(p.product_catalogue);
+        const loadedGallery = Array.isArray(p.gallery)
+          ? p.gallery
+          : Array.isArray(p.product_images)
+          ? p.product_images
+          : Array.isArray(p.images)
+          ? p.images
+          : [];
+        setExistingGalleryImages(loadedGallery);
       })
       .catch(() => showToast("error", "Failed to load product."))
       .finally(() => setLoading(false));
@@ -232,6 +243,30 @@ export default function EditProductPage() {
     setCatalogueFile(file);
   };
 
+  const handleGalleryImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const nextImages = files.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+    }));
+
+    setGalleryImages((prev) => [...prev, ...nextImages]);
+    e.target.value = "";
+  };
+
+  const removeGalleryImage = (index) => {
+    setGalleryImages((prev) => {
+      const next = [...prev];
+      const removed = next[index];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 4000);
@@ -254,6 +289,7 @@ export default function EditProductPage() {
       fd.append("remove_image", removeImage ? "1" : "0");
       if (imageFile) fd.append("main_image", imageFile);
       if (catalogueFile) fd.append("product_catalogue", catalogueFile);
+      galleryImages.forEach((img) => fd.append("gallery_images", img.file));
 
       const res = await fetch(`/api/v1/products/${id}`, {
         method: "PUT",
@@ -591,6 +627,102 @@ export default function EditProductPage() {
               className="hidden"
               onChange={handleImage}
             />
+          </Section>
+
+          {/* Gallery Images */}
+          <Section icon={Upload} title="Gallery Images">
+            <div className="space-y-4">
+              <div
+                onClick={() => document.getElementById("edit-gallery-images-input")?.click()}
+                className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition p-5 flex flex-col items-center gap-2 text-gray-400"
+              >
+                <Upload size={22} className="text-gray-300" />
+                <p className="text-sm font-medium text-gray-500 text-center">
+                  Add or replace gallery images
+                </p>
+                <p className="text-xs text-gray-400">
+                  JPG, PNG, WEBP up to 5MB each
+                </p>
+              </div>
+              <input
+                id="edit-gallery-images-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleGalleryImages}
+              />
+
+              {existingGalleryImages.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">
+                    Existing gallery images
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {existingGalleryImages.map((img, index) => {
+                      const src =
+                        img?.image_full_url ||
+                        img?.image_url ||
+                        img?.image_path ||
+                        img?.url ||
+                        "/no-image.png";
+                      return (
+                        <div
+                          key={img.id || `${src}-${index}`}
+                          className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50"
+                        >
+                          <div className="aspect-square">
+                            <Image
+                              src={src}
+                              alt={`gallery-${index + 1}`}
+                              width={240}
+                              height={240}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {galleryImages.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">
+                    New gallery images
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {galleryImages.map((img, index) => (
+                      <div
+                        key={`${img.name}-${index}`}
+                        className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50"
+                      >
+                        <div className="aspect-square">
+                          <Image
+                            src={img.preview}
+                            alt={img.name}
+                            width={240}
+                            height={240}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow text-gray-600 hover:text-red-500 transition"
+                        >
+                          <X size={14} />
+                        </button>
+                        <div className="px-2 py-1 text-[11px] text-gray-500 truncate">
+                          {img.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </Section>
 
           {/* Product Catalogue */}

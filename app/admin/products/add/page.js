@@ -78,6 +78,7 @@ export default function AddProductPage() {
 
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [galleryImages, setGalleryImages] = useState([]);
 
   const [catalogueFile, setCatalogueFile] = useState(null);
 
@@ -178,6 +179,30 @@ export default function AddProductPage() {
     setCatalogueFile(file);
   };
 
+  const handleGalleryImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const nextImages = files.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+    }));
+
+    setGalleryImages((prev) => [...prev, ...nextImages]);
+    e.target.value = "";
+  };
+
+  const removeGalleryImage = (index) => {
+    setGalleryImages((prev) => {
+      const next = [...prev];
+      const removed = next[index];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
   const renderCategoryOptions = (nodes, level = 0) =>
     nodes.flatMap((cat) => [
       <option key={cat.id} value={cat.id}>
@@ -250,6 +275,7 @@ export default function AddProductPage() {
 
       if (imageFile) fd.append("main_image", imageFile);
       if (catalogueFile) fd.append("product_catalogue", catalogueFile);
+      galleryImages.forEach((img) => fd.append("gallery_images", img.file));
 
       if (form.has_variations === 1) {
         const cleanVariations = variations.map(
@@ -496,6 +522,60 @@ export default function AddProductPage() {
               className="hidden"
               onChange={handleImage}
             />
+          </Section>
+
+          {/* Gallery Images */}
+          <Section icon={Upload} title="Gallery Images">
+            <div className="space-y-4">
+              <div
+                onClick={() => document.getElementById("gallery-images-input")?.click()}
+                className="cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition p-5 flex flex-col items-center gap-2 text-gray-400"
+              >
+                <Upload size={22} className="text-gray-300" />
+                <p className="text-sm font-medium text-gray-500 text-center">
+                  Upload one or more product images
+                </p>
+                <p className="text-xs text-gray-400">
+                  JPG, PNG, WEBP up to 5MB each
+                </p>
+              </div>
+              <input
+                id="gallery-images-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleGalleryImages}
+              />
+
+              {galleryImages.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {galleryImages.map((img, index) => (
+                    <div key={`${img.name}-${index}`} className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                      <div className="aspect-square">
+                        <Image
+                          src={img.preview}
+                          alt={img.name}
+                          width={240}
+                          height={240}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(index)}
+                        className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow text-gray-600 hover:text-red-500 transition"
+                      >
+                        <X size={14} />
+                      </button>
+                      <div className="px-2 py-1 text-[11px] text-gray-500 truncate">
+                        {img.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Section>
 
           {/* Product Catalogue */}

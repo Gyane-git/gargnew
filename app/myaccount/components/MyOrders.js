@@ -26,34 +26,16 @@ export default function MyOrders() {
       setLoading(true);
       setError(null);
       const result = await getCustomerOrders();
-
-      // console.log("API Response:", result);
+      const orderList = Array.isArray(result.orders?.orders)
+        ? result.orders.orders
+        : Array.isArray(result.orders)
+          ? result.orders
+          : [];
+      const orderCount = Number(result.orders?.count ?? orderList.length ?? 0);
 
       if (result.success) {
-        // console.log("Orders data:", result.orders);
-
-        // Log the first order's complete structure
-        if (result.orders && result.orders.orders.length > 0) {
-          // console.log(
-          //   "First order complete structure:",
-          //   JSON.stringify(result.orders[0], null, 2)
-          // );
-
-          // Log items from the first order if they exist
-          if (result.orders.orders[0].items) {
-            // console.log("First order items:", result.orders.orders[0].items);
-            if (result.orders.orders[0].items.length > 0) {
-              // console.log(
-              //   "First item complete structure:",
-              //   JSON.stringify(result.orders.orders[0].items[0], null, 2)
-              // );
-            }
-          }
-        }
-
-        setOrderlength(result.orders.count || 0);
-        // console.log("orderlength", result.orders.count);
-        setOrders(result.orders.orders);
+        setOrderlength(orderCount);
+        setOrders(orderList);
       } else {
         setError(result.error);
         toast.error(result.error);

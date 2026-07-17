@@ -59,7 +59,6 @@ export default function CustomerProfilePage() {
 
   const handlePasswordChange = () => {
     setShowChangePassword(false);
-    toast.success("Password changed successfully!");
   };
 
   const handleLogout = async () => {

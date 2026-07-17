@@ -164,7 +164,7 @@ export default function RootLayout({ children }) {
         <LayoutWrapper>
           <ClientLayout>{children}</ClientLayout>
         </LayoutWrapper>
-        {/* <Toast /> */}
+        <Toast />
         <Toaster
           position="top-right"
           toastOptions={{

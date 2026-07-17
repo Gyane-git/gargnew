@@ -55,7 +55,7 @@ export default function RecommendedProducts({ product }) {
     if (product) {
       fetchRelatedProducts();
     }
-  }, []);
+  }, [product]);
   const router = useRouter();
   const scrollRef = useRef(null);
   const scrollLeft = () => {

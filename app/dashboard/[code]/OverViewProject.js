@@ -4,9 +4,38 @@ import { useRef, useState, useEffect } from "react";
 import ProductImageMagnifier from "@/components/ProductImageMagnifier";
 
 const OverViewProject = ({ product }) => {
+  const normalizeGalleryItem = (item) => {
+    if (!item) return null;
+    if (typeof item === "string") return item;
+    if (typeof item === "number") return String(item);
+    if (typeof item === "object") {
+      return (
+        item.image_full_url ||
+        item.full_url ||
+        item.url ||
+        item.path ||
+        item.image_path ||
+        item.file_url ||
+        item.file_path ||
+        item.src ||
+        item.image ||
+        item.main_image_full_url ||
+        item.main_image_url ||
+        null
+      );
+    }
+    return null;
+  };
+
   const [isVideo, setIsVideo] = useState(false);
   const [imageToDisplay, setImageToDisplay] = useState(
-    product.image_url || product.main_image_full_url
+    normalizeGalleryItem(product?.image_url) ||
+      normalizeGalleryItem(product?.main_image_full_url) ||
+      normalizeGalleryItem(product?.gallery?.[0]) ||
+      normalizeGalleryItem(product?.images?.[0]) ||
+      normalizeGalleryItem(product?.product_images?.[0]) ||
+      normalizeGalleryItem(product?.files_full_url?.[0]) ||
+      null
   );
   const [effect, setEffect] = useState("");
   const scrollRef = useRef(null);
@@ -16,7 +45,47 @@ const OverViewProject = ({ product }) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const fileUrls = (product.files_full_url || []).filter(Boolean);
+  const normalizeFiles = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.map(normalizeGalleryItem).filter(Boolean);
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map(normalizeGalleryItem).filter(Boolean);
+        }
+      } catch {}
+
+      return [trimmed];
+    }
+    return [normalizeGalleryItem(value)].filter(Boolean);
+  };
+
+  const fileUrls = normalizeFiles(
+    product?.gallery ||
+      product?.images ||
+      product?.product_images ||
+      product?.files_full_url
+  );
+  const thumbnailKey = fileUrls.join("||");
+
+  useEffect(() => {
+    const nextImage =
+      fileUrls[0] ||
+      normalizeGalleryItem(product?.image_url) ||
+      normalizeGalleryItem(product?.main_image_full_url) ||
+      null;
+
+    if (nextImage) {
+      setImageToDisplay(nextImage);
+      setIsVideo(typeof nextImage === "string" && nextImage.endsWith(".mp4"));
+    }
+  }, [product?.product_code, product?.image_url, product?.main_image_full_url, thumbnailKey]);
 
   function handleClick(url) {
     if (!url) return;
@@ -134,11 +203,11 @@ const OverViewProject = ({ product }) => {
                              p-1 sm:p-2 rounded cursor-pointer snap-start"
                   onClick={() => {
                     // clicking thumbnail should focus it visually and set image
-                    if (url.endsWith(".mp4")) handleVideoClick(url);
+                    if (typeof url === "string" && url.endsWith(".mp4")) handleVideoClick(url);
                     else handleClick(url);
                   }}
                 >
-                  {url.endsWith(".mp4") ? (
+                  {typeof url === "string" && url.endsWith(".mp4") ? (
                     <video
                       src={url}
                       width={38}

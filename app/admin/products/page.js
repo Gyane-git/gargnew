@@ -14,7 +14,7 @@ export default function ProductListPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [bulkPublish, setBulkPublish] = useState(false);
+  const [busyIds, setBusyIds] = useState({});
   const [publishStates, setPublishStates] = useState({});
   const [deleteId, setDeleteId] = useState(null);
 
@@ -30,7 +30,7 @@ export default function ProductListPage() {
   // ── Fetch products ────────────────────────────────────────────────────────
   const fetchProducts = async () => {
     try {
-      const res = await fetch("/api/v1/products");
+      const res = await fetch("/api/v1/products?include_inactive=1");
       const data = await res.json();
       const prods = data.products || [];
       setProducts(prods);
@@ -88,18 +88,52 @@ export default function ProductListPage() {
     }
   };
 
-  // ── Bulk publish ──────────────────────────────────────────────────────────
-  const handleBulkPublish = (checked) => {
-    setBulkPublish(checked);
-    const updated = { ...publishStates };
-    currentItems.forEach((p) => {
-      updated[p.id] = checked;
-    });
-    setPublishStates(updated);
+  const saveProductStatus = async (product, nextStatus, options = {}) => {
+    const { silent = false } = options;
+    setBusyIds((prev) => ({ ...prev, [product.id]: true }));
+    try {
+      const res = await fetch(`/api/v1/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus ? 1 : 0 }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to update product status");
+      }
+      setPublishStates((prev) => ({ ...prev, [product.id]: nextStatus }));
+      if (!silent) {
+        toast.success(nextStatus ? "Product published" : "Product unpublished");
+      }
+    } catch (err) {
+      if (!silent) {
+        toast.error(err.message || "Failed to update product status");
+      }
+      throw err;
+    } finally {
+      setBusyIds((prev) => ({ ...prev, [product.id]: false }));
+    }
   };
 
-  const handlePublishToggle = (id, value) => {
-    setPublishStates((prev) => ({ ...prev, [id]: value }));
+  const handlePublishToggle = (product, value) => {
+    saveProductStatus(product, value);
+  };
+
+  const handleBulkPublish = async (checked) => {
+    if (currentItems.length === 0) return;
+
+    const targetItems = currentItems.filter((product) => publishStates[product.id] !== checked);
+    if (targetItems.length === 0) {
+      toast.success(checked ? "Current page already published" : "Current page already unpublished");
+      return;
+    }
+
+    try {
+      await Promise.all(targetItems.map((product) => saveProductStatus(product, checked, { silent: true })));
+      toast.success(checked ? "Current page published" : "Current page unpublished");
+    } catch (err) {
+      toast.error(err.message || "Bulk update failed");
+    }
   };
 
   // ── Filtering & pagination ────────────────────────────────────────────────
@@ -114,6 +148,7 @@ export default function ProductListPage() {
   const totalPages = Math.ceil(filteredProducts.length / entriesPerPage);
   const startIndex = (currentPage - 1) * entriesPerPage;
   const currentItems = filteredProducts.slice(startIndex, startIndex + entriesPerPage);
+  const bulkPublishState = currentItems.length > 0 && currentItems.every((product) => publishStates[product.id]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
@@ -158,12 +193,20 @@ export default function ProductListPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
           <span className="text-base font-semibold text-[#1a3c6e]">Products</span>
 
-          {/* Bulk Publish */}
+          {/* Bulk Publish Toggle */}
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <div onClick={() => handleBulkPublish(!bulkPublish)} className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${bulkPublish ? "bg-blue-500" : "bg-gray-300"}`}>
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${bulkPublish ? "translate-x-5" : "translate-x-0"}`} />
+            <div
+              onClick={() => handleBulkPublish(!bulkPublishState)}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${bulkPublishState ? "bg-blue-500" : "bg-gray-300"}`}
+              title={bulkPublishState ? "Bulk unpublish this page" : "Bulk publish this page"}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                  bulkPublishState ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
             </div>
-            <span className="text-blue-700 font-semibold text-sm">Bulk Publish (This Page Only)</span>
+            <span className="text-blue-700 font-semibold text-sm">Bulk Publish Page</span>
           </label>
 
           {/* Category filter + Add button */}
@@ -248,7 +291,10 @@ export default function ProductListPage() {
 
                   {/* Publish Toggle */}
                   <td className="px-4 py-3">
-                    <div onClick={() => handlePublishToggle(product.id, !publishStates[product.id])} className={`relative w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ${publishStates[product.id] ? "bg-blue-500" : "bg-gray-300"}`}>
+                    <div
+                      onClick={() => !busyIds[product.id] && handlePublishToggle(product, !publishStates[product.id])}
+                      className={`relative w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ${busyIds[product.id] ? "opacity-60 pointer-events-none" : ""} ${publishStates[product.id] ? "bg-blue-500" : "bg-gray-300"}`}
+                    >
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${publishStates[product.id] ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </td>

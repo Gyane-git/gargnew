@@ -6,7 +6,6 @@ import { toast } from "react-hot-toast";
 import { useState } from "react";
 import AddAddressForm from "./AddAddressForm";
 import { useRouter } from "next/navigation";
-import useConfirmModalStore from "@/stores/confirmModalStore";
 import useInfoModalStore from "@/stores/infoModalStore";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 
@@ -15,9 +14,9 @@ export default function AddressBook({
   homeAddress,
   officeAddress,
   onEditHome,
-  provinces,
-  cities,
-  zones,
+  provinces = [],
+  cities = [],
+  zones = [],
 }) {
   const [showEditAddress, setShowEditAddress] = useState(false);
   const router = useRouter();
@@ -47,27 +46,24 @@ export default function AddressBook({
   };
 
   const handleDelete = async (id) => {
-    // console.log("delete", id);
     if (!id)
       return useInfoModalStore
         .getState()
         .open({ title: "Info", message: "No address to delete" });
-    useConfirmModalStore.getState().open({
-      title: "Delete Address",
-      message: "Are you sure you want to delete this address?",
-      onConfirm: async () => {
-        const response = await deleteCustomerAddress(id);
-        // console.log("response from handleDelete", response);
-        if (response.success) {
-          router.refresh();
-          window.location.reload();
-          toast.success(response.message);
-        } else {
-          toast.error(response.message);
-        }
-      },
-      onCancel: () => {},
-    });
+
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this address?"
+    );
+
+    if (!shouldDelete) return;
+
+    const response = await deleteCustomerAddress(id);
+    if (response.success) {
+      router.refresh();
+      toast.success(response.message || "Address deleted successfully!");
+    } else {
+      toast.error(response.message || "Failed to delete address");
+    }
   };
 
   // Function to set an address as default shipping and billing

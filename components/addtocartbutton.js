@@ -53,7 +53,8 @@ export function AddToCart({ product, quantity = 1 }) {
     const response = await addToCart(
       product.product_code,
       quantity,
-      product.sell_price
+      product.sell_price,
+      product.variation_key || product.variation_sku || product.sku || null
     );
     if (response && response.success) {
       useCartStore.getState().setCart(response.cart);
@@ -94,7 +95,8 @@ export function AddtoCartFeatured({ product }) {
     const response = await addToCart(
       product.product_code,
       1,
-      product.sell_price
+      product.sell_price,
+      product.variation_key || product.variation_sku || product.sku || null
     );
 
     if (response && response.success) {

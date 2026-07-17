@@ -2,8 +2,10 @@ import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 import {
   formatCartItem,
   formatCartResponse,
+  ensureCartItemVariationColumn,
   getCustomerCartId,
   getProductByCode,
+  getProductVariationByKey,
 } from "@/utils/cart";
 import pool from "@/utils/db";
 
@@ -11,7 +13,9 @@ const attachProducts = async (rows) =>
   Promise.all(
     rows.map(async (row) => ({
       ...row,
-      product: await getProductByCode(row.product_code),
+      product: row.variation_key
+        ? (await getProductVariationByKey(row.product_code, row.variation_key)) || (await getProductByCode(row.product_code))
+        : await getProductByCode(row.product_code),
     })),
   );
 
@@ -19,6 +23,8 @@ export async function GET(req) {
   try {
     const authUser = getAuthUser(req);
     if (!authUser?.id) return unauthorizedResponse();
+
+    await ensureCartItemVariationColumn(pool);
 
     const cartId = await getCustomerCartId(pool, authUser.id, false);
     if (!cartId) {
@@ -33,7 +39,7 @@ export async function GET(req) {
     }
 
     const [rows] = await pool.query(
-      `SELECT id, cart_id, product_code, quantity, price, actual_price, created_at, updated_at
+      `SELECT id, cart_id, product_code, variation_key, quantity, price, actual_price, created_at, updated_at
        FROM cart_items
        WHERE cart_id = ?
        ORDER BY id DESC`,
