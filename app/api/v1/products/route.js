@@ -140,6 +140,7 @@ export async function POST(req) {
     const today_deals = toBoolInt(formData.get("today_deals"));
 
     const catalogue = formData.get("product_catalogue");
+    const galleryImages = formData.getAll("gallery_images").filter((file) => file && typeof file === "object" && file.size > 0);
 
     const category_id = formData.get("category_id");
     const actual_price = toNumberOrZero(formData.get("actual_price"));
@@ -179,6 +180,7 @@ export async function POST(req) {
     // ---- file uploads ----
     let imagePath = "";
     let cataloguePath = "";
+    const galleryPaths = [];
 
     if (catalogue && typeof catalogue === "object" && catalogue.size > 0) {
       cataloguePath = await saveUpload(catalogue, "catalogues", ALLOWED_CATALOGUE_EXT);
@@ -188,6 +190,12 @@ export async function POST(req) {
     if (image && typeof image === "object" && image.size > 0) {
       imagePath = await saveUpload(image, "products", ALLOWED_IMAGE_EXT);
       writtenFiles.push(path.join(process.cwd(), "public", imagePath));
+    }
+
+    for (const galleryImage of galleryImages) {
+      const galleryPath = await saveUpload(galleryImage, "products", ALLOWED_IMAGE_EXT);
+      galleryPaths.push(galleryPath);
+      writtenFiles.push(path.join(process.cwd(), "public", galleryPath));
     }
 
     const variationUploads = []; // { image } per variation, aligned by index
@@ -250,6 +258,14 @@ export async function POST(req) {
             toNumberOrZero(variation.stock_qty),
             `${product_code}-${i + 1}`,
           ],
+        );
+      }
+
+      for (const galleryPath of galleryPaths) {
+        await conn.query(
+          `INSERT INTO product_images (product_code, image_path, created_at, updated_at)
+           VALUES (?, ?, NOW(), NOW())`,
+          [product_code, galleryPath],
         );
       }
 

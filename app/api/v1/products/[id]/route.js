@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import pool from "@/utils/db";
+import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
 export async function GET(req, { params }) {
   const { id } = await params;
@@ -20,7 +21,10 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, product: rows[0] });
+    const imageMap = await fetchProductImagesMap([rows[0].product_code]);
+    const product = enrichProductsWithImages(rows, imageMap)[0];
+
+    return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error("GET PRODUCT ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -58,6 +62,7 @@ export async function PUT(req, { params }) {
     const remove_image = formData.get("remove_image") === "1";
     const imageFile = formData.get("main_image");
     const catalogueFile = formData.get("product_catalogue");
+    const galleryImages = formData.getAll("gallery_images").filter((file) => file && typeof file === "object" && file.size > 0);
 
     if (!product_name) {
       return NextResponse.json({ success: false, message: "Product name is required" }, { status: 400 });
@@ -90,6 +95,7 @@ export async function PUT(req, { params }) {
     }
 
     let cataloguePath = formData.get("existing_catalogue") || "";
+    const galleryPaths = [];
 
     if (catalogueFile && typeof catalogueFile === "object" && catalogueFile.size > 0) {
       const bytes = await catalogueFile.arrayBuffer();
@@ -99,6 +105,16 @@ export async function PUT(req, { params }) {
       await mkdir(uploadDir, { recursive: true });
       await writeFile(path.join(uploadDir, fileName), buffer);
       cataloguePath = `/uploads/catalogues/${fileName}`;
+    }
+
+    for (const galleryImage of galleryImages) {
+      const bytes = await galleryImage.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const fileName = `${Date.now()}-${galleryImage.name}`;
+      const uploadDir = path.join(process.cwd(), "public/uploads/products");
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(path.join(uploadDir, fileName), buffer);
+      galleryPaths.push(`/uploads/products/${fileName}`);
     }
 
     const categoryIdValue = !category_id || category_id === "" || category_id === "null" ? null : Number(category_id);
@@ -117,6 +133,16 @@ export async function PUT(req, { params }) {
       WHERE id = ?`,
       [product_name, product_code, slug, product_description, key_specifications, packaging, warranty, categoryIdValue, brandIdValue, delivery_target_days, actual_price, sell_price, discount, available_quantity, stock_quantity, product_location, has_variations, flash_sale, weekly_offer, special_offer, today_deals, status, imagePath, cataloguePath, id],
     );
+
+    if (galleryPaths.length > 0) {
+      for (const galleryPath of galleryPaths) {
+        await pool.query(
+          `INSERT INTO product_images (product_code, image_path, created_at, updated_at)
+           VALUES (?, ?, NOW(), NOW())`,
+          [product_code, galleryPath],
+        );
+      }
+    }
 
     return NextResponse.json({ success: true, message: "Product updated successfully" });
   } catch (error) {

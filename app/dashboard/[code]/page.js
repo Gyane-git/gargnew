@@ -63,7 +63,15 @@ const getProductByCode = async (code) => {
       unit_info: product.unit_info,
       flash_sale: product.flash_sale === "1",
       delivery_days: product.delivery_target_days,
-      files_full_url: product.files_full_url,
+      gallery: product.gallery || product.images || product.product_images || [],
+      images: product.images || product.gallery || product.product_images || [],
+      product_images: product.product_images || product.gallery || product.images || [],
+      files_full_url:
+        product.files_full_url ||
+        product.gallery ||
+        product.images ||
+        product.product_images ||
+        [],
     };
   } catch (error) {
     // console.log("API fetch error:", error.message);
