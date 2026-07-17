@@ -4,7 +4,6 @@ import React, { useRef } from "react";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import { toast } from "react-hot-toast";
-import useInfoModalStore from "@/stores/infoModalStore";
 
 export default function ClinicSetupPage() {
   const formRef = useRef(null);
@@ -48,13 +47,10 @@ export default function ClinicSetupPage() {
       const result = response;
       // console.log("API response formData:", response);
       if (response.success) {
-        // toast.success("Form submitted successfully!");
-        useInfoModalStore.getState().open({
-          title: "Success",
-          message:
-            response.message ||
-            "Your form has been submitted successfully. We will get back to you shortly.",
-        });
+        toast.success(
+          response.message ||
+            "Your form has been submitted successfully. We will get back to you shortly."
+        );
         // console.log("Form submitted successfully:", result);
         setFormData({
           full_name: "",

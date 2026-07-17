@@ -16,7 +16,24 @@ const OverViewProject = ({ product }) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const fileUrls = (product.files_full_url || []).filter(Boolean);
+  const normalizeFiles = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {}
+
+      return [trimmed];
+    }
+    return [value].filter(Boolean);
+  };
+
+  const fileUrls = normalizeFiles(product.files_full_url);
 
   function handleClick(url) {
     if (!url) return;

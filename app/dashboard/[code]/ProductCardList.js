@@ -8,6 +8,7 @@ export default function ProductCardList({ products }) {
   const mappedVariations = (products || []).map((v) => ({
     id: v.id,
     product_code: v.product_code,
+    variation_key: v.variation_key || v.sku || v.id,
     product_name: v.product_name,
     actual_price: v.actual_price,
     sell_price: v.sell_price,
@@ -24,47 +25,45 @@ export default function ProductCardList({ products }) {
   return (
     <div className="max-h-[390px] sm:max-h-[390px] max-w-full w-full overflow-y-auto hide-scrollbar">
       <div className="flex flex-col space-y-4">
-        {mappedVariations.map((product, idx) =>
-          product.stock_quantity > 0 && product.available_quantity > 0 ? (
-            <div
-              key={product.id || idx}
-              className="flex justify-between items-center border rounded-xl  p-3 sm:p-4 shadow-sm hover:shadow-md transition bg-gray-50 w-full min-w-0"
-            >
-              <div>
-                <div className="flex-1 min-w-0">
-                  <div className="max-w-full break-words">
-                    <p className="font-medium text-gray-800 break-words whitespace-normal">
-                      {product.product_name}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2 sm:space-x-3 mb-1">
-                    <span className="text-lg sm:text-xl font-bold text-gray-800">
-                      Rs. {Number(product.sell_price).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}
-                    </span>
-                    {parseFloat(product.actual_price) >
-                      parseFloat(product.sell_price) && (
-                      <span className="text-gray-400 line-through text-sm sm:text-base">
-                        Rs. {Number(product.actual_price).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}
-                      </span>
-                    )}
-                    {product.discount && (
-                      <span className="text-green-600 font-semibold text-xs sm:text-sm">
-                        {product.discount} off
-                      </span>
-                    )}
-                  </div>
+        {mappedVariations.map((product, idx) => (
+          <div
+            key={product.id || idx}
+            className="flex justify-between items-center border rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md transition bg-gray-50 w-full min-w-0"
+          >
+            <div>
+              <div className="flex-1 min-w-0">
+                <div className="max-w-full break-words">
+                  <p className="font-medium text-gray-800 break-words whitespace-normal">
+                    {product.product_name}
+                  </p>
                 </div>
-                <AddtoCartFeatured product={product} />
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-1">
+                  <span className="text-lg sm:text-xl font-bold text-gray-800">
+                    Rs. {Number(product.sell_price).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                  {parseFloat(product.actual_price) >
+                    parseFloat(product.sell_price) && (
+                    <span className="text-gray-400 line-through text-sm sm:text-base">
+                      Rs. {Number(product.actual_price).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  )}
+                  {product.discount && (
+                    <span className="text-green-600 font-semibold text-xs sm:text-sm">
+                      {product.discount} off
+                    </span>
+                  )}
+                </div>
               </div>
+              <AddtoCartFeatured product={product} />
             </div>
-          ) : null
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );

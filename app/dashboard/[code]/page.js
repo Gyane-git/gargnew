@@ -13,10 +13,16 @@ import { baseUrl } from "@/utils/config";
 import ProductCardList from "./ProductCardList";
 import { resolveProductImage } from "@/utils/productMedia";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 //fetch api data
 const getProductByCode = async (code) => {
   try {
-    const res = await fetch(`${baseUrl}/products/details/${code}`);
+    const res = await fetch(`${baseUrl}/products/details/${code}`, {
+      cache: "no-store",
+    });
 
     if (!res.ok) {
       // console.log("Failed to fetch product:", res.status);
@@ -147,7 +153,7 @@ export default async function ProductPage({ params }) {
             <br />
 
             {/* Product Card List in place of Size */}
-            <ProductCardList products={product.variations} />
+          <ProductCardList key={product.product_code} products={product.variations} />
 
             <br />
             {product.stock_quantity === 0 &&
@@ -165,7 +171,7 @@ export default async function ProductPage({ params }) {
           </div>
         </div>
         <br />
-        <RecommendedProducts product={product.product_code} />
+        <RecommendedProducts key={product.product_code} product={product.product_code} />
       </div>
     </>
   );

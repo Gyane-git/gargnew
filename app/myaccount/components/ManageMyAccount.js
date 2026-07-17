@@ -12,9 +12,9 @@ export default function ManageMyAccount({
   onEditAddress,
   onChangePassword,
   onRemoveAccount,
-  provinces,
-  cities,
-  zones,
+  provinces = [],
+  cities = [],
+  zones = [],
 }) {
   // console.log("homeAddress", homeAddress);
   // console.log("defaultBillingAddress", defaultBillingAddress);

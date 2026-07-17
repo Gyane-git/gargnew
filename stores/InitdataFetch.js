@@ -33,6 +33,7 @@ export const useProductStore = create((set, get) => ({
 
     let data = [];
     let expiry = 0;
+    let hasCache = false;
 
     if (typeof window !== "undefined") {
     const cached = localStorage.getItem("productsCache-v3");
@@ -41,6 +42,7 @@ export const useProductStore = create((set, get) => ({
         const parsed = JSON.parse(cached);
         data = parsed.version === PRODUCTS_CACHE_VERSION ? parsed.data || [] : [];
         expiry = parsed.expiry || 0;
+        hasCache = data.length > 0 && Date.now() < expiry;
         // console.log("Cached Products:", data);
         } catch {
         data = [];
@@ -49,23 +51,24 @@ export const useProductStore = create((set, get) => ({
     }
     }
 
-    // Only use cache if it exists AND is not expired
-    if (data.length > 0 && Date.now() < expiry) {
+    // Use cache immediately if it exists, but still refresh in the background.
+    if (hasCache) {
         set({ products: data, lastFetched: Date.now() });
-        return;
     }
 
     // If expired, remove from localStorage
-    if (Date.now() >= expiry ) {
+    if (!hasCache && Date.now() >= expiry ) {
       if (typeof window !== "undefined") {
             localStorage.removeItem("productsCache-v3");
           }
     }
 
     const now = Date.now();
-    set({ loading: true, error: null });
+    set({ loading: !hasCache, error: null });
     try {
-      const data = await apiRequest(`/products/all`, false);
+      const data = await apiRequest(`/products/all`, false, {
+        cache: "no-store",
+      });
 
       const transformedProducts =
         data.products?.map((product) => ({
@@ -106,7 +109,7 @@ export const useProductStore = create((set, get) => ({
         lastFetched: now,
       });
     } catch (err) {
-        set({ error: 'Data not fetched !' });
+        set({ error: hasCache ? null : 'Data not fetched !' });
     } finally {
       set({ loading: false });
     }

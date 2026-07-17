@@ -8,6 +8,7 @@ import {
   insertOrderItems,
   insertOrderRow,
   removeCartItemsByIds,
+  reserveInventoryForItem,
 } from "@/utils/order";
 
 const toNumber = (value) => Number(value || 0);
@@ -60,6 +61,7 @@ export async function POST(req) {
       `SELECT
         ci.id,
         ci.product_code,
+        ci.variation_key,
         ci.quantity,
         ci.price,
         ci.actual_price,
@@ -76,6 +78,22 @@ export async function POST(req) {
         { success: false, message: "One or more selected cart items were not found." },
         { status: 404 },
       );
+    }
+
+    for (const row of cartRows) {
+      try {
+        await reserveInventoryForItem(connection, {
+          productCode: row.product_code,
+          quantity: Number(row.quantity || 0),
+          variationKey: row.variation_key || null,
+        });
+      } catch (inventoryError) {
+        await connection.rollback();
+        return Response.json(
+          { success: false, message: inventoryError.message || "Insufficient stock." },
+          { status: 422 },
+        );
+      }
     }
 
     const orderItems = cartRows.map((row) => {

@@ -31,7 +31,12 @@ import useInfoModalStore from "@/stores/warningModalStore";
 import { getWishlist } from "@/utils/apiHelper";
 
 const AccountPage = () => {
-  const { provinces, cities, zones, fetchAddressDropdowns } = useAddressStore();
+  const {
+    provinces = [],
+    cities = [],
+    zones = [],
+    fetchAddressDropdowns,
+  } = useAddressStore() || {};
 
   const [activeTab, setActiveTab] = useState("account");
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -86,10 +91,11 @@ const AccountPage = () => {
         title: "Info",
         message: "Please login to continue.",
       });
-      router.push("/account");
+      router.replace("/account");
+      return;
     }
 
-    fetchAddressDropdowns();
+    fetchAddressDropdowns?.();
   }, [fetchAddressDropdowns]);
 
   const fetchUserData = async () => {
@@ -284,7 +290,6 @@ const AccountPage = () => {
 
   const handlePasswordChangeSuccess = () => {
     setShowChangePassword(false);
-    toast.success("Password changed successfully!");
   };
 
   const handleRemoveAccount = () => {

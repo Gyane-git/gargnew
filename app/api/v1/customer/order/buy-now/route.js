@@ -7,6 +7,7 @@ import {
   getProductByCode,
   insertOrderItems,
   insertOrderRow,
+  reserveInventoryForItem,
 } from "@/utils/order";
 
 const toNumber = (value) => Number(value || 0);
@@ -50,6 +51,19 @@ export async function POST(req) {
     if (!product) {
       await connection.rollback();
       return Response.json({ success: false, message: "Product not found." }, { status: 404 });
+    }
+
+    try {
+      await reserveInventoryForItem(connection, {
+        productCode,
+        quantity,
+      });
+    } catch (inventoryError) {
+      await connection.rollback();
+      return Response.json(
+        { success: false, message: inventoryError.message || "Insufficient stock." },
+        { status: 422 },
+      );
     }
 
     const price = Number(product.sell_price || product.actual_price || 0);

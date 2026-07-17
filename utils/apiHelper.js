@@ -146,13 +146,14 @@ export const getCartSummary = (cartResponse) => {
   return { subtotal, totalItems }; //return subtotal and total items
 };
 
-export const addToCart = async (product_code, quantity, price) => {
+export const addToCart = async (product_code, quantity, price, variationKey = null) => {
   try {
     // console.log(product_code, quantity, price);
     const response = await apiPostRequest("/customer/cart/add", {
       product_code: product_code,
       quantity: quantity,
       price: price,
+      ...(variationKey ? { variation_key: variationKey } : {}),
     });
     if (response.success) {
       // Update the local store after successful API call
@@ -160,6 +161,7 @@ export const addToCart = async (product_code, quantity, price) => {
         const mappedCartItems = response.cart.items.map((item) => ({
           id: item.id,
           product_code: item.product_code,
+          variation_key: item.variation_key || null,
           quantity: item.quantity,
           price: parseFloat(item.price),
         }));
@@ -205,6 +207,7 @@ export const updateCart = async (id, quantity) => {
       const mappedCartItems = response.cart.items.map((item) => ({
         id: item.id,
         product_code: item.product_code,
+        variation_key: item.variation_key || null,
         quantity: item.quantity,
         price: parseFloat(item.price),
         // Assuming you store product name/image in frontend, otherwise need to fetch

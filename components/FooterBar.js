@@ -300,7 +300,13 @@ export default function FooterBar() {
               </div> */}
 
               {/* Email Subscription */}
-              <div className="flex w-full rounded-md overflow-hidden shadow mr-12">
+              <form
+                className="flex w-full rounded-md overflow-hidden shadow mr-12"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubscribe(email);
+                }}
+              >
                 <input
                   type="email"
                   required
@@ -310,12 +316,12 @@ export default function FooterBar() {
                   className="flex-1 px-4 py-2 text-gray-900 bg-gray-50 border-none focus:outline-none text-sm"
                 />
                 <button
-                  onClick={() => handleSubscribe(email)}
+                  type="submit"
                   className="bg-blue-800 hover:bg-blue-900 text-white px-3 py-3 text-[12px] font-semibold"
                 >
                   SUBSCRIBE
                 </button>
-              </div>
+              </form>
 
               <p className="text-xs text-blue-100 text-center">
                 Subscribe to the mailing list to receive updates on promotions,

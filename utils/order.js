@@ -145,3 +145,79 @@ export const getProductByCode = async (connection, productCode) => {
 
   return rows[0] || null;
 };
+
+export const reserveInventoryForItem = async (connection, {
+  productCode,
+  quantity,
+  variationKey = null,
+}) => {
+  const qty = Number(quantity || 0);
+  if (!productCode || !Number.isFinite(qty) || qty < 1) {
+    throw new Error("Invalid inventory reservation request.");
+  }
+
+  if (variationKey) {
+    const [variationRows] = await connection.query(
+      `SELECT id, product_code, sku, stock, attributes
+       FROM product_variations
+       WHERE product_code = ? AND sku = ?
+       LIMIT 1 FOR UPDATE`,
+      [productCode, variationKey],
+    );
+
+    const variation = variationRows[0];
+    if (!variation) {
+      throw new Error("Product variation not found.");
+    }
+
+    const currentStock = Number(variation.stock || 0);
+    if (currentStock < qty) {
+      throw new Error(`Only ${currentStock} items available in stock.`);
+    }
+
+    await connection.query(
+      `UPDATE product_variations
+       SET stock = GREATEST(COALESCE(stock, 0) - ?, 0)
+       WHERE id = ?`,
+      [qty, variation.id],
+    );
+
+    return {
+      success: true,
+      remaining: Math.max(currentStock - qty, 0),
+      variation: true,
+    };
+  }
+
+  const [productRows] = await connection.query(
+    `SELECT product_code, available_quantity, stock_quantity
+     FROM products
+     WHERE product_code = ?
+     LIMIT 1 FOR UPDATE`,
+    [productCode],
+  );
+
+  const product = productRows[0];
+  if (!product) {
+    throw new Error("Product not found.");
+  }
+
+  const currentStock = Number(product.available_quantity ?? product.stock_quantity ?? 0);
+  if (currentStock < qty) {
+    throw new Error(`Only ${currentStock} items available in stock.`);
+  }
+
+  await connection.query(
+    `UPDATE products
+     SET available_quantity = GREATEST(COALESCE(available_quantity, 0) - ?, 0),
+         stock_quantity = GREATEST(COALESCE(stock_quantity, 0) - ?, 0)
+     WHERE product_code = ?`,
+    [qty, qty, productCode],
+  );
+
+  return {
+    success: true,
+    remaining: Math.max(currentStock - qty, 0),
+    variation: false,
+  };
+};

@@ -226,6 +226,12 @@ const itemsWithVat = selectedItems.map((item) => ({
       // console.log("result from order create", result);
 
       if (result && result.success) {
+        toast.success(result.message || "Order placed successfully");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("productsCache-v3");
+          sessionStorage.removeItem("products");
+        }
+
         // Add order to local store
         addOrder({
           items: selectedItems,
@@ -237,6 +243,8 @@ const itemsWithVat = selectedItems.map((item) => ({
 
         // Clear selected items from cart
         useCartStore.getState().setSelectedItems([]);
+
+        router.refresh();
 
         // Redirect to my account page
         router.push("/product");
@@ -276,6 +284,12 @@ const itemsWithVat = selectedItems.map((item) => ({
       const result = await handleOrder(orderData);
       // console.log("result in ips", result);
         if( result && result.success){
+           toast.success(result.message || "Order placed successfully");
+           if (typeof window !== "undefined") {
+             localStorage.removeItem("productsCache-v3");
+             sessionStorage.removeItem("products");
+           }
+
            addOrder({
               items: selectedItems,
               address: selectedShippingAddress,
@@ -286,6 +300,8 @@ const itemsWithVat = selectedItems.map((item) => ({
 
                 // Clear selected items from cart
               useCartStore.getState().setSelectedItems([]); 
+
+              router.refresh();
 
           const transactionDetails = {
                 MERCHANTID,
