@@ -13,6 +13,7 @@ export default function AuthPage() {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -44,6 +45,7 @@ export default function AuthPage() {
   //account creation
   const handleCreateAccount = async () => {
     try {
+      setIsSubmitting(true);
       if (!formData.firstname || !formData.lastname || !formData.email || !formData.password || !formData.confirmPassword || !formData.phone) {
         return useWarningModalStore.getState().open({
           title: "Incomplete Form !",
@@ -111,7 +113,6 @@ export default function AuthPage() {
       });
 
       const data = await response.json();
-      // console.log("Register Response:", data);
 
       if (response.ok) {
         useInfoModalStore.getState().open({
@@ -123,17 +124,22 @@ export default function AuthPage() {
             ),
         });
       } else {
+        const message =
+          data?.errors?.[0]?.message ||
+          data?.message ||
+          "Registration failed";
         useWarningModalStore.getState().open({
           title: "Error",
-          message: data.errors[0].message || "Registration failed",
+          message,
         });
       }
     } catch (error) {
-      // console.error("Error:", error);
       useWarningModalStore.getState().open({
         title: "Error",
         message: "Something went wrong. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -360,10 +366,12 @@ export default function AuthPage() {
 
             <div className="pt-4">
               <button
+                type="button"
                 onClick={handleCreateAccount}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
               >
-                CREATE ACCOUNT
+                {isSubmitting ? "CREATING..." : "CREATE ACCOUNT"}
               </button>
             </div>
           </div>

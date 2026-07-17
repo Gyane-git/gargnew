@@ -1,9 +1,7 @@
 import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
-import { getProductByCode } from "@/utils/cart";
-
-const buildOrderItem = async (_connection, row) => {
-  const product = await getProductByCode(row.product_code);
+const buildOrderItem = (row, productMap = new Map()) => {
+  const product = productMap.get(String(row.product_code)) || null;
 
   return {
     id: row.id,
@@ -22,17 +20,8 @@ const buildOrderItem = async (_connection, row) => {
   };
 };
 
-const buildOrder = async (connection, row) => {
-  const [itemRows] = await connection.query(
-    `SELECT id, order_id, product_code, quantity, price, actual_price, subtotal_without_tax, tax, subtotal, discount, shipping_cost, reviewed
-     FROM order_items
-     WHERE order_id = ?
-     ORDER BY id ASC`,
-    [row.order_id],
-  );
-
-  const orderItems = await Promise.all(itemRows.map((item) => buildOrderItem(connection, item)));
-
+const buildOrder = (row, itemRows = [], productMap = new Map()) => {
+  const orderItems = itemRows.map((item) => buildOrderItem(item, productMap));
   return {
     ...row,
     order_number: row.order_id,
@@ -84,7 +73,54 @@ export async function GET(req) {
       params,
     );
 
-    const orders = await Promise.all(rows.map((row) => buildOrder(connection, row)));
+    const orderIds = rows.map((row) => row.order_id);
+    let itemRows = [];
+    if (orderIds.length > 0) {
+      const placeholders = orderIds.map(() => "?").join(",");
+      const [items] = await connection.query(
+        `SELECT id, order_id, product_code, quantity, price, actual_price, subtotal_without_tax, tax, subtotal, discount, shipping_cost, reviewed
+         FROM order_items
+         WHERE order_id IN (${placeholders})
+         ORDER BY id ASC`,
+        orderIds,
+      );
+      itemRows = items;
+    }
+
+    const productCodes = [...new Set(itemRows.map((item) => String(item.product_code)).filter(Boolean))];
+    let productMap = new Map();
+    if (productCodes.length > 0) {
+      const placeholders = productCodes.map(() => "?").join(",");
+      const [products] = await connection.query(
+        `SELECT 
+          p.*,
+          c.category_name,
+          c.parent_id AS category_parent_id,
+          c.image AS category_image,
+          c.top AS category_top,
+          c.status AS category_status,
+          b.brand_name,
+          b.image AS brand_image,
+          b.top AS brand_top,
+          b.status AS brand_status
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.id
+         LEFT JOIN brands b ON p.brand_id = b.id
+         WHERE p.product_code IN (${placeholders})`,
+        productCodes,
+      );
+
+      productMap = new Map(products.map((product) => [String(product.product_code), product]));
+    }
+
+    const itemsByOrderId = new Map();
+    for (const item of itemRows) {
+      const key = String(item.order_id);
+      if (!itemsByOrderId.has(key)) itemsByOrderId.set(key, []);
+      itemsByOrderId.get(key).push(item);
+    }
+
+    const orders = rows.map((row) => buildOrder(row, itemsByOrderId.get(String(row.order_id)) || [], productMap));
 
     return Response.json({
       success: true,
