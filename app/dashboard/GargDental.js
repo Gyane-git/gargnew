@@ -16,12 +16,11 @@ import toast from "react-hot-toast";
 import TopCategoriesPage from "./components/topCategories";
 import { useFreeShippingStore } from "@/stores/ShippingThreshold";
 import CategoryMenu from "@/components/CategoriesMenu";
-import { Grid3X3, ChevronRight } from 'lucide-react';
-
+import { Grid3X3, ChevronRight } from "lucide-react";
 
 //import TopCategoriesPage from "@/app/dashboard/components/topCategories";
 
- const GargDental = () => {
+const GargDental = () => {
   const [products, setProducts] = useState([]);
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -51,11 +50,11 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
   const router = useRouter();
 
   const {
-  setInsideOfValleyThreshold,
-  setOutOfValleyThreshold,
-  getInsideOfValleyThreshold,
-  getOutOfValleyThreshold,
-} = useFreeShippingStore();
+    setInsideOfValleyThreshold,
+    setOutOfValleyThreshold,
+    getInsideOfValleyThreshold,
+    getOutOfValleyThreshold,
+  } = useFreeShippingStore();
 
   // useEffect(() => {
   //   const fetchCategories = async () => {
@@ -79,8 +78,6 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
 
   //   fetchCategories();
   // }, []);
-
-
 
   // Recursive render (dropdown-below)
   // const renderCategory = (category) => (
@@ -109,17 +106,18 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
 
       if (data.success) {
         const mappedSlides = data.banners
-        .filter(item =>
-          item.image_full_url != null &&
-          item.id != null &&
-          item.product_code != null
-        )
-        .map(item => ({
-          image_full_url: item.image_full_url,
-          id: item.id,
-          product_code: item.product_code,
-          is_offer: item.is_offer,
-        }));
+          .filter(
+            (item) =>
+              item.image_full_url != null &&
+              item.id != null &&
+              item.product_code != null,
+          )
+          .map((item) => ({
+            image_full_url: item.image_full_url,
+            id: item.id,
+            product_code: item.product_code,
+            is_offer: item.is_offer,
+          }));
         // console.log("mappedSlides", mappedSlides);
         setSlides(mappedSlides);
       }
@@ -154,19 +152,30 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
         const footerLogo = company_logo_footer?.footer_logo_full_url || "";
 
         // const freeShippingThreshold = free_shipping_threshold?.value || null;
-        const freeShipping_threshold_inside_of_valley = free_shipping_threshold_inside_of_valley?.value || null;
-        const freeShipping_threshold_out_of_valley = free_shipping_threshold_out_of_valley?.value || null;
-        if (freeShipping_threshold_inside_of_valley && freeShipping_threshold_out_of_valley && !isNaN(parseFloat(freeShipping_threshold_out_of_valley)) && !isNaN(parseFloat(freeShipping_threshold_inside_of_valley))) {
-          const thresholdInside = parseFloat(freeShipping_threshold_inside_of_valley);
-          const thresholdOutside = parseFloat(freeShipping_threshold_out_of_valley);
+        const freeShipping_threshold_inside_of_valley =
+          free_shipping_threshold_inside_of_valley?.value || null;
+        const freeShipping_threshold_out_of_valley =
+          free_shipping_threshold_out_of_valley?.value || null;
+        if (
+          freeShipping_threshold_inside_of_valley &&
+          freeShipping_threshold_out_of_valley &&
+          !isNaN(parseFloat(freeShipping_threshold_out_of_valley)) &&
+          !isNaN(parseFloat(freeShipping_threshold_inside_of_valley))
+        ) {
+          const thresholdInside = parseFloat(
+            freeShipping_threshold_inside_of_valley,
+          );
+          const thresholdOutside = parseFloat(
+            freeShipping_threshold_out_of_valley,
+          );
           setInsideOfValleyThreshold(thresholdInside);
           setOutOfValleyThreshold(thresholdOutside);
           // console.log("Inside of valley threshold from API:", thresholdInside);
           // console.log("Outside of valley threshold from API:", thresholdOutside);
-        } 
+        }
 
         // console.log(getInsideOfValleyThreshold());
-        // console.log(getOutOfValleyThreshold()); 
+        // console.log(getOutOfValleyThreshold());
         setSettings({
           company_name: companyName,
           timezone: timezone?.value || null,
@@ -284,10 +293,11 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
             return (
               <div
                 key={slide.id || index}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive
-                  ? "opacity-100 z-10 pointer-events-auto"
-                  : "opacity-0 z-0 pointer-events-none"
-                  }`}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  isActive
+                    ? "opacity-100 z-10 pointer-events-auto"
+                    : "opacity-0 z-0 pointer-events-none"
+                }`}
                 style={{ willChange: "opacity" }}
               >
                 <img
@@ -322,45 +332,44 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
           {/* Navigation Buttons */}
           {/* Left Scroll */}
           {/* Left Scroll */}
-<button
-  onClick={slideNavigation.prev}
-  className="hidden md:flex absolute top-1/2 left-0 transform -translate-y-1/2 bg-gray-50 rounded-full shadow-lg p-2 cursor-pointer hover:bg-gray-50 transition duration-200 z-10"
->
-  <svg
-    className="w-6 h-6 text-gray-600"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 19l-7-7 7-7"
-    />
-  </svg>
-</button>
+          <button
+            onClick={slideNavigation.prev}
+            className="hidden md:flex absolute top-1/2 left-0 transform -translate-y-1/2 bg-gray-50 rounded-full shadow-lg p-2 cursor-pointer hover:bg-gray-50 transition duration-200 z-10"
+          >
+            <svg
+              className="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
 
-{/* Right Scroll */}
-<button
-  onClick={slideNavigation.next}
-  className="hidden md:flex absolute top-1/2 right-0 transform -translate-y-1/2 bg-gray-50 rounded-full shadow-lg p-2 cursor-pointer hover:bg-gray-50 transition duration-200 z-10"
->
-  <svg
-    className="w-6 h-6 text-gray-600"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 5l7 7-7 7"
-    />
-  </svg>
-</button>
-
+          {/* Right Scroll */}
+          <button
+            onClick={slideNavigation.next}
+            className="hidden md:flex absolute top-1/2 right-0 transform -translate-y-1/2 bg-gray-50 rounded-full shadow-lg p-2 cursor-pointer hover:bg-gray-50 transition duration-200 z-10"
+          >
+            <svg
+              className="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
         <TopBrandPage />
         <TopCategoriesPage />
@@ -423,8 +432,9 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Sidebar */}
             <aside
-              className={`lg:block ${sidebarOpen ? "block" : "hidden"
-                } lg:w-64 xl:w-72`}
+              className={`lg:block ${
+                sidebarOpen ? "block" : "hidden"
+              } lg:w-64 xl:w-72`}
             >
               <div className="bg-gray-50 h-full flex flex-row sm:flex-col flex-wrap gap-2 rounded-lg p-3 sm:p-4 lg:p-5 shadow ">
                 {/* <h3 className="text-blue-900 text-base sm:text-lg font-semibold mb-3 sm:mb-4 pb-2 border-b-2 border-blue-900">
@@ -439,29 +449,29 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
                   )}
                 </ul> */}
 
-
                 {/* <div className="mb sm:mb-8 ">
                   <CategoryMenu />
                 </div> */}
-
-
-
 
                 {/* Manufacturers */}
 
                 <div className="px-6 py-5 border-b border-gray-100 rounded-t-xl">
                   <div className="flex items-center space-x-3">
                     <Grid3X3 className="h-6 w-6 text-blue-600" />
-                    <h3 className="text-xl font-semibold text-gray-800">Manufacturers</h3>
+                    <h3 className="text-xl font-semibold text-gray-800">
+                      Manufacturers
+                    </h3>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">Explore our dental supplies</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Explore our dental supplies
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs overflow-y-scroll h-48 sm:h-340 hide-scrollbar">
                   {manufacturers.map((manufacturer, index) => (
                     <Link
                       key={manufacturer.id || index}
-                       href={`/product?manufacturer=${manufacturer.id}`} 
+                      href={`/product?manufacturer=${manufacturer.id}`}
                       className="block break-words py-1 text-sm sm:py-1.5 px-2 hover:border-l-2 text-gray-700 font-semibold hover:bg-gray-50 hover:text-blue-700 transition-colors duration-200 items-center space-x-2"
                     >
                       {manufacturer.brand_name}
@@ -483,6 +493,5 @@ import { Grid3X3, ChevronRight } from 'lucide-react';
     </div>
   );
 };
-
 
 export default GargDental;
