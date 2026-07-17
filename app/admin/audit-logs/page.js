@@ -44,10 +44,13 @@ const MODULE_LABELS = {
   products: "Products",
 };
 
-const sortAlpha = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
+const sortAlpha = (a, b) =>
+  String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
 
 const isDefaultFilters = (filters) =>
-  Object.keys(DEFAULT_FILTERS).every((key) => filters[key] === DEFAULT_FILTERS[key]);
+  Object.keys(DEFAULT_FILTERS).every(
+    (key) => filters[key] === DEFAULT_FILTERS[key],
+  );
 
 const buildQueryString = (filters, limit, offset, includeMeta = false) => {
   const params = new URLSearchParams();
@@ -67,9 +70,16 @@ const buildQueryString = (filters, limit, offset, includeMeta = false) => {
   return params.toString();
 };
 
-const mergeUnique = (...groups) => Array.from(new Set(groups.flat().filter(Boolean))).sort(sortAlpha);
+const mergeUnique = (...groups) =>
+  Array.from(new Set(groups.flat().filter(Boolean))).sort(sortAlpha);
 
-const normalizeGroupName = (role) => role?.groupName || role?.group_name || role?.name || role?.role_name || role?.title || "";
+const normalizeGroupName = (role) =>
+  role?.groupName ||
+  role?.group_name ||
+  role?.name ||
+  role?.role_name ||
+  role?.title ||
+  "";
 
 const emptyCatalog = {
   admins: [],
@@ -90,7 +100,8 @@ export default function AuditLogsPage() {
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const updateDraft = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
+  const updateDraft = (key, value) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
 
   useEffect(() => {
     let cancelled = false;
@@ -101,12 +112,20 @@ export default function AuditLogsPage() {
 
       try {
         const offset = (currentPage - 1) * entriesPerPage;
-        const shouldLoadMeta = currentPage === 1 && isDefaultFilters(appliedFilters);
-        const query = buildQueryString(appliedFilters, entriesPerPage, offset, shouldLoadMeta);
+        const shouldLoadMeta =
+          currentPage === 1 && isDefaultFilters(appliedFilters);
+        const query = buildQueryString(
+          appliedFilters,
+          entriesPerPage,
+          offset,
+          shouldLoadMeta,
+        );
 
         const [logsResponse, groupsResponse] = await Promise.all([
           fetch(`/api/v1/admin/audit-logs?${query}`, { cache: "no-store" }),
-          shouldLoadMeta ? fetch("/api/system-users/groups", { cache: "no-store" }) : Promise.resolve(null),
+          shouldLoadMeta
+            ? fetch("/api/system-users/groups", { cache: "no-store" })
+            : Promise.resolve(null),
         ]);
 
         const logsData = await logsResponse.json();
@@ -125,19 +144,34 @@ export default function AuditLogsPage() {
         setTotalCount(Number(logsData.count || 0));
 
         if (shouldLoadMeta) {
-          const groupRoles = groupsData?.success && Array.isArray(groupsData.groups) ? groupsData.groups : [];
+          const groupRoles =
+            groupsData?.success && Array.isArray(groupsData.groups)
+              ? groupsData.groups
+              : [];
           const meta = logsData.meta || {};
 
           setCatalog({
-            admins: mergeUnique(meta.admins || [], rows.map((log) => log.admin)),
+            admins: mergeUnique(
+              meta.admins || [],
+              rows.map((log) => log.admin),
+            ),
             roles: mergeUnique(
               meta.roles || [],
               groupRoles.map(normalizeGroupName),
               rows.map((log) => log.role),
             ),
-            modules: mergeUnique(meta.modules || [], rows.map((log) => log.module)),
-            models: mergeUnique(meta.models || [], rows.map((log) => log.model)),
-            actions: mergeUnique(meta.actions || [], rows.map((log) => log.action)),
+            modules: mergeUnique(
+              meta.modules || [],
+              rows.map((log) => log.module),
+            ),
+            models: mergeUnique(
+              meta.models || [],
+              rows.map((log) => log.model),
+            ),
+            actions: mergeUnique(
+              meta.actions || [],
+              rows.map((log) => log.action),
+            ),
           });
         }
       } catch (err) {
@@ -167,35 +201,60 @@ export default function AuditLogsPage() {
 
   const setToday = () => {
     const today = new Date();
-    setDraft((prev) => ({ ...prev, startDate: formatDate(today), endDate: formatDate(today) }));
+    setDraft((prev) => ({
+      ...prev,
+      startDate: formatDate(today),
+      endDate: formatDate(today),
+    }));
   };
 
   const setLastNDays = (days) => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - (days - 1));
-    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(end) }));
+    setDraft((prev) => ({
+      ...prev,
+      startDate: formatDate(start),
+      endDate: formatDate(end),
+    }));
   };
 
   const setThisMonth = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
+    setDraft((prev) => ({
+      ...prev,
+      startDate: formatDate(start),
+      endDate: formatDate(now),
+    }));
   };
 
   const setLastNMonths = (months) => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
-    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - months,
+      now.getDate(),
+    );
+    setDraft((prev) => ({
+      ...prev,
+      startDate: formatDate(start),
+      endDate: formatDate(now),
+    }));
   };
 
   const setThisYear = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
-    setDraft((prev) => ({ ...prev, startDate: formatDate(start), endDate: formatDate(now) }));
+    setDraft((prev) => ({
+      ...prev,
+      startDate: formatDate(start),
+      endDate: formatDate(now),
+    }));
   };
 
-  const clearDates = () => setDraft((prev) => ({ ...prev, startDate: "", endDate: "" }));
+  const clearDates = () =>
+    setDraft((prev) => ({ ...prev, startDate: "", endDate: "" }));
 
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
@@ -246,7 +305,9 @@ export default function AuditLogsPage() {
   const exportExcel = async () => {
     try {
       const query = buildQueryString(appliedFilters, 2000, 0, false);
-      const response = await fetch(`/api/v1/admin/audit-logs?${query}`, { cache: "no-store" });
+      const response = await fetch(`/api/v1/admin/audit-logs?${query}`, {
+        cache: "no-store",
+      });
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -270,7 +331,10 @@ export default function AuditLogsPage() {
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Logs");
-      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
       const file = new Blob([excelBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
       });
@@ -284,7 +348,9 @@ export default function AuditLogsPage() {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 p-3 sm:p-6">
         <div className="mb-1">
-          <h1 className="text-xl sm:text-2xl font-normal text-gray-900">Audit Logs</h1>
+          <h1 className="text-xl sm:text-2xl font-normal text-gray-900">
+            Audit Logs
+          </h1>
           <p className="flex items-center gap-1 text-sm text-gray-500 mt-1">
             <LayoutDashboard size={14} />
             <Link href="/admin/dashboard" className="hover:underline">
@@ -296,12 +362,16 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="mb-6">
-          <h1 className="flex items-center gap-1 text-xl text-gray-500 mt-1">Track all administrative actions across the system.</h1>
+          <h1 className="flex items-center gap-1 text-xl text-gray-500 mt-1">
+            Track all administrative actions across the system.
+          </h1>
         </div>
 
         <div className="bg-white rounded-lg p-5 shadow-sm space-y-5">
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Date Range</p>
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Date Range
+            </p>
             <div className="flex items-center gap-2 flex-wrap mb-3">
               <input
                 type="date"
@@ -328,7 +398,10 @@ export default function AuditLogsPage() {
                   {shortcut.label}
                 </button>
               ))}
-              <button onClick={clearDates} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
+              <button
+                onClick={clearDates}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+              >
                 Clear Dates
               </button>
             </div>
@@ -336,7 +409,9 @@ export default function AuditLogsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Role</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Filter by Role
+              </label>
               <select
                 value={draft.role}
                 onChange={(e) => updateDraft("role", e.target.value)}
@@ -352,7 +427,9 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Admin</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Filter by Admin
+              </label>
               <select
                 value={draft.admin}
                 onChange={(e) => updateDraft("admin", e.target.value)}
@@ -368,7 +445,9 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Module</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Filter by Module
+              </label>
               <select
                 value={draft.module}
                 onChange={(e) => updateDraft("module", e.target.value)}
@@ -386,7 +465,9 @@ export default function AuditLogsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Model</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Filter by Model
+              </label>
               <select
                 value={draft.model}
                 onChange={(e) => updateDraft("model", e.target.value)}
@@ -402,7 +483,9 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Filter by Action</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Filter by Action
+              </label>
               <select
                 value={draft.action}
                 onChange={(e) => updateDraft("action", e.target.value)}
@@ -418,7 +501,9 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Search</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Search
+              </label>
               <input
                 type="text"
                 value={draft.search}
@@ -430,13 +515,22 @@ export default function AuditLogsPage() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-1">
-            <button onClick={applyFilters} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+            <button
+              onClick={applyFilters}
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
               Apply Filters
             </button>
-            <button onClick={resetFilters} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
+            <button
+              onClick={resetFilters}
+              className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+            >
               Reset Filters
             </button>
-            <button onClick={exportExcel} className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+            <button
+              onClick={exportExcel}
+              className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+            >
               Export Excel
             </button>
           </div>
@@ -458,7 +552,9 @@ export default function AuditLogsPage() {
               <option value={100}>100</option>
             </select>
 
-            <h2 className="text-lg font-bold text-blue-950">Audit Logs ({totalCount} records)</h2>
+            <h2 className="text-lg font-bold text-blue-950">
+              Audit Logs ({totalCount} records)
+            </h2>
             <p className="text-sm text-gray-500">
               Showing {startEntry} to {endEntry} of {totalCount} entries
             </p>
@@ -468,57 +564,98 @@ export default function AuditLogsPage() {
             <table className="w-full text-sm min-w-[750px]">
               <thead>
                 <tr className="text-left border-y bg-gray-50">
-                  <th className="px-5 sm:px-6 py-3 font-semibold text-gray-500 tracking-wide text-xs">SL</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">ADMIN</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">ROLE</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">ACTION</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">MODULE</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">IP ADDRESS</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">TIME</th>
-                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">CHANGES</th>
+                  <th className="px-5 sm:px-6 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    SL
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    ADMIN
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    ROLE
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    ACTION
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    MODULE
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    IP ADDRESS
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    TIME
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 tracking-wide text-xs">
+                    CHANGES
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-10 text-center text-gray-400">
+                    <td
+                      colSpan={8}
+                      className="px-6 py-10 text-center text-gray-400"
+                    >
                       Loading audit logs...
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-10 text-center text-red-500">
+                    <td
+                      colSpan={8}
+                      className="px-6 py-10 text-center text-red-500"
+                    >
                       {error}
                     </td>
                   </tr>
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-10 text-center text-gray-400">
+                    <td
+                      colSpan={8}
+                      className="px-6 py-10 text-center text-gray-400"
+                    >
                       No audit logs match your filters.
                     </td>
                   </tr>
                 ) : (
                   logs.map((log, index) => (
-                    <tr key={log.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                      <td className="px-5 sm:px-6 py-4 text-blue-600 font-medium">{startIndex + index + 1}</td>
+                    <tr
+                      key={log.id}
+                      className="border-b last:border-b-0 hover:bg-gray-50"
+                    >
+                      <td className="px-5 sm:px-6 py-4 text-blue-600 font-medium">
+                        {startIndex + index + 1}
+                      </td>
                       <td className="px-5 py-4 text-gray-800">{log.admin}</td>
                       <td className="px-5 py-4 text-gray-800">{log.role}</td>
                       <td className="px-5 py-4">
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                            actionBadgeStyles[log.action] || "bg-gray-50 text-gray-600 border border-gray-200"
+                            actionBadgeStyles[log.action] ||
+                            "bg-gray-50 text-gray-600 border border-gray-200"
                           }`}
                         >
                           {log.action}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-gray-800 font-mono text-[13px]">{MODULE_LABELS[log.module] || log.module}</td>
-                      <td className="px-5 py-4 text-pink-500 font-mono text-[13px]">{log.ip}</td>
+                      <td className="px-5 py-4 text-gray-800 font-mono text-[13px]">
+                        {MODULE_LABELS[log.module] || log.module}
+                      </td>
+                      <td className="px-5 py-4 text-pink-500 font-mono text-[13px]">
+                        {log.ip}
+                      </td>
                       <td className="px-5 py-4 text-gray-800">
                         <div>{log.date}</div>
-                        <div className="text-gray-400 text-xs mt-0.5">{log.time}</div>
-                        {log.summary ? <div className="text-gray-500 text-xs mt-1">{log.summary}</div> : null}
+                        <div className="text-gray-400 text-xs mt-0.5">
+                          {log.time}
+                        </div>
+                        {log.summary ? (
+                          <div className="text-gray-500 text-xs mt-1">
+                            {log.summary}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-5 py-4">
                         <button
@@ -549,12 +686,17 @@ export default function AuditLogsPage() {
                 Previous
               </button>
 
-              {Array.from({ length: Math.min(totalPages, 10) }, (_, index) => index + 1).map((page) => (
+              {Array.from(
+                { length: Math.min(totalPages, 10) },
+                (_, index) => index + 1,
+              ).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={`w-8 h-8 rounded border text-sm ${
-                    currentPage === page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-100"
+                    currentPage === page
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "border-gray-300 hover:bg-gray-100"
                   }`}
                 >
                   {page}
@@ -562,7 +704,9 @@ export default function AuditLogsPage() {
               ))}
 
               <button
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-3 py-1.5 text-sm border rounded disabled:opacity-40"
               >
@@ -574,7 +718,8 @@ export default function AuditLogsPage() {
       </div>
 
       <footer className="py-5 text-center text-sm text-gray-500 border-t">
-        Copyright © 2026 <span className="font-bold">Global Tech Nepal Pvt. Ltd.</span>
+        Copyright © 2026{" "}
+        <span className="font-bold">Global Tech Nepal Pvt. Ltd.</span>
       </footer>
     </div>
   );

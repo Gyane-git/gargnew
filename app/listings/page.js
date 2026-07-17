@@ -311,7 +311,7 @@ const DentalSuppliesListing = () => {
 
   if (loading || loadings || loadingcategory) {
     return (
-      <div className="min-h-20 flex items-center justify-center bg-gray-50">
+      <div className="min-h-100 flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-2">
             <span className="h-3 w-3 rounded-full bg-indigo-600 animate-bounce"></span>

@@ -23,14 +23,20 @@ export async function GET(req) {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    const [rows] = await pool.query(`SELECT * FROM carousel_images ${where} ORDER BY id DESC`, params);
+    const [rows] = await pool.query(
+      `SELECT * FROM carousel_images ${where} ORDER BY id DESC`,
+      params,
+    );
 
     return Response.json({
       success: true,
       banners: rows.map(formatBanner),
     });
   } catch (error) {
-    return Response.json({ success: false, message: error.message }, { status: 500 });
+    return Response.json(
+      { success: false, message: error.message },
+      { status: 500 },
+    );
   }
 }
 
@@ -47,7 +53,10 @@ export async function POST(req) {
     const mobileFile = formData.get("mobile_file");
 
     if (!product_code) {
-      return Response.json({ success: false, message: "Product is required" }, { status: 400 });
+      return Response.json(
+        { success: false, message: "Product is required" },
+        { status: 400 },
+      );
     }
 
     let file_path = null;
@@ -95,6 +104,9 @@ export async function POST(req) {
   } catch (error) {
     console.error("POST ERROR:", error);
 
-    return Response.json({ success: false, message: error.message }, { status: 500 });
+    return Response.json(
+      { success: false, message: error.message },
+      { status: 500 },
+    );
   }
 }

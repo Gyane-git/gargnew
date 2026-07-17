@@ -33,9 +33,6 @@ export default function FooterBar() {
       toast.error("Please enter your email");
       return;
     }
-
-    // console.log("Subscribing:", { email });
-
     try {
       const response = await apiRequest("/newsletter-subscriber", false, {
         method: "POST",
@@ -45,8 +42,6 @@ export default function FooterBar() {
         body: JSON.stringify({ email }),
       });
 
-      // console.log("Subscribe API response:", response);
-
       if (response.success) {
         setEmail("");
         toast.success(`${email} subscribed successfully!`);
@@ -54,11 +49,10 @@ export default function FooterBar() {
         toast.error(
           Array.isArray(response?.errors) && response.errors.length > 0
             ? response.errors[0].message
-            : "Failed to subscribe"
+            : "Failed to subscribe",
         );
       }
     } catch (error) {
-      // console.error("Error subscribing:", error);
       toast.error("Something went wrong. Please try again later.");
     }
   };
@@ -71,7 +65,6 @@ export default function FooterBar() {
     const fetchSettings = async () => {
       const response = await apiRequest("/settings", false);
       if (response.success) {
-        // setSettings(response.settings);
         const {
           company_logo_footer,
           company_name,
@@ -92,12 +85,9 @@ export default function FooterBar() {
           primary_email: primaryEmail,
           address: addressData,
         });
-
-        // console.log("settings", response.settings);
       } else {
         // console.error("Failed to fetch settings:", response.error);
         toast.error(response?.errors[0]?.message || "Failed to fetch settings");
-        // setSettings();
       }
     };
     fetchSettings();
@@ -179,8 +169,6 @@ export default function FooterBar() {
                   <Instagram className="w-4 h-4" />
                 </Link>
               </div>
-
-              
             </div>
 
             {/* Information Section */}
@@ -205,14 +193,6 @@ export default function FooterBar() {
                     Legal Registration
                   </Link>
                 </li>
-                {/* <li className="footer-list">
-                  <Link
-                    href="/MedicalCertification"
-                    className="text-xs sm:text-sm hover:text-blue-200 transition-colors"
-                  >
-                    Medical Certifications
-                  </Link>
-                </li> */}
 
                 <li className="footer-list">
                   <Link
@@ -273,32 +253,6 @@ export default function FooterBar() {
                 Join our Newsletter
               </h3>
 
-              {/* Gender Selection */}
-              {/* <div className="flex space-x-4 mb-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    checked={gender === "male"}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-4 h-4 text-blue-600 bg-gray-50 border-gray-300 focus:ring-blue-500 focus:ring-2"
-                  />
-                  <span className="text-sm">Male</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    checked={gender === "female"}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-4 h-4 text-blue-600 bg-gray-50 border-gray-300 focus:ring-blue-500 focus:ring-2"
-                  />
-                  <span className="text-sm">Female</span>
-                </label>
-              </div> */}
-
               {/* Email Subscription */}
               <div className="flex w-full rounded-md overflow-hidden shadow mr-12">
                 <input
@@ -323,31 +277,30 @@ export default function FooterBar() {
               </p>
               <div className="flex space-x-4 pt-10 ">
                 <MobileAppDownload />
+              </div>
             </div>
-            
           </div>
         </div>
-      </div>
 
-      {/* Bottom Footer */}
-      <div className="bg-slate-800 text-gray-300 py-2 sm:py-4">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-xs sm:text-sm text-center sm:text-left">
-              Copyright © 2025 Garg Dental All Right Reserved
-            </p>
+        {/* Bottom Footer */}
+        <div className="bg-slate-800 text-gray-300 py-2 sm:py-4">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <p className="text-xs sm:text-sm text-center sm:text-left">
+                Copyright © 2025 Garg Dental All Right Reserved
+              </p>
 
-            {/* Back to Top Button */}
-            <button
-              onClick={scrollToTop}
-              className="mt-2 sm:mt-0 w-8 sm:w-10 h-8 sm:h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center transition-colors"
-              aria-label="Back to top"
-            >
-              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+              {/* Back to Top Button */}
+              <button
+                onClick={scrollToTop}
+                className="mt-2 sm:mt-0 w-8 sm:w-10 h-8 sm:h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center transition-colors"
+                aria-label="Back to top"
+              >
+                <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </footer>
   );

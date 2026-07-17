@@ -82,7 +82,7 @@ const statCards = [
 
 // ── QUICK LINKS ───────────────────────────────────────────────────
 const quickLinks = [
-  { label: "Products", desc: "Manage your product catalog", href: "/admin/products", icon: ShoppingBag, accent: "bg-blue-600" },
+  { label: "Produc  ts", desc: "Manage your product catalog", href: "/admin/products", icon: ShoppingBag, accent: "bg-blue-600" },
   { label: "Brands", desc: "Add and update brands", href: "/admin/brands", icon: Bookmark, accent: "bg-violet-600" },
   { label: "Categories", desc: "Organise product categories", href: "/admin/categories", icon: Layers, accent: "bg-amber-500" },
   { label: "Customers", desc: "View and manage customers", href: "/admin/customers", icon: Users, accent: "bg-emerald-600" },
