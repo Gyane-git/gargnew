@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUp, Gauge, List, Printer, ShoppingCart, Truck, User } from "lucide-react";
+import toast from "react-hot-toast";
 
 const statusOptions = ["processing", "shipped", "delivered", "cancelled", "returned"];
 const paymentOptions = ["unpaid", "paid"];
@@ -142,10 +143,14 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
         throw new Error(data?.message || "Failed to update order.");
       }
 
-      setMessage(data.message || "Order updated successfully.");
+      const successMessage = data.message || "Order updated successfully.";
+      setMessage(successMessage);
+      toast.success(successMessage);
       await loadOrder();
     } catch (err) {
-      setError(err.message || "Failed to update order.");
+      const errorMessage = err.message || "Failed to update order.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

@@ -7,6 +7,66 @@ import { toast } from "react-hot-toast";
 import Link from "next/link";
 import ReviewPage from "@/components/AddReview";
 
+const toNumber = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
+
+const normalizeOrder = (order = {}) => {
+  const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+
+  const itemSubtotalWithoutTax = orderItems.reduce((sum, item) => {
+    const subtotalWithoutTax =
+      item.subtotal_without_tax ??
+      item.subtotal ??
+      toNumber(item.price) * toNumber(item.quantity);
+    return sum + toNumber(subtotalWithoutTax);
+  }, 0);
+
+  const itemTax = orderItems.reduce((sum, item) => sum + toNumber(item.tax), 0);
+  const itemDiscount = orderItems.reduce(
+    (sum, item) => sum + toNumber(item.discount),
+    0
+  );
+  const itemShipping = orderItems.reduce(
+    (sum, item) => sum + toNumber(item.shipping_cost),
+    0
+  );
+
+  const subtotalWithoutTax =
+    toNumber(order.subtotal_without_tax) ||
+    toNumber(order.subtotal) ||
+    itemSubtotalWithoutTax;
+  const shippingCost = toNumber(order.shipping_cost) || itemShipping;
+  const tax = toNumber(order.tax) || itemTax;
+  const discount = toNumber(order.discount) || itemDiscount;
+  const grandTotal =
+    toNumber(order.total_amount) ||
+    toNumber(order.grand_total) ||
+    toNumber(order.total) ||
+    subtotalWithoutTax + shippingCost + tax - discount;
+
+  return {
+    ...order,
+    order_items: orderItems,
+    payment_method: order.payment_method || order.paymentMethod || "",
+    payment_status: order.payment_status || order.paymentStatus || "unpaid",
+    order_status: order.order_status || order.orderStatus || "processing",
+    invoice_email:
+      order.invoice_email ||
+      order.customer_email ||
+      order.billing_email ||
+      "",
+    summary: {
+      subtotalWithoutTax,
+      shippingCost,
+      tax,
+      discount,
+      grandTotal,
+    },
+  };
+};
+
 export default function CustomTab({ status }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -85,15 +145,27 @@ export default function CustomTab({ status }) {
   };
 
   const getPaymentMethodText = (method) => {
-    switch (method) {
+    switch (String(method || "").trim().toUpperCase()) {
       case "C":
+      case "COD":
+      case "CASH_ON_DELIVERY":
         return "Cash on Delivery";
       case "E":
+      case "ESEWA":
         return "eSewa Payment";
+      case "IPS":
+        return "IPS";
+      case "FONEPAY":
+        return "Fonepay";
+      case "WALLET":
+        return "Wallet";
       default:
-        return method;
+        return method || "N/A";
     }
   };
+
+  const getPaymentStatusText = (paymentStatus) =>
+    String(paymentStatus || "").toLowerCase() === "paid" ? "PAID" : "Unpaid";
 
   const handleConfirmCancellation = async (
     orderId,
@@ -196,9 +268,12 @@ export default function CustomTab({ status }) {
           </div>
         </div>
       ) : (
-        orders.map((order, index) => (
+        orders.map((order, index) => {
+          const normalizedOrder = normalizeOrder(order);
+
+          return (
           <div
-            key={order.id || index}
+            key={normalizedOrder.id || index}
             className="bg-gray-50 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6 border"
           >
             {/* Header: Order ID + Status */}
@@ -206,21 +281,21 @@ export default function CustomTab({ status }) {
               {/* LEFT SIDE */}
               <div className="flex-1 min-w-0">
                 <span className="text-blue-700 font-semibold block text-base sm:text-lg">
-                  Order #{order.order_id}
+                  Order #{normalizedOrder.order_id}
                 </span>
                 <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                  Placed on {formatDate(order.created_at)}
+                  Placed on {formatDate(normalizedOrder.created_at)}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 mt-1">
-                  {order.order_items?.length > 0 && (
+                  {normalizedOrder.order_items?.length > 0 && (
                     <span className="text-gray-500">
-                      ({order.order_items.length} item Ordered)
+                      ({normalizedOrder.order_items.length} item Ordered)
                     </span>
                   )}
                 </div>
-                {order.invoice_email && (
+                {normalizedOrder.invoice_email && (
                   <div className="text-xs sm:text-sm text-gray-600 mt-1 break-all">
-                    Invoice Email: <strong>{order.invoice_email}</strong>
+                    Invoice Email: <strong>{normalizedOrder.invoice_email}</strong>
                   </div>
                 )}
               </div>
@@ -230,21 +305,21 @@ export default function CustomTab({ status }) {
                 {/* Order Status */}
                 <span
                   className={`text-xs sm:text-sm font-semibold px-3 py-1 rounded-full text-center break-words whitespace-normal w-full sm:w-auto max-w-full sm:max-w-[200px] lg:max-w-[150px] overflow-hidden ${getStatusColor(
-                    order.order_status
+                    normalizedOrder.order_status
                   )}`}
                 >
-                  {order.order_status}
+                  {normalizedOrder.order_status}
                 </span>
 
                 {/* Cancel Button */}
-                {order.order_status !== "cancelled" &&
-                  order.order_status !== "shipped" &&
-                  order.order_status !== "delivered" && (
+                {normalizedOrder.order_status !== "cancelled" &&
+                  normalizedOrder.order_status !== "shipped" &&
+                  normalizedOrder.order_status !== "delivered" && (
                     <button
                     aria-label="Cancel"
                       className="text-red-600 text-xs sm:text-sm font-bold underline px-3 py-1 rounded hover:bg-red-50 transition w-full sm:w-auto"
                       onClick={() =>
-                        handleCancelOrder(order.id, order.order_id)
+                        handleCancelOrder(normalizedOrder.id, normalizedOrder.order_id)
                       }
                     >
                       Cancel
@@ -252,10 +327,10 @@ export default function CustomTab({ status }) {
                   )}
 
                 {/* Return Button */}
-                {order.order_status === "delivered" &&
-                  order.return_available && (
+                {normalizedOrder.order_status === "delivered" &&
+                  normalizedOrder.return_available && (
                     <Link
-                      href={`/myaccount/return?order_id=${order.order_id}`}
+                      href={`/myaccount/return?order_id=${normalizedOrder.order_id}`}
                       className="text-red-600 text-xs sm:text-sm font-bold underline px-3 py-1 rounded hover:bg-red-50 transition w-full sm:w-auto"
                     >
                       Return
@@ -265,21 +340,21 @@ export default function CustomTab({ status }) {
             </div>
 
             {/* Order Items Dropdown */}
-            {order.order_items && order.order_items.length > 0 && (
+            {normalizedOrder.order_items && normalizedOrder.order_items.length > 0 && (
               <div className="border p-2 border-blue-300  sm:p-4 rounded-lg">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2 sm:gap-0">
                   <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
-                    Order Items ({order.order_items.length}):
+                    Order Items ({normalizedOrder.order_items.length}):
                   </h4>
                   <button
                     className="flex items-center gap-1 px-2 py-1 text-blue-700 border border-blue-200 rounded hover:bg-blue-50 text-xs"
-                    onClick={() => toggleOrder(order.id)}
-                    aria-expanded={!!openOrders[order.id]}
+                    onClick={() => toggleOrder(normalizedOrder.id)}
+                    aria-expanded={!!openOrders[normalizedOrder.id]}
                   >
-                    {openOrders[order.id] ? "Hide" : "Show"}
+                    {openOrders[normalizedOrder.id] ? "Hide" : "Show"}
                     <span
                       style={{
-                        transform: openOrders[order.id]
+                        transform: openOrders[normalizedOrder.id]
                           ? "rotate(90deg)"
                           : "rotate(0deg)",
                         transition: "transform 0.2s",
@@ -287,10 +362,10 @@ export default function CustomTab({ status }) {
                     ></span>
                   </button>
                 </div>
-                {openOrders[order.id] && (
+                {openOrders[normalizedOrder.id] && (
                   <div>
                     <div className="space-y-3 sm:space-y-4">
-                      {order.order_items.map((item, idx) => {
+                      {normalizedOrder.order_items.map((item, idx) => {
                         // Debug: Log the item structure to console
                         // console.log(`Item ${idx}:`, item);
 
@@ -356,15 +431,15 @@ export default function CustomTab({ status }) {
                                     </span>
                                   </div>
                                   {/* Show Add Review button only in delivered tab */}
-                                  {status === "delivered" && (
+                                      {status === "delivered" && (
                                     <div className="text-xs sm:text-sm text-gray-500">
                                       <button
                                       
                                         disabled={item.reviewed}
                                         onClick={() =>
                                           handleAddReview(
-                                            order.id,
-                                            order.order_id,
+                                            normalizedOrder.id,
+                                            normalizedOrder.order_id,
                                             item?.product?.product_code
                                           )
                                         }
@@ -393,20 +468,20 @@ export default function CustomTab({ status }) {
                                           : "Add Review"}
                                       </button>
                                       {showAddReview[
-                                        order.id +
+                                        normalizedOrder.id +
                                           "-" +
                                           item.product?.product_code
                                       ] && (
                                         <ReviewPage
-                                          orderId={order.id}
-                                          orderNumber={order.order_id}
+                                          orderId={normalizedOrder.id}
+                                          orderNumber={normalizedOrder.order_id}
                                           productId={item.product?.product_code}
                                           showAddReview={true}
                                           onClose={() => {
                                             setIsChanged(true);
                                             fetchOrders("delivered");
                                             handleCloseAddReview(
-                                              order.id,
+                                              normalizedOrder.id,
                                               item?.product?.product_code
                                             );
                                           }}
@@ -428,15 +503,15 @@ export default function CustomTab({ status }) {
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
                         <div>
                           <div className="text-xs sm:text-sm text-blue-800">
-                            <span className="font-medium">Payment Method:</span>{" "}
-                            {getPaymentMethodText(order.payment_method)}
+                          <span className="font-medium">Payment Method:</span>{" "}
+                            {getPaymentMethodText(normalizedOrder.payment_method)}
                           </div>
-                          {order.invoice_email && (
+                          {normalizedOrder.invoice_email && (
                             <div className="text-xs sm:text-sm text-blue-700 mt-1">
                               <span className="font-medium">
                                 Invoice Email:
                               </span>{" "}
-                              {order.invoice_email}
+                              {normalizedOrder.invoice_email}
                             </div>
                           )}
                         </div>
@@ -445,12 +520,12 @@ export default function CustomTab({ status }) {
                             Order Status:{" "}
                             <span
                               className={`font-semibold ${getStatusColor(
-                                order.order_status
+                                normalizedOrder.order_status
                               )
                                 .replace("bg-", "text-")
                                 .replace("text-", "")}`}
                             >
-                              {order.order_status || "Processing"}
+                              {normalizedOrder.order_status || "Processing"}
                             </span>
                           </div>
                         </div>
@@ -463,7 +538,7 @@ export default function CustomTab({ status }) {
                         <h4 className="font-semibold text-green-900 text-sm sm:text-base">
                           Order Summary:
                         </h4>
-                        { order.payment_status === 'paid' ? 
+                        { getPaymentStatusText(normalizedOrder.payment_status) === "PAID" ? 
 
                         <span className="text-sm sm:text-base font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full">
                           PAID
@@ -484,9 +559,7 @@ export default function CustomTab({ status }) {
                           </span>
                           <span className="font-semibold text-green-800">
                             Rs.{" "}
-                            {parseFloat(
-                              order.subtotal_without_tax || 0
-                            ).toFixed(2)}
+                          {normalizedOrder.summary.subtotalWithoutTax.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs sm:text-sm">
@@ -495,7 +568,7 @@ export default function CustomTab({ status }) {
                           </span>
                           <span className="font-semibold text-green-800">
                             Rs.{" "}
-                            {parseFloat(order.shipping_cost || 0).toFixed(2)}
+                            {normalizedOrder.summary.shippingCost.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs sm:text-sm">
@@ -503,7 +576,7 @@ export default function CustomTab({ status }) {
                             Tax:
                           </span>
                           <span className="font-semibold text-green-800">
-                            Rs. {parseFloat(order.tax || 0).toFixed(2)}
+                            Rs. {normalizedOrder.summary.tax.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs sm:text-sm">
@@ -511,19 +584,13 @@ export default function CustomTab({ status }) {
                             Discount:
                           </span>
                           <span className="font-semibold text-green-800">
-                            Rs. {parseFloat(order.discount).toFixed(2)}
+                            Rs. {normalizedOrder.summary.discount.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-base sm:text-lg font-bold text-green-900 pt-2 border-t border-green-300">
                           <span>Grand Total:</span>
                           <span>
-                            Rs.{" "}
-                            {parseFloat(
-                              order.total_amount ||
-                                order.grand_total ||
-                                order.total ||
-                                0
-                            ).toFixed(2)}
+                            Rs. {normalizedOrder.summary.grandTotal.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -535,7 +602,8 @@ export default function CustomTab({ status }) {
 
             {/* Payment Method */}
           </div>
-        ))
+          );
+        })
       )}
 
       {/* Cancellation Modal */}
