@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { fetchAdminOrderById, upsertOrderPaymentHistory, upsertOrderStatusHistory } from "@/utils/adminOrders";
 import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
+import { buildOrderStatusEmail } from "@/lib/orderEmail";
+import { sendMail } from "@/utils/mailer";
 
 const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
 
@@ -52,6 +54,7 @@ export async function PATCH(request, context) {
     }
 
     const body = await request.json();
+    const previousOrderStatus = normalizeStatus(order.orderStatus);
     const nextOrderStatus = normalizeStatus(body.order_status || body.orderStatus || order.orderStatus);
     const nextPaymentStatus = normalizeStatus(body.payment_status || body.paymentStatus || order.paymentStatus);
     const nextPaymentMethod = String(body.payment_mode || body.paymentMethod || order.paymentMethod || order.raw?.payment_method || "").trim() || null;
@@ -132,6 +135,45 @@ export async function PATCH(request, context) {
       }
     } catch (historyError) {
       console.error("Order history insert failed:", historyError);
+    }
+
+    if (nextOrderStatus !== previousOrderStatus || nextPaymentStatus !== normalizeStatus(order.paymentStatus)) {
+      try {
+        const customerEmail = order.customerInfo?.email || order.raw?.invoice_email || "";
+        if (customerEmail) {
+          const orderItems = Array.isArray(order.items)
+            ? order.items.map((item) => ({
+                product_name: item.product || item.product_name || item.product_code || "Product",
+                quantity: item.qty || item.quantity || 0,
+                unit_price: item.unitPrice || item.price || item.actual_price || 0,
+                final_price: item.subtotal || item.total || 0,
+              }))
+            : [];
+
+          await sendMail({
+            to: customerEmail,
+            subject: `Order update for #${order.order_id}`,
+            text: `Hello ${order.customer || "Customer"},\n\nYour order #${order.order_id} status has been updated to ${nextOrderStatus || "processing"}.\n\nThank you for choosing Garg Dental.`,
+            html: buildOrderStatusEmail({
+              landingData: {
+                company_name: "Garg Dental Pvt. Ltd.",
+                company_logo_header: "",
+                website_link: "https://gargdental.com/",
+                primary_phone: "+977-1-4536276",
+              },
+              status: nextOrderStatus || "processing",
+              customerName: order.customer || "Customer",
+              orderNumber: order.order_id,
+              shippingCarrier: body.shipping_carrier || body.carrier_name || order.shippingCarrier || "",
+              shippingCharge: Number(order.summary?.shippingCost || order.raw?.shipping_cost || 0),
+              remarks: body.cancel_notes || body.cancel_reason || "",
+              orderItems,
+            }),
+          });
+        }
+      } catch (mailError) {
+        console.error("ORDER STATUS MAIL ERROR:", mailError.message);
+      }
     }
 
     await recordAuditLog(connection, {

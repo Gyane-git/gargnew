@@ -98,7 +98,66 @@ const buildMessage = ({ from, to, subject, text, html }) => {
   ].join("\r\n");
 };
 
-export const sendMail = async ({ to, subject, text, html }) => {
+const chunkBase64 = (value) => String(value || "").match(/.{1,76}/g)?.join("\r\n") || "";
+
+const buildAttachmentPart = (attachment) => {
+  const filename = String(attachment?.filename || "attachment.bin");
+  const contentType = String(attachment?.contentType || "application/octet-stream");
+  const content = Buffer.isBuffer(attachment?.content)
+    ? attachment.content
+    : Buffer.from(attachment?.content || "");
+
+  return [
+    `Content-Type: ${contentType}; name="${filename}"`,
+    "Content-Transfer-Encoding: base64",
+    `Content-Disposition: attachment; filename="${filename}"`,
+    "",
+    chunkBase64(content.toString("base64")),
+    "",
+  ].join("\r\n");
+};
+
+const buildMessageWithAttachments = ({ from, to, subject, text, html, attachments = [] }) => {
+  const mixedBoundary = `garg-mixed-${Date.now()}`;
+  const altBoundary = `garg-alt-${Date.now()}`;
+
+  const alternativePart = [
+    `--${mixedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    "",
+    `--${altBoundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: 7bit",
+    "",
+    text || "",
+    "",
+    `--${altBoundary}`,
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: 7bit",
+    "",
+    html || "",
+    "",
+    `--${altBoundary}--`,
+    "",
+  ].join("\r\n");
+
+  const attachmentParts = attachments.map((attachment) => `--${mixedBoundary}\r\n${buildAttachmentPart(attachment)}`).join("");
+
+  return [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+    "",
+    alternativePart,
+    attachmentParts,
+    `--${mixedBoundary}--`,
+    "",
+  ].join("\r\n");
+};
+
+export const sendMail = async ({ to, subject, text, html, attachments = [] }) => {
   const config = smtpConfig();
 
   if (!config.host || !config.user || !config.pass || !config.fromAddress) {
@@ -121,7 +180,9 @@ export const sendMail = async ({ to, subject, text, html }) => {
     await sendCommand(socket, "DATA", [354]);
 
     const from = encodeAddress(config.fromName, config.fromAddress);
-    const message = buildMessage({ from, to, subject, text, html });
+    const message = attachments.length
+      ? buildMessageWithAttachments({ from, to, subject, text, html, attachments })
+      : buildMessage({ from, to, subject, text, html });
     await sendCommand(socket, `${message}\r\n.`, [250]);
     await sendCommand(socket, "QUIT", [221]);
   } finally {
