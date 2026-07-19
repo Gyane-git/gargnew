@@ -18,6 +18,7 @@ import useInfoModalStore from "@/stores/warningModalStore";
 import toast from "react-hot-toast";
 import FormatCurrencyNPR from "@/components/NprStyleBalance";
 import { useFreeShippingStore } from "@/stores/ShippingThreshold";
+import { resolveProductImage } from "@/utils/productMedia";
 
 export default function ShoppingCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -62,10 +63,10 @@ export default function ShoppingCart() {
           if (response?.cart?.items) {
             const mappedCartItems = response.cart.items.map((item) => ({
               id: item.id,
-              image:
-                item.product.image_full_url ||
-                item.product.main_image_full_url ||
-                "https://dentalnepal.com/assets/logo.png",
+              image: resolveProductImage(
+                item.product,
+                "https://dentalnepal.com/assets/logo.png"
+              ),
               name: item.product.product_name,
               product_code: item.product.product_code,
               quantity: item.quantity,
@@ -501,7 +502,7 @@ export default function ShoppingCart() {
                           {/* Product Image */}
                           <div className="w-[60px] h-[60px] max-w-[60px] flex-shrink-0 bg-gray-50 rounded-lg flex items-center justify-center">
                             <img
-                              src={item.image}
+                              src={item.image || "/assets/logo.png"}
                               alt={item.name}
                               className="w-full h-full object-cover rounded-lg"
                             />
