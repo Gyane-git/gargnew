@@ -13,6 +13,7 @@ import FormatCurrencyNPR from "@/components/NprStyleBalance";
 import { useUserStore } from "@/stores/useUserStore";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import FullScreenLoader from "@/components/FullScreenLoader";
+import { resolveProductImage } from "@/utils/productMedia";
 
 
 export default function OrderSummaryBuyNow() {
@@ -351,12 +352,15 @@ export default function OrderSummaryBuyNow() {
               {/* Product Items */}
               <div className="border border-gray-200 rounded-lg p-4 space-y-4">
                 {selectedItems.length > 0 ? (
-                  selectedItems.map((item) => (
+                  selectedItems.map((item) => {
+                    const itemImage = resolveProductImage(item, item.image || "/assets/logo.png");
+
+                    return (
                     <div key={item.id} className="flex items-center space-x-4">
                       <div className="w-18 h-18  rounded-lg flex items-center justify-center">
                         <div className="w-16 h-16  rounded flex items-center justify-center">
                           <img
-                            src={item.image}
+                            src={itemImage}
                             alt={item.name}
                             className="w-8 h-8 object-cover rounded"
                           />
@@ -375,7 +379,8 @@ export default function OrderSummaryBuyNow() {
                       </div>
                       {/* Remove button can be implemented if needed */}
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-gray-500 text-center">
                     No items selected.

@@ -86,6 +86,7 @@ const codDescription = (
 const PayOpsPage = () => {
   const [selected, setSelected] = useState("C");
   const [shipping, setShipping] = useState(50);
+  const [isProcessing, setIsProcessing] = useState(false);
   const selectedItems = useCartStore((state) => state.selectedItems) || [];
   const selectedShippingAddress = useCartStore(
     (state) => state.selectedShippingAddress
@@ -210,6 +211,7 @@ const itemsWithVat = selectedItems.map((item) => ({
 
   const handleConfirmOrder = async () => {
     try {
+      setIsProcessing(true);
       const orderData = {
         payment_method: selected,
         billing_address: selectedBillingAddress.id,
@@ -255,6 +257,8 @@ const itemsWithVat = selectedItems.map((item) => ({
     } catch (error) {
       // console.error("Error in handleConfirmOrder:", error);
       toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -351,7 +355,7 @@ const itemsWithVat = selectedItems.map((item) => ({
   }
 };
 
-  if(loading){
+  if(loading || isProcessing){
     return <FullScreenLoader />
   }
 
@@ -400,9 +404,10 @@ const itemsWithVat = selectedItems.map((item) => ({
               {codDescription}
               <button
                 onClick={handleConfirmOrder}
+                disabled={isProcessing}
                 className="mt-6 w-full bg-blue-900 text-white py-3 rounded font-semibold text-lg hover:bg-blue-800 transition-colors"
               >
-                Confirm Order
+                {isProcessing ? "Processing..." : "Confirm Order"}
               </button>
             </>
           )}

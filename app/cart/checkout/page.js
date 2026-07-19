@@ -12,6 +12,7 @@ import FormatCurrencyNPR from "@/components/NprStyleBalance";
 import { useUserStore } from "@/stores/useUserStore";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { apiRequest } from "@/utils/ApiSafeCalls";
+import { resolveProductImage } from "@/utils/productMedia";
 // import MainTopBar from "@/components/mainTopbar";
 
 export default function OrderSummary() {
@@ -406,13 +407,16 @@ export default function OrderSummary() {
 
               {/* Product Items */}
               <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-                {selectedItems.length > 0 ? (
-                  selectedItems.map((item) => (
+                  {selectedItems.length > 0 ? (
+                  selectedItems.map((item) => {
+                    const itemImage = resolveProductImage(item, item.image || "/assets/logo.png");
+
+                    return (
                     <div key={item.id} className="flex items-center space-x-4">
                       <div className="w-18 h-18  rounded-lg flex items-center justify-center">
                         <div className="w-16 h-16  rounded flex items-center justify-center">
                           <img
-                            src={item.image}
+                            src={itemImage}
                             alt={item.name}
                             className="w-8 h-8 object-cover rounded"
                           />
@@ -431,7 +435,8 @@ export default function OrderSummary() {
                       </div>
                       {/* Remove button can be implemented if needed */}
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-gray-500 text-center">
                     No items selected.
