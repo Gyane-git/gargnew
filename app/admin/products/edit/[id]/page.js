@@ -82,6 +82,58 @@ const emptyForm = {
   status: 1,
 };
 
+const emptyVariation = () => ({
+  name: "",
+  actual_price: "",
+  sell_price: "",
+  available_qty: "",
+  stock_qty: "",
+  sku: "",
+  imagePath: "",
+  imageFile: null,
+  preview: null,
+});
+
+const mapVariationToForm = (variation) => ({
+  name:
+    variation?.attributes?.name ||
+    variation?.product_name ||
+    variation?.name ||
+    "",
+  actual_price:
+    variation?.actual_price ??
+    variation?.attributes?.actual_price ??
+    variation?.attributes?.price ??
+    "",
+  sell_price:
+    variation?.sell_price ??
+    variation?.attributes?.sell_price ??
+    "",
+  available_qty:
+    variation?.available_quantity ??
+    variation?.attributes?.available_qty ??
+    "",
+  stock_qty:
+    variation?.stock_quantity ??
+    variation?.attributes?.stock_qty ??
+    "",
+  sku: variation?.sku || "",
+  imagePath:
+    variation?.attributes?.image ||
+    variation?.image_full_url ||
+    variation?.image_url ||
+    variation?.main_image_full_url ||
+    variation?.main_image_url ||
+    "",
+  imageFile: null,
+  preview:
+    variation?.image_full_url ||
+    variation?.image_url ||
+    variation?.main_image_full_url ||
+    variation?.main_image_url ||
+    null,
+});
+
 export default function EditProductPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -107,6 +159,7 @@ export default function EditProductPage() {
   const [catalogueFile, setCatalogueFile] = useState(null);
 
   const [form, setForm] = useState(emptyForm);
+  const [variations, setVariations] = useState([emptyVariation()]);
 
   // ── slug auto-gen only when user edits product_name manually ──────────────
   const [slugEdited, setSlugEdited] = useState(false);
@@ -190,12 +243,12 @@ export default function EditProductPage() {
           available_quantity: p.available_quantity ?? "",
           stock_quantity: p.stock_quantity ?? "",
           product_location: p.product_location || "",
-          has_variations: p.has_variations ?? 0,
-          flash_sale: p.flash_sale ?? 0,
-          weekly_offer: p.weekly_offer ?? 0,
-          special_offer: p.special_offer ?? 0,
-          today_deals: p.today_deals ?? 0,
-          status: p.status ?? 1,
+          has_variations: Number(p.has_variations ?? 0),
+          flash_sale: Number(p.flash_sale ?? 0),
+          weekly_offer: Number(p.weekly_offer ?? 0),
+          special_offer: Number(p.special_offer ?? 0),
+          today_deals: Number(p.today_deals ?? 0),
+          status: Number(p.status ?? 1),
         });
 
         // slug was already set from DB — don't auto-overwrite it
@@ -211,6 +264,11 @@ export default function EditProductPage() {
           ? p.images
           : [];
         setExistingGalleryImages(loadedGallery);
+
+        const loadedVariations = Array.isArray(p.variations) && p.variations.length > 0
+          ? p.variations.map(mapVariationToForm)
+          : [];
+        setVariations(loadedVariations.length > 0 ? loadedVariations : [emptyVariation()]);
       })
       .catch(() => showToast("error", "Failed to load product."))
       .finally(() => setLoading(false));
@@ -241,6 +299,63 @@ export default function EditProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setCatalogueFile(file);
+  };
+
+  const handleVariationChange = (index, key, value) => {
+    setVariations((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [key]: value };
+      return next;
+    });
+  };
+
+  const handleVariationImage = (index, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const preview = URL.createObjectURL(file);
+    setVariations((prev) => {
+      const next = [...prev];
+      if (next[index]?.preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(next[index].preview);
+      }
+      next[index] = {
+        ...next[index],
+        imageFile: file,
+        preview,
+      };
+      return next;
+    });
+  };
+
+  const handleRemoveVariationImage = (index) => {
+    setVariations((prev) => {
+      const next = [...prev];
+      if (next[index]?.preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(next[index].preview);
+      }
+      next[index] = {
+        ...next[index],
+        imageFile: null,
+        preview: next[index]?.imagePath || null,
+        imagePath: next[index]?.imagePath || "",
+      };
+      return next;
+    });
+  };
+
+  const addVariation = () => {
+    setVariations((prev) => [...prev, emptyVariation()]);
+  };
+
+  const removeVariation = (index) => {
+    setVariations((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (prev[index]?.preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev[index].preview);
+      }
+      return next.length > 0 ? next : [emptyVariation()];
+    });
   };
 
   const handleGalleryImages = (e) => {
@@ -286,10 +401,21 @@ export default function EditProductPage() {
 
       // image handling
       fd.append("existing_image", existingImage);
+      fd.append("existing_catalogue", existingCatalogue);
       fd.append("remove_image", removeImage ? "1" : "0");
       if (imageFile) fd.append("main_image", imageFile);
       if (catalogueFile) fd.append("product_catalogue", catalogueFile);
       galleryImages.forEach((img) => fd.append("gallery_images", img.file));
+
+      if (form.has_variations === 1) {
+        const cleanVariations = variations.map(({ imageFile: _imageFile, preview: _preview, ...rest }) => rest);
+        fd.append("variations", JSON.stringify(cleanVariations));
+        variations.forEach((variation, index) => {
+          if (variation.imageFile) {
+            fd.append(`variation_image_${index}`, variation.imageFile);
+          }
+        });
+      }
 
       const res = await fetch(`/api/v1/products/${id}`, {
         method: "PUT",
@@ -411,9 +537,9 @@ export default function EditProductPage() {
               <Field label="Product Code" required hint="Must be unique">
                 <input
                   value={form.product_code}
-                  onChange={set("product_code")}
                   placeholder="e.g. SKU-00123"
-                  className={inputCls}
+                  readOnly
+                  className={`${inputCls} bg-gray-100 cursor-not-allowed`}
                 />
               </Field>
               <Field label="Slug">
@@ -518,68 +644,202 @@ export default function EditProductPage() {
           </Section>
 
           {/* Pricing */}
-          <Section icon={DollarSign} title="Pricing">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <Field label="Actual Price (Rs.)" required>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.actual_price}
-                  onChange={set("actual_price")}
-                  placeholder="0.00"
-                  className={inputCls}
-                />
-              </Field>
-              {/* <Field label="Discount (%)" hint="Auto-calculates sell price">
-                <input type="number" min="0" max="100" step="0.01" value={form.discount} onChange={set("discount")} placeholder="0" className={inputCls} />
-              </Field> */}
-              <Field label="Discount (%)" hint="Calculated automatically">
-                <input
-                  type="text"
-                  value={`${discountPercentage}%`}
-                  readOnly
-                  className={`${inputCls} bg-gray-100 cursor-not-allowed`}
-                />
-              </Field>
-              <Field label="Sell Price (Rs.)" hint="Auto-calculated">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.sell_price}
-                  onChange={set("sell_price")}
-                  placeholder="0.00"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-          </Section>
+          {form.has_variations === 0 && (
+            <Section icon={DollarSign} title="Pricing">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <Field label="Actual Price (Rs.)" required>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.actual_price}
+                    onChange={set("actual_price")}
+                    placeholder="0.00"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Discount (%)" hint="Calculated automatically">
+                  <input
+                    type="text"
+                    value={`${discountPercentage}%`}
+                    readOnly
+                    className={`${inputCls} bg-gray-100 cursor-not-allowed`}
+                  />
+                </Field>
+                <Field label="Sell Price (Rs.)" hint="Auto-calculated">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.sell_price}
+                    onChange={set("sell_price")}
+                    placeholder="0.00"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+            </Section>
+          )}
 
           {/* Inventory */}
           <Section icon={Boxes} title="Inventory">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <Field label="Available Quantity" required>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.available_quantity}
-                  onChange={set("available_quantity")}
-                  placeholder="0"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Stock Quantity" required>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock_quantity}
-                  onChange={set("stock_quantity")}
-                  placeholder="0"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
+            {form.has_variations === 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Field label="Available Quantity" required>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.available_quantity}
+                    onChange={set("available_quantity")}
+                    placeholder="0"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Stock Quantity" required>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.stock_quantity}
+                    onChange={set("stock_quantity")}
+                    placeholder="0"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+            )}
+
+            {form.has_variations === 1 && (
+              <div className="flex flex-col gap-6">
+                {variations.map((variation, index) => (
+                  <div key={index} className="relative border rounded-xl p-5 bg-gray-50">
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVariation(index)}
+                        className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+
+                    <p className="text-sm font-medium text-gray-700 mb-4 pr-10">
+                      Variation #{index + 1}
+                    </p>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Variation Image
+                      </label>
+                      <label className="flex items-center w-full border border-gray-300 rounded-xl overflow-hidden cursor-pointer bg-white">
+                        <span className="px-4 py-2.5 bg-gray-100 border-r border-gray-300 text-sm font-semibold text-gray-600 shrink-0">
+                          Choose File
+                        </span>
+                        <span className="px-3 py-2.5 text-sm text-gray-400 truncate">
+                          {variation.imageFile ? variation.imageFile.name : variation.preview ? "Current image" : "No file chosen"}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleVariationImage(index, e)}
+                        />
+                      </label>
+
+                      {variation.preview && (
+                        <div className="mt-3 relative w-40 h-28">
+                          <Image
+                            src={variation.preview}
+                            alt={`Variation ${index + 1} preview`}
+                            fill
+                            className="object-cover rounded-xl border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVariationImage(index)}
+                            className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100 text-gray-600 hover:text-red-500 transition"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Field label="Variation Name (name, size, colour, etc.)">
+                      <input
+                        value={variation.name}
+                        onChange={(e) => handleVariationChange(index, "name", e.target.value)}
+                        placeholder="e.g. Blue – Large"
+                        className={inputCls}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
+                      <Field label="Actual Price">
+                        <div className="flex">
+                          <span className="px-3 py-2.5 bg-gray-100 border border-r-0 border-gray-200 rounded-l-xl text-sm text-gray-600">
+                            Rs.
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={variation.actual_price}
+                            onChange={(e) => handleVariationChange(index, "actual_price", e.target.value)}
+                            placeholder="0.00"
+                            className={inputCls + " rounded-l-none"}
+                          />
+                        </div>
+                      </Field>
+                      <Field label="Selling Price">
+                        <div className="flex">
+                          <span className="px-3 py-2.5 bg-gray-100 border border-r-0 border-gray-200 rounded-l-xl text-sm text-gray-600">
+                            Rs.
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={variation.sell_price}
+                            onChange={(e) => handleVariationChange(index, "sell_price", e.target.value)}
+                            placeholder="0.00"
+                            className={inputCls + " rounded-l-none"}
+                          />
+                        </div>
+                      </Field>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
+                      <Field label="Available Qty">
+                        <input
+                          type="number"
+                          min="0"
+                          value={variation.available_qty}
+                          onChange={(e) => handleVariationChange(index, "available_qty", e.target.value)}
+                          placeholder="0"
+                          className={inputCls}
+                        />
+                      </Field>
+                      <Field label="Stock Qty">
+                        <input
+                          type="number"
+                          min="0"
+                          value={variation.stock_qty}
+                          onChange={(e) => handleVariationChange(index, "stock_qty", e.target.value)}
+                          placeholder="0"
+                          className={inputCls}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addVariation}
+                  className="text-blue-600 text-sm font-medium border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50 transition w-fit"
+                >
+                  + Add Another Variation
+                </button>
+              </div>
+            )}
           </Section>
         </div>
 

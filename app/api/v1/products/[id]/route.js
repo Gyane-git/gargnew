@@ -2,16 +2,81 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import pool from "@/utils/db";
+import { assetUrl, formatProduct } from "@/utils/apiFormatters";
 import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
+
+const productSelect = `
+  SELECT
+    p.*,
+    c.category_name,
+    c.parent_id AS category_parent_id,
+    c.image AS category_image,
+    c.top AS category_top,
+    c.status AS category_status,
+    b.brand_name,
+    b.image AS brand_image,
+    b.top AS brand_top,
+    b.status AS brand_status
+  FROM products p
+  LEFT JOIN categories c ON p.category_id = c.id
+  LEFT JOIN brands b ON p.brand_id = b.id
+`;
+
+const parseVariationAttributes = (attributes) => {
+  if (!attributes) return {};
+  if (typeof attributes === "object") return attributes;
+
+  try {
+    return JSON.parse(attributes);
+  } catch {
+    return {};
+  }
+};
+
+const normalizeVariationRow = (row, product) => {
+  const attributes = parseVariationAttributes(row.attributes);
+  const variationImage =
+    attributes.image ||
+    attributes.image_url ||
+    row.image_path ||
+    row.image ||
+    product.main_image ||
+    product.main_image_path ||
+    null;
+  const imageFullUrl = variationImage
+    ? assetUrl(variationImage, "uploads/products/variations") ||
+      assetUrl(variationImage, "uploads/products") ||
+      variationImage
+    : product.image_full_url || product.main_image_full_url || null;
+
+  const sellPrice = Number(attributes.sell_price ?? row.sell_price ?? row.price ?? product.sell_price ?? 0);
+  const actualPrice = Number(row.price ?? attributes.actual_price ?? product.actual_price ?? 0);
+  const availableQty = Number(attributes.available_qty ?? row.available_qty ?? row.stock ?? product.available_quantity ?? 0);
+  const stockQty = Number(attributes.stock_qty ?? row.stock_qty ?? row.stock ?? product.stock_quantity ?? 0);
+
+  return {
+    id: row.id,
+    product_code: row.product_code || product.product_code,
+    product_name: attributes.name || row.product_name || product.product_name,
+    actual_price: Number.isFinite(actualPrice) ? actualPrice : 0,
+    sell_price: Number.isFinite(sellPrice) ? sellPrice : 0,
+    discount: Number(attributes.discount ?? row.discount ?? product.discount ?? 0) || 0,
+    available_quantity: Number.isFinite(availableQty) ? availableQty : 0,
+    stock_quantity: Number.isFinite(stockQty) ? stockQty : 0,
+    image_full_url: imageFullUrl,
+    main_image_full_url: imageFullUrl,
+    image_url: imageFullUrl,
+    main_image_url: imageFullUrl,
+    attributes,
+    sku: row.sku || null,
+  };
+};
 
 export async function GET(req, { params }) {
   const { id } = await params;
   try {
     const [rows] = await pool.query(
-      `SELECT p.*, c.category_name, b.brand_name
-       FROM products p
-       LEFT JOIN categories c ON p.category_id = c.id
-       LEFT JOIN brands b ON p.brand_id = b.id
+      `${productSelect}
        WHERE p.id = ?
        LIMIT 1`,
       [id],
@@ -22,9 +87,46 @@ export async function GET(req, { params }) {
     }
 
     const imageMap = await fetchProductImagesMap([rows[0].product_code]);
-    const product = enrichProductsWithImages(rows, imageMap)[0];
+    const productSnapshot = formatProduct(enrichProductsWithImages(rows, imageMap)[0]);
 
-    return NextResponse.json({ success: true, product });
+    let variations = [];
+    try {
+      const [variationRows] = await pool.query(
+        "SELECT * FROM product_variations WHERE product_code = ? ORDER BY id ASC",
+        [productSnapshot.product_code],
+      );
+      variations = variationRows.map((row) => normalizeVariationRow(row, productSnapshot));
+
+      if (Number(productSnapshot.has_variations) === 1 && variations.length === 0) {
+        variations = [
+          {
+            id: `${productSnapshot.product_code}-default`,
+            product_code: productSnapshot.product_code,
+            product_name: productSnapshot.product_name,
+            actual_price: Number(productSnapshot.actual_price || 0),
+            sell_price: Number(productSnapshot.sell_price || 0),
+            discount: Number(productSnapshot.discount || 0),
+            available_quantity: Number(productSnapshot.available_quantity || 0),
+            stock_quantity: Number(productSnapshot.stock_quantity || 0),
+            image_full_url: productSnapshot.image_full_url || productSnapshot.main_image_full_url || null,
+            main_image_full_url: productSnapshot.image_full_url || productSnapshot.main_image_full_url || null,
+            image_url: productSnapshot.image_full_url || productSnapshot.main_image_full_url || null,
+            main_image_url: productSnapshot.image_full_url || productSnapshot.main_image_full_url || null,
+            attributes: {
+              name: productSnapshot.product_name,
+              image: productSnapshot.main_image || productSnapshot.main_image_path || null,
+              sell_price: Number(productSnapshot.sell_price || 0),
+              available_qty: Number(productSnapshot.available_quantity || 0),
+              actual_price: Number(productSnapshot.actual_price || 0),
+              stock_qty: Number(productSnapshot.stock_quantity || 0),
+            },
+            sku: null,
+          },
+        ];
+      }
+    } catch {}
+
+    return NextResponse.json({ success: true, product: { ...productSnapshot, variations } });
   } catch (error) {
     console.error("GET PRODUCT ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -46,11 +148,11 @@ export async function PUT(req, { params }) {
     const category_id = formData.get("category_id");
     const brand_id = formData.get("brand_id");
     const delivery_target_days = formData.get("delivery_target_days") || null;
-    const actual_price = formData.get("actual_price") || 0;
-    const sell_price = formData.get("sell_price") || 0;
+    let actual_price = formData.get("actual_price") || 0;
+    let sell_price = formData.get("sell_price") || 0;
     const discount = formData.get("discount") || 0;
-    const available_quantity = formData.get("available_quantity") || 0;
-    const stock_quantity = formData.get("stock_quantity") || 0;
+    let available_quantity = formData.get("available_quantity") || 0;
+    let stock_quantity = formData.get("stock_quantity") || 0;
     const product_location = formData.get("product_location") || "";
     const has_variations = formData.get("has_variations") ?? 0;
     const flash_sale = formData.get("flash_sale") ?? 0;
@@ -59,6 +161,7 @@ export async function PUT(req, { params }) {
     const today_deals = formData.get("today_deals") ?? 0;
     const status = formData.get("status") ?? 1;
     const existing_image = formData.get("existing_image") || "";
+    const existing_catalogue = formData.get("existing_catalogue") || "";
     const remove_image = formData.get("remove_image") === "1";
     const imageFile = formData.get("main_image");
     const catalogueFile = formData.get("product_catalogue");
@@ -94,7 +197,7 @@ export async function PUT(req, { params }) {
       imagePath = `/uploads/products/${fileName}`;
     }
 
-    let cataloguePath = formData.get("existing_catalogue") || "";
+    let cataloguePath = existing_catalogue;
     const galleryPaths = [];
 
     if (catalogueFile && typeof catalogueFile === "object" && catalogueFile.size > 0) {
@@ -120,6 +223,33 @@ export async function PUT(req, { params }) {
     const categoryIdValue = !category_id || category_id === "" || category_id === "null" ? null : Number(category_id);
     const brandIdValue = !brand_id || brand_id === "" || brand_id === "null" ? null : Number(brand_id);
 
+    let variations = [];
+    const variationsJson = formData.get("variations");
+    if (Number(has_variations) === 1 && variationsJson) {
+      try {
+        variations = JSON.parse(variationsJson);
+        if (!Array.isArray(variations)) throw new Error("not an array");
+      } catch {
+        return NextResponse.json({ success: false, message: "Invalid variations payload" }, { status: 400 });
+      }
+    }
+
+    if (Number(has_variations) === 1 && variations.length > 0) {
+      const actualPrices = variations.map((v) => Number(v.actual_price || 0)).filter((n) => n > 0);
+      const sellPrices = variations.map((v) => Number(v.sell_price || 0)).filter((n) => n > 0);
+      const availableQtyTotal = variations.reduce((sum, v) => sum + Number(v.available_qty || 0), 0);
+      const stockQtyTotal = variations.reduce((sum, v) => sum + Number(v.stock_qty || 0), 0);
+
+      if (actualPrices.length) {
+        actual_price = Math.max(...actualPrices);
+      }
+      if (sellPrices.length) {
+        sell_price = Math.min(...sellPrices);
+      }
+      available_quantity = availableQtyTotal;
+      stock_quantity = stockQtyTotal;
+    }
+
     await pool.query(
       `UPDATE products SET
         product_name = ?, product_code = ?, slug = ?,
@@ -133,6 +263,45 @@ export async function PUT(req, { params }) {
       WHERE id = ?`,
       [product_name, product_code, slug, product_description, key_specifications, packaging, warranty, categoryIdValue, brandIdValue, delivery_target_days, actual_price, sell_price, discount, available_quantity, stock_quantity, product_location, has_variations, flash_sale, weekly_offer, special_offer, today_deals, status, imagePath, cataloguePath, id],
     );
+
+    if (Number(has_variations) === 1) {
+      await pool.query("DELETE FROM product_variations WHERE product_code = ?", [product_code]);
+
+      for (let i = 0; i < variations.length; i++) {
+        const variation = variations[i] || {};
+        const variationImageFile = formData.get(`variation_image_${i}`);
+        let variationImage = variation.imagePath || variation.image || variation.image_path || "";
+
+        if (variationImageFile && typeof variationImageFile === "object" && variationImageFile.size > 0) {
+          const bytes = await variationImageFile.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const fileName = `${Date.now()}-${variationImageFile.name}`;
+          const uploadDir = path.join(process.cwd(), "public/uploads/products/variations");
+          await mkdir(uploadDir, { recursive: true });
+          await writeFile(path.join(uploadDir, fileName), buffer);
+          variationImage = `/uploads/products/variations/${fileName}`;
+        }
+
+        await pool.query(
+          `INSERT INTO product_variations (product_code, attributes, price, stock, sku, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+          [
+            product_code,
+            JSON.stringify({
+              name: variation.name || "",
+              image: variationImage,
+              sell_price: Number(variation.sell_price || 0),
+              available_qty: Number(variation.available_qty || 0),
+              actual_price: Number(variation.actual_price || 0),
+              stock_qty: Number(variation.stock_qty || 0),
+            }),
+            Number(variation.actual_price || 0),
+            Number(variation.stock_qty || 0),
+            variation.sku || `${product_code}-${i + 1}`,
+          ],
+        );
+      }
+    }
 
     if (galleryPaths.length > 0) {
       for (const galleryPath of galleryPaths) {

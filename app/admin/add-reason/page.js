@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 export default function AddReasonPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     reasonName: "",
     reasonType: "",
@@ -55,6 +57,7 @@ export default function AddReasonPage() {
           reasonType: "",
           reasonFor: "",
         });
+        router.push("/admin/return-cancell-reasons");
       } else {
         toast.error(data.message || "Failed to add reason.");
       }
@@ -71,6 +74,7 @@ export default function AddReasonPage() {
       reasonType: "",
       reasonFor: "",
     });
+    router.push("/admin/return-cancell-reasons");
   };
 
   return (

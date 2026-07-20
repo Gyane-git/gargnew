@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, Eye, LayoutDashboard } from "lucide-react";
+import { ArrowUpDown, Eye, LayoutDashboard, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -26,6 +27,8 @@ export default function GrievancesPage() {
   const [sortOrder, setSortOrder] = useState("desc");
 
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const loadGrievances = async () => {
@@ -93,6 +96,34 @@ export default function GrievancesPage() {
     } else {
       setSortField(field);
       setSortOrder("asc");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.id) return;
+
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/v1/grievances/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to delete grievance.");
+      }
+
+      toast.success("Grievance deleted successfully.");
+      setGrievances((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      if (selectedComplaint?.id === deleteTarget.id) {
+        setSelectedComplaint(null);
+      }
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(error.message || "Failed to delete grievance.");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -234,13 +265,22 @@ export default function GrievancesPage() {
                         {formatDate(row.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => setSelectedComplaint(row)}
-                          className="flex items-center justify-center w-9 h-9 rounded-full bg-sky-500 hover:bg-sky-600 text-white transition-all duration-200 hover:scale-110 shadow-md"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedComplaint(row)}
+                            className="flex items-center justify-center w-9 h-9 rounded-full bg-sky-500 hover:bg-sky-600 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                            title="View Details"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(row)}
+                            className="flex items-center justify-center w-9 h-9 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                            title="Delete Grievance"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -316,6 +356,47 @@ export default function GrievancesPage() {
                     className="rounded-lg bg-sky-600 px-5 py-2 text-white hover:bg-sky-700 transition"
                   >
                     Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {deleteTarget && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+              onClick={() => !deleteLoading && setDeleteTarget(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-xl bg-white shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Delete Grievance
+                  </h2>
+                  <p className="mt-3 text-sm text-gray-600">
+                    Are you sure you want to delete this grievance from{" "}
+                    <span className="font-semibold text-gray-800">
+                      {deleteTarget.full_name || deleteTarget.name}
+                    </span>
+                    ?
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3 border-t px-6 py-4">
+                  <button
+                    onClick={() => setDeleteTarget(null)}
+                    disabled={deleteLoading}
+                    className="rounded-lg border px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteLoading}
+                    className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-60"
+                  >
+                    {deleteLoading ? "Deleting..." : "Delete"}
                   </button>
                 </div>
               </div>
