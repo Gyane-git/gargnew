@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { resolveProductImage } from "@/utils/productMedia";
+import { resolveAddressShippingCost } from "@/utils/shipping";
 
 
 export default function OrderSummaryBuyNow() {
@@ -157,6 +158,9 @@ export default function OrderSummaryBuyNow() {
     }
     setIsProcessing(true);
     setSelectedShippingAddress(defaultShippingAddress);
+    const cost = resolveAddressShippingCost(defaultShippingAddress);
+    setShipping(cost);
+    setShowShipping(cost);
     setSelectedBillingAddress(defaultBillingAddress);
     // console.log("defaultShippingAddress", defaultShippingAddress);
     // console.log("defaultBillingAddress", defaultBillingAddress);
@@ -183,17 +187,10 @@ export default function OrderSummaryBuyNow() {
   };
 
    useEffect(() => {
-      // console.log("currentThreshold:", getInsideOfValleyThreshold(), getOutOfValleyThreshold());
-      // console.log("defaukt shippingaddress :", defaultShippingAddress);
-      
-       if ( defaultShippingAddress && defaultShippingAddress?.shipping_cost) {
-        // console.log("defaultShippingAddress changed:", defaultShippingAddress);
-        // console.log("defaultShippingAddress cost:", defaultShippingAddress?.shipping_cost);
-        const cost = parseFloat(defaultShippingAddress?.shipping_cost);
-        setShipping(cost);
-        setShowShipping(cost);
-      }
-    }, [selectedId]);
+      const cost = resolveAddressShippingCost(defaultShippingAddress);
+      setShipping(cost);
+      setShowShipping(cost);
+    }, [selectedId, defaultShippingAddress]);
 
   // const subtotal = selectedItems.reduce(
   //   (sum, item) => sum + item.price * item.quantity,
@@ -215,6 +212,7 @@ export default function OrderSummaryBuyNow() {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
+  const addressShipping = resolveAddressShippingCost(defaultShippingAddress);
   const taxtotal = subtotal - totalVatAmount;
 
   const fetchShippingCost =async () => {
@@ -252,14 +250,13 @@ export default function OrderSummaryBuyNow() {
     }
     }
 
-    useEffect(() => {
-      fetchShippingCost();
-    }, [defaultShippingAddress]);
+  useEffect(() => {
+    fetchShippingCost();
+  }, [defaultShippingAddress]);
 
   useEffect(() => {
-    if (subtotal >= currentThreshold) {
+    if (currentThreshold > 0 && subtotal >= currentThreshold) {
       setisFreeShipping(true);
-      setShipping(0);
       // console.log("current threshold : ", currentThreshold);
     } else {
       setisFreeShipping(false);
@@ -267,7 +264,7 @@ export default function OrderSummaryBuyNow() {
   }, [subtotal, currentThreshold]);
 
   // const total = subtotal + totalVatAmount + shipping;
-  const total = subtotal + (subtotal >= currentThreshold ? 0 : shipping);
+  const total = subtotal + (currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping);
 
   if( loading ){
     return (
@@ -488,7 +485,7 @@ export default function OrderSummaryBuyNow() {
                   </span>
                   <span className={`font-semibold text-gray-800 ${isFreeShipping ? "line-through text-gray-500" : ""
                     }`}>
-                    Rs. {showShipping.toFixed(2)}
+                    Rs. {addressShipping.toFixed(2)}
                   </span>
                 </div>
                 <hr className="border-gray-200" />

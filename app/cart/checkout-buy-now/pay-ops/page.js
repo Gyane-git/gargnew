@@ -16,6 +16,7 @@ import { apiRequest } from "@/utils/ApiSafeCalls";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { getToken } from "@/utils/ApiSafeCalls";
 import useInfoModalStore from "@/stores/infoModalStore";
+import { resolveAddressShippingCost } from "@/utils/shipping";
 
 const paymentMethods = [
     {
@@ -132,9 +133,7 @@ const PayOpsPageBuyNow = () => {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-
-
-
+  const addressShipping = resolveAddressShippingCost(selectedShippingAddress);
   const taxtotal = subtotal - totalVatAmount;
 const [ loading , setLoading ] = useState(false);
 const fetchShippingCost =async () => {
@@ -174,10 +173,9 @@ const fetchShippingCost =async () => {
   useEffect(() => {
     fetchShippingCost();
     // console.log("current  threshold:", currentThreshold);
-    if (subtotal >= currentThreshold) {
+    if (currentThreshold > 0 && subtotal >= currentThreshold) {
 
       setisFreeShipping(true);
-      setShipping(0);
       // console.log("current threshold : ", currentThreshold);
     } else {
       setisFreeShipping(false);
@@ -185,7 +183,7 @@ const fetchShippingCost =async () => {
   }, [subtotal, currentThreshold]);
 
   // const total = subtotal + totalVatAmount + shipping;
-  const total = subtotal + (subtotal >= currentThreshold ? 0 : shipping);
+  const total = subtotal + (currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping);
   useEffect(() => {
     if (email === null || email === "") {
       toast.error("Please don't refresh the page.");
@@ -197,15 +195,9 @@ const fetchShippingCost =async () => {
       router.push("/dashboard");
       return;
     }
-    if (selectedShippingAddress?.city?.shipping_cost !== null) {
-      const cost = parseFloat(selectedShippingAddress?.shipping_cost);
-      setShipping(cost);
-      setShowShipping(cost);
-    } else {
-      toast.error("Please don't refresh the page.");
-      router.push("/dashboard");
-      return;
-    }
+    const cost = resolveAddressShippingCost(selectedShippingAddress);
+    setShipping(cost);
+    setShowShipping(cost);
   }, [selectedShippingAddress]);
 
   const handleConfirmOrderBuyNow = async () => {
@@ -216,6 +208,7 @@ const fetchShippingCost =async () => {
       shipping_address: selectedShippingAddress.id,
       token: getToken(),
       invoice_email: email,
+      shipping: currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping,
       buy_now_item: {
         product_code: selectedItems[0].product_code,
         quantity: selectedItems[0].quantity,
@@ -265,6 +258,7 @@ const fetchShippingCost =async () => {
        token: getToken(),
       invoice_email: email,
       transaction_id : transId,
+      shipping: currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping,
       buy_now_item: {
         product_code: selectedItems[0].product_code,
         quantity: selectedItems[0].quantity,
@@ -485,7 +479,7 @@ const fetchShippingCost =async () => {
             <div className="flex justify-between mb-4">
               <span className="font-bold text-lg">SHIPPING</span>
               <span className={`font-semibold text-gray-800 ${isFreeShipping ? "line-through text-gray-500" : ""
-                }`}>Rs. {showShipping}</span>
+                }`}>Rs. {addressShipping}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span className="font-bold text-xl">GRAND TOTAL</span>

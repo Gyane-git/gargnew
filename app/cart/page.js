@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import FormatCurrencyNPR from "@/components/NprStyleBalance";
 import { useFreeShippingStore } from "@/stores/ShippingThreshold";
 import { resolveProductImage } from "@/utils/productMedia";
+import { resolveAddressShippingCost } from "@/utils/shipping";
 
 export default function ShoppingCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -109,13 +110,9 @@ export default function ShoppingCart() {
             if (allAddresses && defaultBillingAddress && defaultShippingAddress) {
               setHomeAddress(defaultShippingAddress);
               // console.log("home address", defaultShippingAddress);
-              if (defaultShippingAddress.city?.shipping_cost) {
-                const cost = parseFloat(
-                  defaultShippingAddress.city?.shipping_cost
-                );
-                setShipping(cost);
-                setShowShipping(cost);
-              }
+              const cost = resolveAddressShippingCost(defaultShippingAddress);
+              setShipping(cost);
+              setShowShipping(cost);
               setBillingAddress(defaultBillingAddress);
             }
           } catch (error) {
@@ -271,13 +268,14 @@ export default function ShoppingCart() {
     }
     return sum;
   }, 0);
+  const baseShipping = resolveAddressShippingCost(homeAddress);
 
   useEffect(() => {
     fetchShippingCost();
   }, [selectedSubtotal]);
 
     useEffect(() => {
-      if (selectedSubtotal >= currentThreshold) {
+      if (currentThreshold > 0 && selectedSubtotal >= currentThreshold) {
         setisFreeShipping(true);
         setShipping(0);
         // console.log("current threshold : ", currentThreshold);
@@ -289,7 +287,7 @@ export default function ShoppingCart() {
   // const total = selectedSubtotal + (selectedItems.size > 0 ? shipping : 0);
   var total = selectedSubtotal;
   if(selectedItems.size > 0){
-     total = selectedSubtotal + (selectedSubtotal >= currentThreshold ? 0 : shipping);
+     total = selectedSubtotal + (currentThreshold > 0 && selectedSubtotal >= currentThreshold ? 0 : baseShipping);
   }
 
   const handleClearCart = async () => {
@@ -669,7 +667,7 @@ export default function ShoppingCart() {
                     <span className={`font-semibold text-gray-800 ${ (isFreeShipping && selectedItems.size > 0) ? "line-through text-gray-500" : ""
                     }`}>
                       Rs.{" "}
-                      {selectedItems.size > 0 ? showShipping.toFixed(2) : "0.00"}
+                      {selectedItems.size > 0 ? baseShipping.toFixed(2) : "0.00"}
                     </span>
                   </div>
 

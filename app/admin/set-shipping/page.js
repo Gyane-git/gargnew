@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /* ---------------- Inline icon components (no external deps) ---------------- */
@@ -103,6 +103,7 @@ export default function SetShippingCostPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ province: "", city: "", cost: "" });
+  const [viewing, setViewing] = useState(null);
 
   const [showTop, setShowTop] = useState(false);
 
@@ -112,52 +113,53 @@ export default function SetShippingCostPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    const loadShipping = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const res = await fetch("/api/v1/addresses/shipping", {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (!res.ok || !data?.success) {
-          throw new Error(data?.message || "Failed to load shipping data.");
-        }
-
-        const normalized = Array.isArray(data.shipping)
-          ? data.shipping.map((row) => ({
-              id: row.id,
-              province:
-                row.province_name || `Province #${row.province_id || ""}`,
-              city: row.city || "",
-              cost: Number(row.shipping_cost || 0),
-              applyShipping: Number(row.apply_shipping ?? 1) === 1,
-              createdAt: row.created_at
-                ? new Date(row.created_at)
-                    .toLocaleString("en-US", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })
-                    .replace(",", "")
-                : "",
-            }))
-          : [];
-
-        setRows(normalized);
-      } catch (fetchError) {
-        setError(fetchError.message || "Failed to load shipping data.");
-      } finally {
-        setLoading(false);
+  const loadShipping = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetch("/api/v1/addresses/shipping", {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to load shipping data.");
       }
-    };
 
-    loadShipping();
+      const normalized = Array.isArray(data.shipping)
+        ? data.shipping.map((row) => ({
+            id: row.id,
+            province: row.province_name || `Province #${row.province_id || ""}`,
+            province_id: row.province_id || "",
+            city: row.city || "",
+            cost: Number(row.shipping_cost || 0),
+            applyShipping: Number(row.apply_shipping ?? 1) === 1,
+            remarks: row.remarks || "",
+            createdAt: row.created_at
+              ? new Date(row.created_at)
+                  .toLocaleString("en-US", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  })
+                  .replace(",", "")
+              : "",
+          }))
+        : [];
+
+      setRows(normalized);
+    } catch (fetchError) {
+      setError(fetchError.message || "Failed to load shipping data.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadShipping();
+  }, [loadShipping]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -196,6 +198,26 @@ export default function SetShippingCostPage() {
         r.id === id ? { ...r, applyShipping: !r.applyShipping } : r,
       ),
     );
+    const row = rows.find((item) => item.id === id);
+    if (!row) return;
+    fetch("/api/v1/addresses/shipping", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: row.id,
+        province_id: row.province_id || row.province,
+        city: row.city,
+        shipping_cost: row.cost,
+        apply_shipping: row.applyShipping ? 0 : 1,
+        remarks: row.remarks || "",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.success) throw new Error(data?.message || "Failed to update shipping.");
+        loadShipping();
+      })
+      .catch((err) => setError(err.message || "Failed to update shipping."));
   };
 
   const openAdd = () => {
@@ -210,53 +232,49 @@ export default function SetShippingCostPage() {
     setShowModal(true);
   };
 
+  const openView = (row) => {
+    setViewing(row);
+  };
+
   const handleDelete = (row) => {
     if (!window.confirm(`Delete shipping cost for "${row.city}"?`)) return;
-    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    fetch("/api/v1/addresses/shipping", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: row.id }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.success) throw new Error(data?.message || "Failed to delete shipping.");
+        loadShipping();
+      })
+      .catch((err) => setError(err.message || "Failed to delete shipping."));
   };
 
   const handleSave = () => {
     if (!form.province.trim() || !form.city.trim() || form.cost === "") return;
-    if (editing) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === editing.id
-            ? {
-                ...r,
-                province: form.province.trim(),
-                city: form.city.trim(),
-                cost: Number(form.cost),
-              }
-            : r,
-        ),
-      );
-    } else {
-      const nextId =
-        rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-      const now = new Date();
-      const createdAt = now
-        .toLocaleString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-        .replace(",", "");
-      setRows((prev) => [
-        ...prev,
-        {
-          id: nextId,
-          province: form.province.trim(),
-          city: form.city.trim(),
-          cost: Number(form.cost),
-          applyShipping: true,
-          createdAt,
-        },
-      ]);
-    }
-    setShowModal(false);
+    const method = editing ? "PUT" : "POST";
+    const payload = {
+      province_id: editing?.province_id || editing?.province || form.province.trim(),
+      city: form.city.trim(),
+      shipping_cost: Number(form.cost),
+      apply_shipping: editing ? (editing.applyShipping ? 1 : 0) : 1,
+      remarks: editing?.remarks || "",
+    };
+    if (editing) payload.id = editing.id;
+    fetch("/api/v1/addresses/shipping", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.success) throw new Error(data?.message || "Failed to save shipping.");
+        setShowModal(false);
+        setEditing(null);
+        loadShipping();
+      })
+      .catch((err) => setError(err.message || "Failed to save shipping."));
   };
 
   return (
@@ -405,6 +423,7 @@ export default function SetShippingCostPage() {
                       <div className="flex gap-2">
                         <button
                           title="View"
+                          onClick={() => openView(r)}
                           className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-[#cfeaf7] bg-[#eef8fd] text-[#2f9bd6] hover:brightness-95"
                         >
                           <IconInfo />
@@ -540,6 +559,38 @@ export default function SetShippingCostPage() {
                 className="rounded-md bg-[#2f55d4] px-4 py-2 text-sm text-white"
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewing && (
+        <div
+          onClick={() => setViewing(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,26,46,0.45)]"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-[420px] max-w-[90vw] rounded-[10px] bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.2)]"
+          >
+            <h3 className="mb-4 text-lg font-semibold text-[#232f4b]">
+              Shipping Details
+            </h3>
+            <div className="space-y-2 text-sm text-[#4b5468]">
+              <div><span className="font-medium text-[#232f4b]">Province:</span> {viewing.province}</div>
+              <div><span className="font-medium text-[#232f4b]">City:</span> {viewing.city}</div>
+              <div><span className="font-medium text-[#232f4b]">Shipping Cost:</span> {Number(viewing.cost).toFixed(2)}</div>
+              <div><span className="font-medium text-[#232f4b]">Apply Shipping:</span> {viewing.applyShipping ? "Yes" : "No"}</div>
+              <div><span className="font-medium text-[#232f4b]">Remarks:</span> {viewing.remarks || "-"}</div>
+              <div><span className="font-medium text-[#232f4b]">Created At:</span> {viewing.createdAt || "-"}</div>
+            </div>
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={() => setViewing(null)}
+                className="rounded-md bg-[#2f55d4] px-4 py-2 text-sm text-white"
+              >
+                Close
               </button>
             </div>
           </div>

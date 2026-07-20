@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import { resolveProductImage } from "@/utils/productMedia";
+import { resolveAddressShippingCost } from "@/utils/shipping";
 // import MainTopBar from "@/components/mainTopbar";
 
 export default function OrderSummary() {
@@ -168,13 +169,9 @@ export default function OrderSummary() {
     }
     setIsProcessing(true);
     setSelectedShippingAddress(defaultShippingAddress);
-    // console.log("defaultShippingAddress", defaultShippingAddress);
-    if (defaultShippingAddress.city?.shipping_cost) {
-      // console.log("defaultShippingAddress changed:", defaultShippingAddress.city?.shipping_cost);
-      const cost = parseFloat(defaultShippingAddress?.city?.shipping_cost);
-      setShipping(cost);
-      setShowShipping(cost);
-    }
+    const cost = resolveAddressShippingCost(defaultShippingAddress);
+    setShipping(cost);
+    setShowShipping(cost);
     setSelectedBillingAddress(defaultBillingAddress);
     // console.log("defaultShippingAddress", defaultShippingAddress);
     // console.log("defaultBillingAddress", defaultBillingAddress);
@@ -189,17 +186,10 @@ export default function OrderSummary() {
   };
 
     useEffect(() => {
-       // console.log("currentThreshold:", getInsideOfValleyThreshold(), getOutOfValleyThreshold());
-       // console.log("defaukt shippingaddress :", defaultShippingAddress);
-       
-        if ( defaultShippingAddress && defaultShippingAddress?.shipping_cost) {
-         // console.log("defaultShippingAddress changed:", defaultShippingAddress);
-         // console.log("defaultShippingAddress cost:", defaultShippingAddress?.shipping_cost);
-         const cost = parseFloat(defaultShippingAddress?.shipping_cost);
-         setShipping(cost);
-         setShowShipping(cost);
-       }
-     }, [selectedId]);
+       const cost = resolveAddressShippingCost(defaultShippingAddress);
+       setShipping(cost);
+       setShowShipping(cost);
+     }, [selectedId, defaultShippingAddress]);
 
   //  useEffect(() => {
   //       fetchShippingCost();
@@ -225,6 +215,7 @@ export default function OrderSummary() {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
+  const addressShipping = resolveAddressShippingCost(defaultShippingAddress);
 
 
 
@@ -269,17 +260,17 @@ export default function OrderSummary() {
        fetchShippingCost();
      }, [defaultShippingAddress]);
  
-   useEffect(() => {
-     if (subtotal >= currentThreshold) {
+  useEffect(() => {
+     if (currentThreshold > 0 && subtotal >= currentThreshold) {
        setisFreeShipping(true);
        setShipping(0);
        // console.log("current threshold : ", currentThreshold);
      } else {
        setisFreeShipping(false);
      }
-   }, [subtotal, currentThreshold]);
+  }, [subtotal, currentThreshold]);
   // const total = subtotal + totalVatAmount + shipping;
-  const total = subtotal + (subtotal >= currentThreshold ? 0 : shipping);
+  const total = subtotal + (currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping);
 
   if (loading) {
     return (
@@ -565,7 +556,7 @@ export default function OrderSummary() {
                     className={`font-semibold text-gray-800 ${isFreeShipping ? "line-through text-gray-500" : ""
                       }`}
                   >
-                    Rs. {showShipping.toFixed(2)}
+                    Rs. {addressShipping.toFixed(2)}
                   </span>
                 </div>
                 <hr className="border-gray-200" />

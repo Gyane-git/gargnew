@@ -14,6 +14,7 @@ import { getDate  } from '@/utils/payments/getDate'
 import { apiRequest } from "@/utils/ApiSafeCalls";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { getToken } from "@/utils/ApiSafeCalls";
+import { resolveAddressShippingCost } from "@/utils/shipping";
 // import { Toaster } from "react-hot-toast";
 
 const paymentMethods = [
@@ -124,15 +125,9 @@ const PayOpsPage = () => {
       router.push("/cart");
       return;
     }
-    if (selectedShippingAddress?.city?.shipping_cost !== null) {
-      const cost = parseFloat(selectedShippingAddress?.shipping_cost);
-      setShipping(cost);
-      setShowShipping(cost);
-    } else {
-      toast.error("Please don't refresh the page.");
-      router.push("/cart");
-      return;
-    }
+    const cost = resolveAddressShippingCost(selectedShippingAddress);
+    setShipping(cost);
+    setShowShipping(cost);
   }, [selectedShippingAddress]);
   // Calculate totals from selected items
   // const subtotal = selectedItems.reduce(
@@ -154,6 +149,7 @@ const itemsWithVat = selectedItems.map((item) => ({
     (sum, item) => sum + item.price * item.quantity,
     0
   );
+  const addressShipping = resolveAddressShippingCost(selectedShippingAddress);
 
 
 
@@ -193,19 +189,18 @@ const itemsWithVat = selectedItems.map((item) => ({
         }
     }
 
-    useEffect(() => {
-      fetchShippingCost();
-      if (subtotal >= currentThreshold && currentThreshold > 0 ) {
-        setisFreeShipping(true);
-        setShipping(0);
-        // console.log("current threshold : ", currentThreshold);
-      }else{
-        setisFreeShipping(false);
-      }
-    }, [subtotal, currentThreshold]);
+  useEffect(() => {
+    fetchShippingCost();
+    if (currentThreshold > 0 && subtotal >= currentThreshold ) {
+      setisFreeShipping(true);
+      // console.log("current threshold : ", currentThreshold);
+    }else{
+      setisFreeShipping(false);
+    }
+  }, [subtotal, currentThreshold]);
   
-    // const total = subtotal + totalVatAmount + shipping;
-    const total = subtotal  + (subtotal >= currentThreshold ? 0 : shipping);
+  // const total = subtotal + totalVatAmount + shipping;
+  const total = subtotal  + (currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping);
     // const total = subtotal  + ( shipping);
   
 
@@ -220,7 +215,7 @@ const itemsWithVat = selectedItems.map((item) => ({
         invoice_email: email,
         subtotal: subtotal,
         grandtotal: total,
-        shipping: shipping,
+        shipping: currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping,
         selected_items: selectedItems.map((item) => item.id),
       };
       // console.log("orderData", orderData);
@@ -280,7 +275,7 @@ const itemsWithVat = selectedItems.map((item) => ({
         invoice_email: email,
         subtotal: subtotal,
         grandtotal: total,
-        shipping: shipping,
+        shipping: currentThreshold > 0 && subtotal >= currentThreshold ? 0 : addressShipping,
         selected_items: selectedItems.map((item) => item.id),
         transaction_id : transId
       };
@@ -496,7 +491,7 @@ const itemsWithVat = selectedItems.map((item) => ({
                   isFreeShipping ? "line-through text-gray-500" : ""
                 }`}
               >
-                Rs. {showShipping}
+                Rs. {addressShipping}
               </span>
             </div>
             <div className="flex justify-between mb-2">

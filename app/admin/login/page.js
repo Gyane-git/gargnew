@@ -113,18 +113,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <input type="checkbox" id="remember" className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
-                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
-              <button type="button" onClick={() => router.push("/business/account/forgot-password")} className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot password?
-              </button>
-            </div>
+           
+            
 
             {/* Submit Button */}
             <button type="submit" disabled={isLoading} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
