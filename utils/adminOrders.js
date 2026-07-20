@@ -1,4 +1,16 @@
 import pool from "@/utils/db";
+import { ensureOrderItemVariationColumn } from "@/utils/order";
+
+const parseVariationName = (attributes) => {
+  if (!attributes) return null;
+
+  try {
+    const parsed = typeof attributes === "string" ? JSON.parse(attributes) : attributes;
+    return parsed?.name || null;
+  } catch {
+    return null;
+  }
+};
 
 const HISTORY_TABLES = {
   shipped: ["order_shipped"],
@@ -116,11 +128,14 @@ export const formatOrderRow = (row, itemRows = [], productMap = new Map()) => {
     const quantity = Number(item.quantity || 0);
     const unitPrice = Number(item.price || product.sell_price || product.actual_price || 0);
     const subtotal = Number(item.subtotal || unitPrice * quantity || 0);
+    const variationName = parseVariationName(item.variation_attributes);
 
     return {
       sn: index + 1,
       product: product.product_name || item.product_code,
       product_code: item.product_code,
+      variation_key: item.variation_key || null,
+      variation_name: variationName,
       qty: quantity,
       unitPrice,
       subtotal,
@@ -169,11 +184,14 @@ export const formatOrderRow = (row, itemRows = [], productMap = new Map()) => {
 };
 
 export const fetchOrderItems = async (connection, orderId) => {
+  await ensureOrderItemVariationColumn(connection);
+
   const [rows] = await connection.query(
     `SELECT
        oi.id,
        oi.order_id,
        oi.product_code,
+       oi.variation_key,
        oi.quantity,
        oi.price,
        oi.actual_price,
@@ -185,9 +203,11 @@ export const fetchOrderItems = async (connection, orderId) => {
        oi.reviewed,
        p.product_name,
        p.sell_price,
-       p.actual_price AS product_actual_price
+       p.actual_price AS product_actual_price,
+       pv.attributes AS variation_attributes
      FROM order_items oi
      LEFT JOIN products p ON p.product_code = oi.product_code
+     LEFT JOIN product_variations pv ON pv.product_code = oi.product_code AND pv.sku = oi.variation_key
      WHERE oi.order_id = ?
      ORDER BY oi.id ASC`,
     [orderId],

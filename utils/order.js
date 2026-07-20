@@ -103,15 +103,25 @@ export const insertOrderRow = async (connection, data) => {
   return result.insertId;
 };
 
+export const ensureOrderItemVariationColumn = async (connection) => {
+  const [rows] = await connection.query("SHOW COLUMNS FROM order_items LIKE 'variation_key'");
+  if (!rows.length) {
+    await connection.query("ALTER TABLE order_items ADD COLUMN variation_key VARCHAR(191) NULL AFTER product_code");
+  }
+};
+
 export const insertOrderItems = async (connection, orderId, items) => {
+  await ensureOrderItemVariationColumn(connection);
+
   for (const item of items) {
     await connection.query(
       `INSERT INTO order_items
-       (order_id, product_code, quantity, price, actual_price, subtotal_without_tax, tax, subtotal, discount, shipping_cost, reviewed, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
+       (order_id, product_code, variation_key, quantity, price, actual_price, subtotal_without_tax, tax, subtotal, discount, shipping_cost, reviewed, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
       [
         orderId,
         item.product_code,
+        item.variation_key || null,
         item.quantity,
         item.price,
         item.actual_price,

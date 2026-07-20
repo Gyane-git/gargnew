@@ -403,9 +403,14 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
                   <tbody>
                     {(order.items || []).length ? (
                       order.items.map((item) => (
-                        <tr key={`${item.sn}-${item.product_code}`} className="border-b border-slate-100">
+                        <tr key={`${item.sn}-${item.product_code}-${item.variation_key || ""}`} className="border-b border-slate-100">
                           <td className="py-3 px-4 text-slate-700">{item.sn}</td>
-                          <td className="py-3 px-4 text-slate-700">{item.product}</td>
+                          <td className="py-3 px-4 text-slate-700">
+                            <div>{item.product}</div>
+                            {item.variation_name ? (
+                              <div className="text-xs text-slate-500 mt-0.5">Variation: {item.variation_name}</div>
+                            ) : null}
+                          </td>
                           <td className="py-3 px-4 text-right text-blue-600">{item.qty}</td>
                           <td className="py-3 px-4 text-right text-slate-700">{formatCurrency(item.unitPrice)}</td>
                           <td className="py-3 px-4 text-right text-slate-700">{formatCurrency(item.subtotal)}</td>

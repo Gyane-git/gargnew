@@ -106,6 +106,7 @@ export async function POST(req) {
       const subtotalValue = Number((price * quantity).toFixed(2));
       return {
         product_code: row.product_code,
+        variation_key: row.variation_key || null,
         quantity,
         price: price.toFixed(2),
         actual_price: actualPrice.toFixed(2),
