@@ -19,16 +19,17 @@ export const resolveProductImage = (product, fallback = "/assets/logo.png") => {
   const galleryImage = product?.product_images?.[0] || product?.gallery?.[0] || product?.images?.[0] || null;
 
   const candidates = [
+    product?.main_image,
+    product?.main_image_path,
     product?.image_full_url,
     product?.main_image_full_url,
     product?.gallery_image_full_url,
     product?.image_url,
     product?.main_image_url,
-    product?.main_image,
     product?.gallery_image_path,
+    galleryImage?.image_path,
     galleryImage?.image_full_url,
     galleryImage?.image_url,
-    galleryImage?.image_path,
   ];
 
   for (const candidate of candidates) {

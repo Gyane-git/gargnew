@@ -30,8 +30,14 @@ const pickAssetPath = (value, folder = "") => {
   if (!rawValue) return null;
   if (/^https?:\/\//i.test(rawValue)) return rawValue;
 
+  // Keep full public paths from excel/folder uploads as-is.
+  if (/^(images|backend|assets|uploads)\//i.test(normalizedValue)) {
+    return `/${normalizedValue}`;
+  }
+
   const filename = normalizedValue.split("/").filter(Boolean).pop() || normalizedValue;
   const candidates = uniqueCandidates([
+    normalizedValue.includes("/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("storage/app/public/backend/")
       ? `/${normalizedValue.replace(/^storage\/app\/public\//, "")}`
       : null,
@@ -46,7 +52,7 @@ const pickAssetPath = (value, folder = "") => {
   ]);
 
   const existing = candidates.find((candidate) => publicAssetExists(candidate));
-  return existing || candidates[0] || null;
+  return existing || candidates.find((candidate) => candidate?.startsWith("/images/") || candidate?.startsWith("/backend/") || candidate?.startsWith("/uploads/")) || candidates[0] || null;
 };
 
 export const assetUrl = (value, folder = "") => {
