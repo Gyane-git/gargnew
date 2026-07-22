@@ -8,8 +8,6 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { baseUrl } from "@/utils/config";
-import useCartStore from "@/stores/useCartStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -98,8 +96,7 @@ export default function ReturnProduct() {
       formData.images.forEach((imgObj, index) => {
         fd.append("images[]", imgObj.file || imgObj); // safer: works for both {file} and File
       });
-      // console.log("fd data :", fd);
-      const response = await fetch(`${baseUrl}/customer/order/return`, {
+      const response = await fetch("/api/v1/customer/order/return", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("token")}`,
@@ -107,19 +104,24 @@ export default function ReturnProduct() {
         body: fd,
       });
 
-      const data = await response.json();
-      // console.log("API response:", data);
+      const raw = await response.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        data = { success: false, message: raw || "Server returned an invalid response." };
+      }
       
-      if (data.success) {
+      if (response.ok && data?.success) {
         setData(data);
         toast.success("Return request submitted!");
         setStep(2); // show renderStep2 instead of redirect
       } else {
-        toast.error(data.message || "Something went wrong");
+        toast.error(data?.message || "Something went wrong");
       }
     } catch (error) {
       // console.error("Error submitting form:", error);
-      toast.error("Failed to submit request");
+      toast.error(error?.message || "Failed to submit request");
     } finally {
       setIsSubmitting(false);
     }

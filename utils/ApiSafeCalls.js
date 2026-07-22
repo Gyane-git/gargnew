@@ -59,12 +59,25 @@ export const apiRequest = async (url, tokenReq = true, options = {}) => {
     ...options.headers,
   };
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 30000);
   let response;
   try {
-    response = await fetch(url, { ...options, headers });
+    response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
   } catch (err) {
+    clearTimeout(timeoutId);
     // console.log("Network error:", err);
     // console.warn(err);
+    if (err?.name === "AbortError") {
+      return {
+        success: false,
+        message: "Request timed out. Please try again.",
+      };
+    }
     return {
       success: false,
       message: "Network error or server unreachable.",
@@ -75,6 +88,7 @@ export const apiRequest = async (url, tokenReq = true, options = {}) => {
   try {
     data = await response.json();
   } catch (e) {
+    clearTimeout(timeoutId);
     // console.log("Invalid JSON from server:", e);
     // console.warn(e);
     return {
@@ -82,6 +96,8 @@ export const apiRequest = async (url, tokenReq = true, options = {}) => {
       message: "Server sent invalid JSON.",
     };
   }
+
+  clearTimeout(timeoutId);
 
   if (data.success || response.ok) {
     return data;

@@ -59,8 +59,10 @@ export default function CancellationModal({
       const iAgree = "Y";
       const description = customReason.trim() || selected?.reason_name || "";
 
-      await onConfirm(orderId, reasonId, description, iAgree);
-      onClose();
+      const result = await onConfirm(orderId, reasonId, description, iAgree);
+      if (result?.success) {
+        onClose();
+      }
     } catch (error) {
       // console.error("Error cancelling order:", error);
     } finally {

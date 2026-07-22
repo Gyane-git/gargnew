@@ -5,6 +5,7 @@ import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { buildOrderStatusEmail } from "@/lib/orderEmail";
 import { sendMail } from "@/utils/mailer";
+import { fetchOrderCancelReasonById, normalizeReasonText } from "@/utils/orderCancelReasons";
 
 const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
 
@@ -58,6 +59,30 @@ export async function PATCH(request, context) {
     const nextOrderStatus = normalizeStatus(body.order_status || body.orderStatus || order.orderStatus);
     const nextPaymentStatus = normalizeStatus(body.payment_status || body.paymentStatus || order.paymentStatus);
     const nextPaymentMethod = String(body.payment_mode || body.paymentMethod || order.paymentMethod || order.raw?.payment_method || "").trim() || null;
+    const cancelReasonId = String(body.cancel_reason_id || body.cancelReasonId || "").trim();
+    let cancelReasonText = String(body.cancel_reason || body.cancelReason || "").trim();
+
+    if (nextOrderStatus === "cancelled" && cancelReasonId) {
+      const reason = await fetchOrderCancelReasonById(cancelReasonId);
+      if (
+        reason &&
+        normalizeReasonText(reason.reason_type) === "cancel" &&
+        normalizeReasonText(reason.reason_for) === "supplier"
+      ) {
+        cancelReasonText = reason.reason_name || cancelReasonText;
+      }
+    }
+
+    if (nextOrderStatus === "cancelled" && !cancelReasonText) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please select a cancellation reason.",
+        },
+        { status: 422 },
+      );
+    }
+
     const orderColumns = await getTableColumns(connection, "orders");
     const updateFields = [];
     const updateValues = [];
@@ -113,7 +138,11 @@ export async function PATCH(request, context) {
       estimated_delivery_date: body.estimated_delivery_date || body.estimatedDelivery || null,
       delivery_date: body.delivery_date || body.deliveryDate || null,
       received_by: body.received_by || body.receivedBy || null,
-      cancellation_reason: body.cancel_reason || body.cancellation_reason || null,
+      cancellation_reason: cancelReasonText || body.cancellation_reason || null,
+      cancel_reason: cancelReasonText || body.cancel_reason || null,
+      reason: cancelReasonText || null,
+      reason_id: cancelReasonId || null,
+      cancel_reason_id: cancelReasonId || null,
       cancellation_notes: body.cancel_notes || body.cancellation_notes || null,
       paid_amount: body.paid_amount || null,
       reference_id: body.reference_id || body.referenceId || null,

@@ -79,12 +79,15 @@ export default function MyOrders() {
         setOrderlength((prev) => Math.max(0, prev - 1));
 
         toast.success("Order cancelled successfully");
+        return result;
       } else {
         toast.error(result.error || "Failed to cancel order");
+        return result;
       }
     } catch (error) {
       // console.error("Error cancelling order:", error);
       toast.error("An unexpected error occurred");
+      return { success: false, error: error.message || "An unexpected error occurred" };
     }
   };
 

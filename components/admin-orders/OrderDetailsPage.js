@@ -37,10 +37,11 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
   const [selectedPaymentMode, setSelectedPaymentMode] = useState("");
   const [shippingCarrier, setShippingCarrier] = useState("");
   const [shippingCarriers, setShippingCarriers] = useState([]);
+  const [cancelReasons, setCancelReasons] = useState([]);
+  const [selectedCancelReasonId, setSelectedCancelReasonId] = useState("");
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [receivedBy, setReceivedBy] = useState("");
-  const [cancelReason, setCancelReason] = useState("");
   const [cancelNotes, setCancelNotes] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
@@ -105,11 +106,44 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
     loadCarriers();
   }, []);
 
+  useEffect(() => {
+    const loadCancelReasons = async () => {
+      try {
+        const response = await fetch("/api/v1/order-cancel-reasons", { cache: "no-store" });
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to load cancellation reasons.");
+        }
+
+        const items = Array.isArray(data.reasons)
+          ? data.reasons.filter(
+              (reason) =>
+                String(reason.reason_type || "").trim().toLowerCase() === "cancel" &&
+                String(reason.reason_for || "").trim().toLowerCase() === "supplier",
+            )
+          : [];
+
+        setCancelReasons(items);
+      } catch (err) {
+        console.error(err);
+        setCancelReasons([]);
+      }
+    };
+
+    loadCancelReasons();
+  }, []);
+
   const statusLabel = useMemo(() => selectedOrderStatus || "processing", [selectedOrderStatus]);
   const paymentLabel = useMemo(() => selectedPaymentStatus || "unpaid", [selectedPaymentStatus]);
 
   const handleUpdate = async () => {
     if (!order) return;
+
+    if (selectedOrderStatus === "cancelled" && !selectedCancelReasonId) {
+      toast.error("Please select a cancellation reason.");
+      return;
+    }
 
     setSaving(true);
     setMessage("");
@@ -124,7 +158,11 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
         estimated_delivery_date: estimatedDelivery,
         delivery_date: deliveryDate,
         received_by: receivedBy,
-        cancel_reason: cancelReason,
+        cancel_reason_id: selectedOrderStatus === "cancelled" ? selectedCancelReasonId : "",
+        cancel_reason:
+          selectedOrderStatus === "cancelled"
+            ? cancelReasons.find((reason) => String(reason.id) === String(selectedCancelReasonId))?.reason_name || ""
+            : "",
         cancel_notes: cancelNotes,
         paid_amount: paidAmount,
         transaction_id: transactionId,
@@ -284,7 +322,18 @@ export default function OrderDetailsPage({ orderId, backHref, title = "Order Det
                   <div className="space-y-3 mt-4">
                     <div>
                       <label className="block text-sm text-slate-700 mb-1">Cancellation Reason</label>
-                      <input type="text" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className={inputClass} placeholder="Reason" />
+                      <select
+                        value={selectedCancelReasonId}
+                        onChange={(e) => setSelectedCancelReasonId(e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Select Reason</option>
+                        {cancelReasons.map((reason) => (
+                          <option key={reason.id} value={reason.id}>
+                            {reason.reason_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm text-slate-700 mb-1">Additional Notes</label>

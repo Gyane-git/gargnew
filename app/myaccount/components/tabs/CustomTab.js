@@ -52,6 +52,12 @@ const normalizeOrder = (order = {}) => {
     payment_method: order.payment_method || order.paymentMethod || "",
     payment_status: order.payment_status || order.paymentStatus || "unpaid",
     order_status: order.order_status || order.orderStatus || "processing",
+    return_available:
+      typeof order.return_available === "boolean"
+        ? order.return_available
+        : String(order.order_status || order.orderStatus || "")
+            .toLowerCase() ===
+          "delivered",
     invoice_email:
       order.invoice_email ||
       order.customer_email ||
@@ -192,12 +198,15 @@ export default function CustomTab({ status }) {
         setOrderlength((prev) => Math.max(0, prev - 1));
 
         toast.success("Order cancelled successfully");
+        return result;
       } else {
         toast.error(result.error || "Failed to cancel order");
+        return result;
       }
     } catch (error) {
       // console.error("Error cancelling order:", error);
       toast.error("An unexpected error occurred");
+      return { success: false, error: error.message || "An unexpected error occurred" };
     }
   };
 

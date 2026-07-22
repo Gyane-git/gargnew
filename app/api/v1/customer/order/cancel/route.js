@@ -79,15 +79,40 @@ export async function POST(request) {
     const columns = await getTableColumns(connection, TABLE);
     const reasonLabel = reason.reason_name || "";
     const reasonText = reasonDescription || reasonLabel;
+    const customerName =
+      authUser?.full_name ||
+      authUser?.name ||
+      order.shipping_full_name ||
+      order.billing_full_name ||
+      "Customer";
+    const customerEmail =
+      authUser?.email ||
+      order.shipping_invoice_email ||
+      order.invoice_email ||
+      "";
+    const customerPhone =
+      authUser?.phone ||
+      order.shipping_phone ||
+      order.billing_phone ||
+      "";
     const insertData = {};
 
+    if (columns.includes("full_name")) insertData.full_name = customerName;
+    if (columns.includes("name")) insertData.name = customerName;
+    if (columns.includes("customer_name")) insertData.customer_name = customerName;
+    if (columns.includes("email")) insertData.email = customerEmail;
+    if (columns.includes("phone")) insertData.phone = customerPhone;
     if (columns.includes("order_id")) insertData.order_id = order.order_id || order.id;
+    if (columns.includes("order_number")) insertData.order_number = order.order_id || order.id;
     if (columns.includes("customer_id")) insertData.customer_id = order.customer_id || null;
     if (columns.includes("reason_id")) insertData.reason_id = reason.id;
     if (columns.includes("reason")) insertData.reason = reasonLabel;
     if (columns.includes("cancel_reason")) insertData.cancel_reason = reasonLabel;
+    if (columns.includes("reason_name")) insertData.reason_name = reasonLabel;
+    if (columns.includes("cancel_reason_name")) insertData.cancel_reason_name = reasonLabel;
     if (columns.includes("reason_description")) insertData.reason_description = reasonText;
     if (columns.includes("description")) insertData.description = reasonText;
+    if (columns.includes("cancel_description")) insertData.cancel_description = reasonText;
     if (columns.includes("policy_checked")) insertData.policy_checked = policyChecked;
     if (columns.includes("status")) insertData.status = "cancelled";
     if (columns.includes("order_status")) insertData.order_status = "cancelled";

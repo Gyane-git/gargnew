@@ -130,7 +130,7 @@ export default function OrderListPage({
       "Order ID": row.orderId,
       Customer: row.customer,
       "Shipping Address": row.address,
-      "Total Items": row.orderItems?.length || 0,
+      "Total Items": row.totalItems,
       "Total Amount": row.totalAmount,
       "Order Status": row.orderStatus,
       "Payment Status": row.paymentStatus,
