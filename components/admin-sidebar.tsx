@@ -65,7 +65,7 @@ const menuItems = [
         icon: Users,
         
       },
-      { name: "Product-list", path: "/admin/products", icon: UserPlus },
+      { name: "Product-list", path: "/admin/products", icon: UserPlus, },
     ],
   },
   {

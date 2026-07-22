@@ -745,10 +745,10 @@ export const cancelOrder = async (
       };
     } else {
       // console.log("Failed to cancel order:", response);
-      toast.error(response?.errors[0].message || "Failed to cancel order");
+      toast.error(response?.errors?.[0]?.message || response?.message || "Failed to cancel order");
       return {
         success: false,
-        error: response?.errors?.[0]?.message || "Failed to cancel order",
+        error: response?.errors?.[0]?.message || response?.message || "Failed to cancel order",
       };
     }
   } catch (err) {

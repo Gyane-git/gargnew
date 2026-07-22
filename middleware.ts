@@ -14,6 +14,21 @@ const decodeJwtPayload = (token: string) => {
   }
 };
 
+const redirectToLogin = (req: NextRequest, clearToken = false) => {
+  const loginUrl = new URL("/admin/login", req.url);
+  const response = NextResponse.redirect(loginUrl);
+  if (clearToken) {
+    response.cookies.set("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0,
+      path: "/",
+    });
+  }
+  return response;
+};
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -27,21 +42,30 @@ export function middleware(req: NextRequest) {
 
   const token = req.cookies.get("token")?.value;
   if (!token) {
-    const loginUrl = new URL("/admin/login", req.url);
-    return NextResponse.redirect(loginUrl);
+    return redirectToLogin(req);
   }
 
   const payload = decodeJwtPayload(token);
-  const role = payload?.role || payload?.accountType || payload?.type || "";
-  if (!payload?.id || !canAccessAdminPath(pathname, role)) {
-    const landingPath = getAdminLandingPath(role);
+  const role = payload?.role || payload?.accountType || "";
+  const accountType = String(payload?.type || "").toLowerCase();
+
+  if (!payload?.id || accountType !== "admin") {
+    return redirectToLogin(req, true);
+  }
+
+  if (canAccessAdminPath(pathname, role)) {
+    return NextResponse.next();
+  }
+
+  const landingPath = getAdminLandingPath(role);
+
+  if (landingPath !== pathname && canAccessAdminPath(landingPath, role)) {
     return NextResponse.redirect(new URL(landingPath, req.url));
   }
 
-  return NextResponse.next();
+  return redirectToLogin(req, true);
 }
 
 export const config = {
   matcher: ["/admin/:path*"],
 };
-

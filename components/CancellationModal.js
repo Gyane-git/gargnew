@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { getCancellationReasons } from "@/utils/apiHelper";
 import { X, Loader2 } from "lucide-react";
-import TermsCheckbox from "./TermsCheckbox";
 import Link from "next/link";
 
 export default function CancellationModal({
@@ -24,6 +23,9 @@ export default function CancellationModal({
   };
   useEffect(() => {
     if (isOpen) {
+      setSelectedReason("");
+      setCustomReason("");
+      setAgreed(false);
       fetchReasons();
     }
   }, [isOpen]);
@@ -45,8 +47,9 @@ export default function CancellationModal({
   };
 
   const handleConfirm = async () => {
-    if (!selectedReason && !customReason.trim() && !agreed) {
-      alert("Please select a reason or provide a custom reason");
+    const selected = reasons.find((reason) => String(reason.id) === String(selectedReason));
+    if (!selectedReason || !agreed) {
+      alert("Please select a reason and accept the terms.");
       return;
     }
 
@@ -54,10 +57,9 @@ export default function CancellationModal({
     try {
       const reasonId = selectedReason;
       const iAgree = "Y";
+      const description = customReason.trim() || selected?.reason_name || "";
 
-      const description = customReason.trim();
-
-      await onConfirm(orderNumber, reasonId, description, iAgree);
+      await onConfirm(orderId, reasonId, description, iAgree);
       onClose();
     } catch (error) {
       // console.error("Error cancelling order:", error);
@@ -117,15 +119,15 @@ export default function CancellationModal({
                 </label>
               ))}
 
-              {/* Custom reason */}
               <div className="mt-4">
-                <p> Description</p>
-
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="Description for cancellation..."
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Add a short description for this cancellation..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows="3"
                 />
               </div>
@@ -163,9 +165,7 @@ export default function CancellationModal({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={
-                loading || (!selectedReason && agreed && !customReason.trim())
-              }
+              disabled={loading || !selectedReason || !agreed}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {loading ? (

@@ -6,7 +6,6 @@ import AdminHeaderBar from "@/components/admin-HeaderBar";
 import SideHeaderBar from "@/components/admin-sidebar";
 import { ToastContainer } from "react-toastify";
 import { canAccessAdminPath, getAdminLandingPath } from "@/utils/adminAccess";
-import { Loader2 } from "lucide-react";
 
 export default function AdminLayout({
   children,
@@ -31,7 +30,10 @@ export default function AdminLayout({
       setChecking(true);
 
       try {
-        const res = await fetch("/api/v1/admin/auth/me", { cache: "no-store" });
+        const res = await fetch("/api/v1/admin/auth/me", {
+          cache: "no-store",
+          credentials: "include",
+        });
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data?.success || !data.admin) {

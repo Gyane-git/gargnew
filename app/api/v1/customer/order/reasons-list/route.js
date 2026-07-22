@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
-import { fetchOrderCancelReasons } from "@/utils/orderCancelReasons";
+import { fetchOrderCancelReasons, normalizeReasonText } from "@/utils/orderCancelReasons";
 
 export async function GET() {
   try {
     const reasons = await fetchOrderCancelReasons();
+    const filteredReasons = reasons.filter(
+      (reason) =>
+        normalizeReasonText(reason.reason_type) === "cancel" &&
+        normalizeReasonText(reason.reason_for) === "customer",
+    );
 
     return NextResponse.json({
       success: true,
-      reasons,
+      reasons: filteredReasons,
     });
   } catch (error) {
     return NextResponse.json(

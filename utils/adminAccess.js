@@ -30,6 +30,10 @@ const ADMIN_PREFIXES = [
   "/admin/poster-card",
   "/admin/profile",
   "/admin/CIPS-transaction-report",
+  "/admin/upload-product-images",
+  "/admin/upload-image-folder",
+  "/admin/orders",
+  "/admin/return-cancell-reasons",
 ];
 
 const normalizeRole = (role) => String(role || "").trim().toLowerCase();
@@ -48,6 +52,11 @@ export const canAccessAdminPath = (pathname, role) => {
   const normalizedRole = normalizeRole(role);
 
   if (currentPath === "/admin/login") {
+    return true;
+  }
+
+  // Dashboard is the default landing page for every authenticated admin.
+  if (currentPath === "/admin/dashboard" || currentPath.startsWith("/admin/dashboard/")) {
     return true;
   }
 

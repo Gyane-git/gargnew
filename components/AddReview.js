@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { apiRequest } from "@/utils/ApiSafeCalls";
+import { getCustomerInfo } from "@/utils/customerApi";
+import { useEffect } from "react";
 
 export default function ReviewPage({
   orderId,
@@ -14,6 +16,9 @@ export default function ReviewPage({
   const [reviewText, setReviewText] = useState("");
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerLoading, setCustomerLoading] = useState(false);
   const showModal = showAddReview;
 
   const ratingTexts = {
@@ -47,6 +52,26 @@ export default function ReviewPage({
     }
   };
 
+  useEffect(() => {
+    const loadCustomer = async () => {
+      if (!showModal) return;
+      setCustomerLoading(true);
+      try {
+        const response = await getCustomerInfo();
+        if (response.success && response.data) {
+          setCustomerName(response.data.full_name || response.data.name || "");
+          setCustomerEmail(response.data.email || "");
+        }
+      } catch (error) {
+        // keep form usable even if profile lookup fails
+      } finally {
+        setCustomerLoading(false);
+      }
+    };
+
+    loadCustomer();
+  }, [showModal]);
+
   const handlePhotoUpload = (e) => {
   const files = Array.from(e.target.files);
 
@@ -74,32 +99,17 @@ export default function ReviewPage({
 
     setIsSubmitting(true);
     try {
-      // console.log("submitting review");
-      // console.log("selectedPhotos", selectedPhotos);
-      // console.log("currentRating", currentRating);
-      // console.log("reviewText", reviewText);
-      // console.log("productId", productId);
-      // console.log("orderNumber", orderNumber);
-      // const response = await apiRequest(`/customer/reviews/add`, true, {
-      //   method: "POST",
-      //   body: JSON.stringify({
-      //     rating: currentRating,
-      //     review_detail: reviewText,
-      //     product_code: productId,
-      //     order_id: orderNumber.toString(),
-      //     image_path : selectedPhotos
-      //   }),
-      //   // photos: selectedPhotos,
-      // });
-
-      const response = await apiRequest(`/customer/reviews/add`, true, {
+      const response = await apiRequest(`/customers/reviews/add`, true, {
         method: "POST",
         body: JSON.stringify({
           rating: currentRating,
           review_detail: reviewText,
           product_code: productId,
           order_id: orderNumber.toString(),
-          image_path: selectedPhotos|| "", 
+          name: customerName || "",
+          email: customerEmail || "",
+          customer_id: null,
+          image_path: selectedPhotos.length ? selectedPhotos[0] : null,
         }),
       });
 
@@ -115,19 +125,14 @@ export default function ReviewPage({
         );
       }
       if (response.success) {
-        setTimeout(() => {
-          // Reset form
-          toast.success(
-            response?.message ||
-              "Review submitted successfully! Thank you for your feedback."
-          );
-          setCurrentRating(0);
-          setReviewText("");
-          setSelectedPhotos([]);
-          setIsSubmitting(false);
-          closeModal();
-          // setShowModal(false);
-        }, 1000);
+        toast.success(
+          response?.message ||
+            "Review submitted successfully! Thank you for your feedback."
+        );
+        setCurrentRating(0);
+        setReviewText("");
+        setSelectedPhotos([]);
+        closeModal();
       }
     } catch (error) {
       // console.error("Error submitting review:", error);
@@ -195,6 +200,23 @@ export default function ReviewPage({
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Tell us about your visit, treatment quality, staff behavior, and overall experience..."
                   className="w-full min-h-32 p-4 border-2 border-blue-100 rounded-xl text-sm leading-relaxed resize-y focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600 focus:ring-opacity-10 transition-all duration-300"
+                />
+              </div>
+
+              <div className="mb-6 grid grid-cols-1 gap-3">
+                <input
+                  type="text"
+                  value={customerName}
+                  readOnly
+                  placeholder={customerLoading ? "Loading your profile..." : "Your name"}
+                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-sm text-gray-700"
+                />
+                <input
+                  type="email"
+                  value={customerEmail}
+                  readOnly
+                  placeholder={customerLoading ? "Loading your profile..." : "Your email"}
+                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-sm text-gray-700"
                 />
               </div>
 
