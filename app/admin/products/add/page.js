@@ -380,14 +380,14 @@ export default function AddProductPage() {
                   className={inputCls}
                 />
               </Field>
-              <Field label="Slug" hint="Auto-generated from name">
+              {/* <Field label="Slug" hint="Auto-generated from name">
                 <input
                   value={form.slug}
                   onChange={set("slug")}
                   placeholder="product-slug"
                   className={inputCls}
                 />
-              </Field>
+              </Field> */}
               <Field label="Delivery Target Days">
                 <input
                   value={form.delivery_target_days}
@@ -420,14 +420,14 @@ export default function AddProductPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Product Location">
+              {/* <Field label="Product Location">
                 <input
                   value={form.product_location}
                   onChange={set("product_location")}
                   placeholder="e.g. Warehouse A, Shelf 3"
                   className={inputCls}
                 />
-              </Field>
+              </Field> */}
             </div>
             <div className="mt-5">
               <Field label="Product Description">

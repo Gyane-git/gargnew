@@ -63,7 +63,7 @@ const menuItems = [
         name: "Add Product",
         path: "/admin/products/add",
         icon: Users,
-        count: 1284,
+        
       },
       { name: "Product-list", path: "/admin/products", icon: UserPlus },
     ],
@@ -78,13 +78,13 @@ const menuItems = [
         name: "Add Category",
         path: "/admin/categories/add",
         icon: FileText,
-        count: 847,
+        
       },
       {
         name: "Category-list",
         path: "/admin/categories",
         icon: Bell,
-        count: 43,
+        
       },
     ],
   },
@@ -94,7 +94,7 @@ const menuItems = [
     path: "#",
     expandable: true,
     children: [
-      { name: "Add Brand", path: "/admin/brands/add", icon: Globe, count: 156 },
+      { name: "Add Brand", path: "/admin/brands/add", icon: Globe, },
       { name: "Brand-list", path: "/admin/brands", icon: Plus },
     ],
   },
@@ -105,7 +105,7 @@ const menuItems = [
     expandable: true,
     children: [
       { name: "Add-Banner", path: "/admin/banners/add", icon: Users },
-      { name: "Banner List", path: "/admin/banners", icon: Users, count: 10 },
+      { name: "Banner List", path: "/admin/banners", icon: Users, },
     ],
   },
   {
@@ -123,7 +123,7 @@ const menuItems = [
         name: "Processing-list",
         path: "/admin/orders/processing",
         icon: Clock,
-        count: 28,
+        
       },
       { name: "Shipping-list", path: "/admin/orders/shipped", icon: Calendar },
       {
@@ -149,7 +149,7 @@ const menuItems = [
         name: "Setup Page",
         path: "/admin/manage-clinical-setup/Setup-page",
         icon: MessageSquare,
-        count: 43,
+        
       },
       {
         name: "Setup Request List",
