@@ -249,6 +249,8 @@ const fetchShippingCost =async () => {
 
 
   const handleConfirmOrderIPS = async () =>{
+    setIsProcessing(true);
+    try {
     const transId = `Tx${generateUniqueId()}`;
     const refId = `Rf${generateUniqueId()}`
     const orderData = {
@@ -300,13 +302,17 @@ const fetchShippingCost =async () => {
 
             };
 
-        const tokenResponse = await fetch('/connectips/get_token', {
+    const tokenResponse = await fetch('/connectips/get_token', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(transactionDetails),
         });
 
           if (!tokenResponse.ok) {
-                    throw new Error('Failed to get payment token');
+                    const errorText = await tokenResponse.text();
+                    throw new Error(errorText || 'Failed to get payment token');
                   }
         
           const { TOKEN } = await tokenResponse.json();
@@ -327,6 +333,10 @@ const fetchShippingCost =async () => {
 
           document.body.appendChild(form);
           form.submit();
+    } catch (error) {
+      toast.error(error?.message || 'Failed to get payment token');
+      setIsProcessing(false);
+    }
 
 
   }

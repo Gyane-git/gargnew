@@ -37,11 +37,15 @@ const initiatePayment = async (transactionDetails: TransactionDetails) => {
   try {
     const tokenResponse = await fetch('/connectips/get_token', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(transactionDetails),
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to get payment token');
+      const errorText = await tokenResponse.text();
+      throw new Error(errorText || 'Failed to get payment token');
     }
 
     const { TOKEN } = await tokenResponse.json();
