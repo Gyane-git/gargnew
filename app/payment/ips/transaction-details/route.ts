@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 
 const MERCHANTID = process.env.NEXT_PUBLIC_CONNECTIPS_MERCHANTID;
 const APPID = process.env.NEXT_PUBLIC_CONNECTIPS_APPID;
-const VALIDATION_URL = process.env.CONNECTIPS_VALIDATION_API_URL;
+const DETAILS_URL = process.env.NEXT_PUBLIC_CONNECTIPS_GETDETAILS_URL;
 
 const normalizeReferenceId = (body: Record<string, unknown>) =>
   String(body.REFERENCEID ?? body.referenceId ?? body.reference_id ?? '');
@@ -16,12 +16,12 @@ const normalizeAmount = (body: Record<string, unknown>) =>
 
 export async function POST(request: Request) {
   try {
-    if (!MERCHANTID || !APPID || !VALIDATION_URL) {
+    if (!MERCHANTID || !APPID || !DETAILS_URL) {
       return NextResponse.json(
         {
           success: false,
           status: 'ERROR',
-          statusDesc: 'ConnectIPS validation configuration is missing.',
+          statusDesc: 'ConnectIPS transaction details configuration is missing.',
         },
         { status: 500 }
       );
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       TXNAMT: payload.txnAmt,
     });
 
-    const { response, data } = await postConnectipsJson(VALIDATION_URL, {
+    const { response, data } = await postConnectipsJson(DETAILS_URL, {
       ...payload,
       token,
     });
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         {
           success: false,
           status: 'ERROR',
-          statusDesc: 'ConnectIPS validation request failed.',
+          statusDesc: 'ConnectIPS transaction-details request failed.',
           upstream: data,
         },
         { status: response.status }

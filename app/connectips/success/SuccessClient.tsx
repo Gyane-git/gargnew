@@ -18,19 +18,15 @@ export default function SuccessClient() {
       method: "POST",
       body: JSON.stringify({ referenceId: refId }),
     });
-    if (!response.success) {
-      setResult([
-        {
-          status: "FAIILED",
-        },
-      ]);
+    if (!response) {
+      return { status: "ERROR", statusDesc: "No response from validation service" };
     }
-    if (response.success) {
-      const data = response.response;
-      // console.log(data);
-      return data;
+
+    if (response.success === false) {
+      return response;
     }
-    return response;
+
+    return response.response || response;
   };
 
   useEffect(() => {

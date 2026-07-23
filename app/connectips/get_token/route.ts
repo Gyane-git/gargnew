@@ -1,41 +1,23 @@
 import { NextResponse } from 'next/server';
 
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { createConnectipsToken } from '@/lib/connectips-server';
 
-import NodeRSA from 'node-rsa';
-import pem, { type Pkcs12ReadResult } from 'pem';
-
-import { objectToKeyValueString } from '@/utils/payments/objectToKeyValueString';
-
-const PASS = process.env.CONNECTIPS_CREDITOR_PASSWORD;
-
-const filePath = path.join(process.cwd(), 'signatures', 'CREDITOR.pfx');
-const pfx = fs.readFileSync(filePath);
-
-const getPrivateKey = async (): Promise<Pkcs12ReadResult['key']> => {
-  return new Promise((resolve, reject) => {
-    pem.readPkcs12(pfx, { p12Password: PASS }, (err, cert) => {
-      if (cert) {
-        resolve(cert.key);
-      } else {
-        reject(err);
-      }
-    });
-  });
-};
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  // console.log('Get Token Body:', body);
-  const message = objectToKeyValueString(body);
+  try {
+    const body = (await request.json()) as Record<string, unknown>;
+    const token = await createConnectipsToken(body);
 
-  const key = new NodeRSA(await getPrivateKey()).exportKey('pkcs8');
-
-  const sign = crypto.createSign('SHA256');
-  sign.update(message);
-  const signature = sign.sign(key, 'base64');
-
-  return NextResponse.json({ TOKEN: signature });
+    return NextResponse.json({ TOKEN: token });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        status: 'ERROR',
+        statusDesc: error instanceof Error ? error.message : 'Failed to generate ConnectIPS token.',
+      },
+      { status: 500 }
+    );
+  }
 }
