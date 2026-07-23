@@ -360,7 +360,6 @@ const DentalSuppliesListing = () => {
             </div> */}
           </div>
         </div>
-
         {/* Filters */}
         <div className="mb-6 sm:mb-8  pb-4 sm:pb-6 border-b">
           <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 sm:gap-4">
@@ -451,14 +450,28 @@ const DentalSuppliesListing = () => {
             )}
           </div>
         </div>
+        {(loading || loadings || loadingcategory) && (
+          <div className="min-h-100 flex items-center justify-center bg-gray-50">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex gap-2">
+                <span className="h-6 w-6 rounded-full bg-indigo-600 animate-bounce"></span>
+                <span
+                  className="h-6 w-6 rounded-full bg-orange-600 animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></span>
+                <span
+                  className="h-6 w-6 rounded-full bg-indigo-600 animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></span>
+              </div>
 
-        {/* {(loading || loadings || loadingcategory) && (
-          <div className="flex justify-center items-center h-48">
-            <Loader2 className="flex justify-center self-center h-4 w-4 animate-spin" />
-            <span className="ml-2">Loading products...</span>
+              <p className="text-gray-600 text-sm font-medium">
+                Loading Products
+              </p>
+            </div>
           </div>
-        )} */}
-
+        )}{" "}
+        */{"}"}
         {!loading &&
           !loadings &&
           !loadingcategory &&
