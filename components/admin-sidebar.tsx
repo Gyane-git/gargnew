@@ -45,6 +45,22 @@ import {
   Video,
 } from "lucide-react";
 
+type SidebarChildItem = {
+  name: string;
+  path: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  count?: number | string;
+};
+
+type SidebarItem = {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  path: string;
+  description?: string;
+  expandable?: boolean;
+  children?: SidebarChildItem[];
+};
+
 const menuItems = [
   {
     icon: LayoutDashboard,
@@ -304,7 +320,7 @@ const EducationSidebar = ({ adminRole = "" }) => {
   };
 
   const isActive = (path) => pathname === path;
-  const canShowItem = (item) => {
+  const canShowItem = (item: SidebarItem) => {
     if (item.expandable && item.children) {
       return item.children.some((child) =>
         canAccessAdminPath(child.path, adminRole),
@@ -320,7 +336,7 @@ const EducationSidebar = ({ adminRole = "" }) => {
 
       {/* Scrollable Nav */}
       <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2 mb-10 border-b-1">
-        {menuItems.filter(canShowItem).map((item) => {
+        {menuItems.filter(canShowItem).map((item: SidebarItem) => {
           const Icon = item.icon;
           const active = isActive(item.path) && !item.expandable;
           const expanded = expandedItems[item.label];
