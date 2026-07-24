@@ -266,7 +266,7 @@ const HeaderBarNew = () => {
                 <Link href="/hot-sales" className="hover:underline font-semibold hover:text-[#1FA2FF] hover:scale-105 transition-all duration-200 cursor-pointer">
                   Flash Sales
                 </Link>
-                <Link href="/NewClinicSetup" className="hover:underline font-semibold hover:text-[#1FA2FF] hover:scale-105 transition-all duration-200 cursor-pointer">
+                <Link href="/new-clinic-setup" className="hover:underline font-semibold hover:text-[#1FA2FF] hover:scale-105 transition-all duration-200 cursor-pointer">
                   New Clinic Setup
                 </Link>
               </div>

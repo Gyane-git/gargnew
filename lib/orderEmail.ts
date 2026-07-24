@@ -1,6 +1,3 @@
-// orderEmails.ts
-// TypeScript HTML builder functions for Garg Dental order emails.
-// Converted from Laravel Blade templates -> plain template-literal functions.
 
 const BASE_URL = process.env.BASE_URL || "https://gagrdental.com";
 
