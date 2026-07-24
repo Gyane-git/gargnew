@@ -39,23 +39,12 @@ export default function HomePage() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65">
           <div className="relative rounded-2xl bg-transparent p-2 mx-4 sm:mx-8 md:mx-0">
             {/* Close button */}
-            <button
-              onClick={() => setShowSplash(false)}
-              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black text-lg text-white transition hover:scale-110"
-              aria-label="Close"
-            >
+            <button onClick={() => setShowSplash(false)} className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black text-lg text-white transition hover:scale-110" aria-label="Close">
               ✕
             </button>
 
             {/* Offer image */}
-            <Image
-              src={offerImage}
-              alt="Dental Nepal Offer"
-              width={1000}
-              height={680}
-              priority
-              className="rounded-xl max-w-[92vw] sm:max-w-full h-auto"
-            />
+            <Image src={offerImage} alt="Dental Nepal Offer" width={1300} height={950} priority className="rounded-xl max-w-[92vw] sm:max-w-full h-auto" />
           </div>
         </div>
       )}
