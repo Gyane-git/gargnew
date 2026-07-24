@@ -41,17 +41,14 @@ export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
   const params = [];
 
   if (activeOnly) {
-    conditions.push("(is_active = 1 OR status = 1)");
+    conditions.push("(is_active = 1)");
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const limitSql = Number(limit) > 0 ? "LIMIT ?" : "";
   if (limitSql) params.push(Number(limit));
 
-  const [rows] = await pool.query(
-    `SELECT * FROM ${TABLE} ${where} ORDER BY id DESC ${limitSql}`,
-    params,
-  );
+  const [rows] = await pool.query(`SELECT * FROM ${TABLE} ${where} ORDER BY id DESC ${limitSql}`, params);
 
   return rows.map(formatOffer);
 };
@@ -78,7 +75,7 @@ export const saveOffer = async ({ id = null, body = {}, file = null } = {}) => {
   const title = String(body.title || existing?.title || "").trim();
   const startDate = String(body.start_date || body.startDate || existing?.start_date || "").trim() || null;
   const endDate = String(body.end_date || body.endDate || existing?.end_date || "").trim() || null;
-  const isActive = normalizeBoolean(body.is_active ?? body.active ?? existing?.is_active ?? existing?.status ?? 1, 1);
+  const isActive = normalizeBoolean(body.is_active ?? body.active ?? existing?.is_active ?? 1, 1);
   const isOffer = normalizeBoolean(body.is_offer ?? body.isOffer ?? existing?.is_offer ?? 1, 1);
 
   if (!title) {
@@ -102,7 +99,6 @@ export const saveOffer = async ({ id = null, body = {}, file = null } = {}) => {
   if (columns.includes("start_date")) payload.start_date = startDate;
   if (columns.includes("end_date")) payload.end_date = endDate;
   if (columns.includes("is_active")) payload.is_active = isActive;
-  if (columns.includes("status")) payload.status = isActive;
   if (columns.includes("is_offer")) payload.is_offer = isOffer;
   if (columns.includes("created_at") && !id) payload.created_at = new Date();
   if (columns.includes("updated_at")) payload.updated_at = new Date();
@@ -121,10 +117,7 @@ export const saveOffer = async ({ id = null, body = {}, file = null } = {}) => {
     const values = keys.map((key) => payload[key]);
     const placeholders = keys.map(() => "?").join(", ");
 
-    const [result] = await pool.query(
-      `INSERT INTO ${TABLE} (${insertColumns}) VALUES (${placeholders})`,
-      values,
-    );
+    const [result] = await pool.query(`INSERT INTO ${TABLE} (${insertColumns}) VALUES (${placeholders})`, values);
 
     return {
       success: true,
@@ -135,10 +128,7 @@ export const saveOffer = async ({ id = null, body = {}, file = null } = {}) => {
   const setClause = keys.map((key) => `\`${key}\` = ?`).join(", ");
   const values = keys.map((key) => payload[key]);
 
-  const [result] = await pool.query(
-    `UPDATE ${TABLE} SET ${setClause} WHERE id = ?`,
-    [...values, id],
-  );
+  const [result] = await pool.query(`UPDATE ${TABLE} SET ${setClause} WHERE id = ?`, [...values, id]);
 
   return {
     success: true,
