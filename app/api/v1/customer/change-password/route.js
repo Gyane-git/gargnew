@@ -52,7 +52,7 @@ export async function POST(req) {
     const passwordMatches = await comparePassword(currentPassword, rows[0].password);
     if (!passwordMatches) {
       return Response.json(
-        { success: false, message: "Current password is incorrect." },
+        { success: false, message: "Current password is incorrectfffffffffffff." },
         { status: 422 },
       );
     }

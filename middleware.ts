@@ -32,6 +32,14 @@ const redirectToLogin = (req: NextRequest, clearToken = false) => {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  const token = req.cookies.get("token")?.value;
+
+  const customerAuthRoutes = ["/account", "/account/signup"];
+
+  if (token && customerAuthRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL("/myaccount", req.url));
+  }
+
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
@@ -40,7 +48,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get("token")?.value;
   if (!token) {
     return redirectToLogin(req);
   }
@@ -67,5 +74,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/account", "/account/:path*"],
 };

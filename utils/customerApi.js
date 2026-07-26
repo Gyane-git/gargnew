@@ -26,11 +26,7 @@ export const getCustomerInfo = async () => {
 // Update customer profile
 export const updateCustomerProfile = async (profileData) => {
   try {
-    const response = await apiPostRequest(
-      "/customer/update-profile",
-      profileData,
-      true
-    );
+    const response = await apiPostRequest("/customer/update-profile", profileData, true);
     // console.log("Update profile response:", response);
     // console.log("Update profile data:", profileData);
     // const res = await apiPostRequest("/customer/update-profile", profileData, true);
@@ -58,20 +54,21 @@ export const updateCustomerProfile = async (profileData) => {
 // Change customer password
 export const changeCustomerPassword = async (passwordData) => {
   try {
-    const response = await apiPostRequest(
-      "/customer/change-password",
-      passwordData,
-      true
-    );
-    // console.log("Change password response:", response);
-    // console.log("Change password data:", passwordData);
+    const response = await apiPostRequest("/customer/change-password", passwordData, true);
+
+    if (!response.success) {
+      return {
+        success: false,
+        error: response.message || "Failed to change password",
+      };
+    }
+
     return {
       success: true,
       data: response,
       message: response.message || "Password changed successfully",
     };
   } catch (error) {
-    // console.error("Error changing password:", error);
     return {
       success: false,
       error: error.message || "Failed to change password",
@@ -93,9 +90,7 @@ export const removeCustomerAccount = async () => {
         success: false,
         error: response?.errors[0].message || "Failed to remove account",
       };
-    }
-    else{
-
+    } else {
       return {
         success: true,
         message: response.message || "Account removed successfully",
@@ -144,10 +139,7 @@ export const validatePasswordData = (data) => {
     errors.new_password = "New password must be at least 6 characters long";
   }
 
-  if (
-    !data.new_password_confirmation ||
-    data.new_password_confirmation !== data.new_password
-  ) {
+  if (!data.new_password_confirmation || data.new_password_confirmation !== data.new_password) {
     errors.new_password_confirmation = "Passwords do not match";
   }
 

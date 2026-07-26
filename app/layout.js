@@ -11,7 +11,6 @@ import TawkToWidget from "@/components/TawkToWidget";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import ClientLayout from "./ClientLayout";
 import LayoutWrapper from "@/components/LayoutWrapper";
-// import { useProductStore } from "@/stores/InitdataFetch";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
