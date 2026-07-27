@@ -248,11 +248,6 @@ const HeaderBarNew = () => {
             </div>
           </div>
 
-          {/* Mobile Search Bar - Always visible on mobile when not on product page */}
-          {/* <div className="flex md:hidden items-center w-full px-4">
-            <SearchBar className="w-full" />
-          </div> */}
-
           {/* Desktop Login Section */}
           <div className="sm:block w-full bg-gray-50 border-t border-b border-gray-200 rounded-lg px-2 sm:px-6 py-3">
             <div className="max-w-7xl mx-auto flex justify-center">
