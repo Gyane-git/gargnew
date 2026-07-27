@@ -88,7 +88,7 @@ export const removeCustomerAccount = async () => {
       // toast.error(response?.errors[0].message || "Failed to remove account");
       return {
         success: false,
-        error: response?.errors[0].message || "Failed to remove account",
+        error: response?.errors?.[0]?.message || response?.message || "Failed to remove account",
       };
     } else {
       return {

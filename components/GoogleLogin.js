@@ -88,7 +88,7 @@ const GoogleLoginButton = () => {
       // console.warn("Login failed:", data);
       useWarningModalStore.getState().open({
         title: "Error",
-        message: data?.errors[0]?.message || "Server Error !",
+        message: data?.errors?.[0]?.message || data?.message || "Server Error !",
       });
     }
   };

@@ -102,7 +102,7 @@ export async function POST(request) {
 
     const table = (await resolveTable(connection)) || TABLE;
     const columns = await getColumns(connection, table);
-    const returnId = `R${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const returnId = Number(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
     const customerName =
       authUser?.full_name ||
       authUser?.name ||
@@ -143,7 +143,8 @@ export async function POST(request) {
     if (columns.includes("customer_id")) insertData.customer_id = order.customer_id || authUser.id;
     if (columns.includes("reason_id")) insertData.reason_id = reason.id;
     if (columns.includes("reason")) insertData.reason = reason.reason_name || "";
-    if (columns.includes("return_reason")) insertData.return_reason = reason.reason_name || "";
+    if (columns.includes("return_reason")) insertData.return_reason = reason.id;
+    if (columns.includes("return_reason_text")) insertData.return_reason_text = reason.reason_name || "";
     if (columns.includes("reason_name")) insertData.reason_name = reason.reason_name || "";
     if (columns.includes("return_reason_name")) insertData.return_reason_name = reason.reason_name || "";
     if (columns.includes("return_description")) insertData.return_description = reasonDescription;
@@ -180,6 +181,10 @@ export async function POST(request) {
       updateFields.push("order_status = ?");
       updateValues.push("returned");
     }
+    if (orderColumns.includes("status")) {
+      updateFields.push("status = ?");
+      updateValues.push("returned");
+    }
     if (orderColumns.includes("updated_at")) {
       updateFields.push("updated_at = NOW()");
     }
@@ -190,27 +195,25 @@ export async function POST(request) {
       );
     }
 
-    try {
-      await recordAuditLog(connection, {
-        admin_name: authUser?.name || authUser?.full_name || authUser?.email || "Customer",
-        role: authUser?.role || authUser?.user_role || "Customer",
-        action: "Returned",
-        module: "orders",
-        model: "Order",
-        record_id: order.order_id,
-        summary: `Order ${order.order_id} return requested`,
-        ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
-        metadata: {
-          order_id: order.order_id,
-          reason_id: reason.id,
-          reason: reason.reason_name || "",
-          reason_description: reasonDescription,
-          image_paths: imagePaths,
-        },
-      });
-    } catch (auditError) {
+    void recordAuditLog(pool, {
+      admin_name: authUser?.name || authUser?.full_name || authUser?.email || "Customer",
+      role: authUser?.role || authUser?.user_role || "Customer",
+      action: "Returned",
+      module: "orders",
+      model: "Order",
+      record_id: order.order_id,
+      summary: `Order ${order.order_id} return requested`,
+      ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
+      metadata: {
+        order_id: order.order_id,
+        reason_id: reason.id,
+        reason: reason.reason_name || "",
+        reason_description: reasonDescription,
+        image_paths: imagePaths,
+      },
+    }).catch((auditError) => {
       console.error("RETURN AUDIT LOG ERROR:", auditError.message);
-    }
+    });
 
     return NextResponse.json({
       success: true,

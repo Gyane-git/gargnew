@@ -15,10 +15,11 @@ export default function ClientLayout({ children }) {
     const fetchSettings = async () => {
       const response = await apiRequest("/settings", false);
       if (response.success) {
-        const { free_shipping_threshold_inside_of_valley, free_shipping_threshold_out_of_valley } = response.settings;
-
-        const freeShipping_threshold_inside_of_valley = free_shipping_threshold_inside_of_valley?.value || null;
-        const freeShipping_threshold_out_of_valley = free_shipping_threshold_out_of_valley?.value || null;
+        const settings = response?.settings || {};
+        const freeShippingThresholdInside = settings.free_shipping_threshold_inside_of_valley || {};
+        const freeShippingThresholdOutside = settings.free_shipping_threshold_out_of_valley || {};
+        const freeShipping_threshold_inside_of_valley = freeShippingThresholdInside?.value || null;
+        const freeShipping_threshold_out_of_valley = freeShippingThresholdOutside?.value || null;
         if (freeShipping_threshold_inside_of_valley && freeShipping_threshold_out_of_valley && !isNaN(parseFloat(freeShipping_threshold_out_of_valley)) && !isNaN(parseFloat(freeShipping_threshold_inside_of_valley))) {
           const thresholdInside = parseFloat(freeShipping_threshold_inside_of_valley);
           const thresholdOutside = parseFloat(freeShipping_threshold_out_of_valley);
@@ -26,7 +27,9 @@ export default function ClientLayout({ children }) {
           setOutOfValleyThreshold(thresholdOutside);
         }
       } else {
-        toast.error(response?.errors[0]?.message || "Failed to fetch settings");
+        // console.error("Failed to fetch settings:", response.error);
+        toast.error(response?.errors?.[0]?.message || response?.message || "Failed to fetch settings");
+
       }
     };
     fetchSettings();

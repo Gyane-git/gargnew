@@ -381,7 +381,7 @@ export const getAddressDropdowns = async () => {
 export const sortAddressDropdowns = async () => {
   const response = await getAddressDropdowns();
   // console.log("response from fetchAddressDropdowns", response);
-  if (response.success && response.data) {
+  if (response?.success && Array.isArray(response?.data)) {
     // Transform the data to get provinces, cities, and zones
     const provinces = response.data.map((province) => ({
       id: province.id,
@@ -419,7 +419,12 @@ export const sortAddressDropdowns = async () => {
   } else {
     // console.error("Failed to fetch address dropdowns:", response.message);
     // setAddressDropdowns({});
-    return { error: response.message };
+    return {
+      provinces: [],
+      cities: [],
+      zones: [],
+      error: response?.message || "Failed to fetch address dropdowns",
+    };
   }
 };
 
@@ -726,6 +731,7 @@ export const cancelOrder = async (
     // console.log(orderId, reasonId, reasonDescription, iAgree);
     const response = await apiRequest("/customer/order/cancel", true, {
       method: "POST",
+      timeoutMs: 60000,
       body: JSON.stringify({
         order_id: orderId,
         reason_id: reasonId,
@@ -765,7 +771,8 @@ export const getCancelledOrders = async (status) => {
   try {
     const response = await apiRequest(
       `/customer/order/list?status=${status}`,
-      true
+      true,
+      { timeoutMs: 60000 }
     );
     if (response.success) {
       return {

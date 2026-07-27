@@ -88,7 +88,7 @@ export default function CustomTab({ status }) {
   const [ischanged, setIsChanged] = useState(false);
   useEffect(() => {
     fetchOrders(status);
-  }, [status, ischanged , cancellationModal.isOpen]);
+  }, [status, ischanged]);
 
   const fetchOrders = async (status) => {
     try {
@@ -191,11 +191,16 @@ export default function CustomTab({ status }) {
       if (result.success) {
         // Remove the cancelled order from the current list
         setOrders((prevOrders) =>
-          prevOrders.filter((order) => order.id !== orderId)
+          prevOrders.filter(
+            (order) =>
+              String(order.id) !== String(orderId) &&
+              String(order.order_id) !== String(orderId)
+          )
         );
 
         // Update the order count
         setOrderlength((prev) => Math.max(0, prev - 1));
+        setIsChanged((prev) => !prev);
 
         toast.success("Order cancelled successfully");
         return result;
@@ -260,8 +265,8 @@ export default function CustomTab({ status }) {
         <div className="text-center py-16 sm:py-20">
           <div className="text-red-600 text-base sm:text-lg mb-4">{error}</div>
           <button
-            aria-label="Try Again"
-            onClick={fetchOrders}
+          aria-label="Try Again"
+            onClick={() => fetchOrders(status)}
             className="px-4 py-2 sm:px-6 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base"
           >
             Try Again

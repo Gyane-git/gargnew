@@ -19,16 +19,14 @@ const HeaderBarNew = () => {
   const suppliesRef = useRef(null);
   const pathname = usePathname();
   const [searchTerm, setSearchTerm] = useState("");
-  const [user, setUser] = useState([
-    {
-      id: null,
-      full_name: "",
-      phone: "",
-      email: "",
-      image_full_url: "",
-      created_at: "",
-    },
-  ]);
+  const [user, setUser] = useState({
+    id: null,
+    full_name: "",
+    phone: "",
+    email: "",
+    image_full_url: "",
+    created_at: "",
+  });
   const [isloggedin, setIsloggedin] = useState(false);
 
   useEffect(() => {
@@ -124,14 +122,14 @@ const HeaderBarNew = () => {
     const fetchSettings = async () => {
       const response = await apiRequest("/settings", false);
       if (response.success) {
-        const { company_logo_header } = response.settings;
-
-        const headerLogo = company_logo_header?.header_logo_full_url || "";
+        const settings = response?.settings || {};
+        const companyLogoHeader = settings.company_logo_header || {};
+        const headerLogo = companyLogoHeader?.header_logo_full_url || "";
         setSettings({
           company_logo_header: headerLogo,
         });
       } else {
-        toast.error(response?.errors[0]?.message || "Failed to fetch settings");
+        toast.error(response?.errors?.[0]?.message || response?.message || "Failed to fetch settings");
       }
     };
     fetchSettings();
