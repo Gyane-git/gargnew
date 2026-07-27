@@ -606,9 +606,7 @@ export const addCustomerAddress = async (addressData) => {
 export const getAddress = async () => {
   try {
     const response = await apiRequest("/customer/address/list", true);
-    // return response;
     if (response.success) {
-      // console.log("response from getAddress", response.addresses);
       const allAddresses = response.addresses.map((addr) => ({
         id: addr.id,
         full_name: addr.full_name,

@@ -26,7 +26,6 @@ export default function FooterBar() {
     primary_email: "",
     primary_phone: "",
   });
-  // const [gender, setGender] = useState("male");
 
   const handleSubscribe = async (email) => {
     if (!email) {
@@ -86,7 +85,6 @@ export default function FooterBar() {
           address: addressData,
         });
       } else {
-        // console.error("Failed to fetch settings:", response.error);
         toast.error(response?.errors[0]?.message || "Failed to fetch settings");
       }
     };
@@ -99,6 +97,7 @@ export default function FooterBar() {
       <div className="bg-gradient-to-r from-[#446c87] via-[#76b9e6] to-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 sm:py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+            
             {/* Contact Us Section */}
             <div className="space-y-2 sm:space-y-4">
               <h3 className="text-base sm:text-xl font-semibold mb-3 sm:mb-6">

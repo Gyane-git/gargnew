@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  User,
-  MapPin,
-  List,
-  Heart,
-  MessageSquare,
-  RotateCcw,
-  Edit,
-} from "lucide-react";
+import { User, MapPin, List, Heart, MessageSquare, RotateCcw, Edit } from "lucide-react";
 
 import EditProfileForm from "./components/EditProfileForm";
 import EditAddressForm from "./components/EditAddressForm";
@@ -28,15 +20,9 @@ import MyReviews from "./components/MyReview";
 import Returnlist from "@/app/Return-list/Returnlist";
 import Complains from "./components/Complains";
 import useInfoModalStore from "@/stores/warningModalStore";
-import { getWishlist } from "@/utils/apiHelper";
 
 const AccountPage = () => {
-  const {
-    provinces = [],
-    cities = [],
-    zones = [],
-    fetchAddressDropdowns,
-  } = useAddressStore() || {};
+  const { provinces = [], cities = [], zones = [], fetchAddressDropdowns } = useAddressStore() || {};
 
   const [activeTab, setActiveTab] = useState("account");
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -105,13 +91,7 @@ const AccountPage = () => {
       // console.log("response", result);
 
       if (result.success) {
-        const {
-          data: userData,
-          allAddresses,
-          homeAddress,
-          defaultBillingAddress,
-          officeAddress,
-        } = result;
+        const { data: userData, allAddresses, homeAddress, defaultBillingAddress, officeAddress } = result;
 
         setUser({
           id: userData.id || "",
@@ -146,11 +126,7 @@ const AccountPage = () => {
       setLoading(true);
       setError(null);
       const result = await getCustomerOrders();
-      const orderList = Array.isArray(result.orders?.orders)
-        ? result.orders.orders
-        : Array.isArray(result.orders)
-          ? result.orders
-          : [];
+      const orderList = Array.isArray(result.orders?.orders) ? result.orders.orders : Array.isArray(result.orders) ? result.orders : [];
       const orderCount = Number(result.orders?.count ?? orderList.length ?? 0);
 
       if (result.success) {
@@ -167,72 +143,10 @@ const AccountPage = () => {
       setLoading(false);
     }
   };
-
-  //   const fetchWishlist = async () => {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-
-  //     const wishlistItems = await getWishlist();
-
-  //     setWishlist(wishlistItems);
-  //     setWishlistlength(wishlistItems.length || 0);
-
-  //     if (wishlistItems.length > 0) {
-  //       console.log(
-  //         "First wishlist item:",
-  //         JSON.stringify(wishlistItems[0], null, 2)
-  //       );
-  //     }
-  //   } catch (err) {
-  //     console.error("Error fetching wishlist:", err);
-  //     setError("Failed to load wishlist");
-  //     toast.error("Failed to load wishlist");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  //all data here
   useEffect(() => {
     fetchUserData();
     fetchOrders();
   }, []);
-  // //   try {
-  // //     setLoading(true);
-  // //     setError(null);
-  // //     const result = await fetchReview();
-
-  // //     console.log("Reviews API Response:", result);
-
-  // //     if (result.success) {
-  // //       const reviewItems = result.reviews || [];
-
-  // //       setReviews(reviewItems);
-  // //       setReviewlength(reviewItems.length || 0);
-
-  // //       if (reviewItems.length > 0) {
-  // //         console.log(
-  // //           "First review item:",
-  // //           JSON.stringify(reviewItems[0], null, 2)
-  // //         );
-  // //       }
-  // //     } else {
-  // //       setError(result.error);
-  // //       toast.error(result.error);
-  // //     }
-  // //   } catch (err) {
-  // //     console.error("Error fetching reviews:", err);
-  // //     setError("Failed to load reviews");
-  // //     toast.error("Failed to load reviews");
-  // //   } finally {
-  // //     setLoading(false);
-  // //   }
-  // // };
-  //   useEffect(() => {
-  //     fetchWishlist();
-
-  //   }, []);
 
   //update profile
   const handleUpdateProfile = (updatedData) => {
@@ -241,10 +155,8 @@ const AccountPage = () => {
       full_name: updatedData.full_name || "",
       email: updatedData.email || "",
       phone: updatedData.phone || "",
-      profileImage:
-        updatedData.image_full_url || updatedData.profile_photo_path || "",
-      profile_image:
-        updatedData.image_full_url || updatedData.profile_photo_path || "",
+      profileImage: updatedData.image_full_url || updatedData.profile_photo_path || "",
+      profile_image: updatedData.image_full_url || updatedData.profile_photo_path || "",
       created_at: updatedData.created_at,
     });
     setShowEditProfile(false);
@@ -252,14 +164,12 @@ const AccountPage = () => {
   };
 
   const handleAddAddress = (newAddress) => {
-    // console.log("newAddress", newAddress);
     fetchUserData();
     setShowEditAddress(false);
     toast.success("Address added successfully!");
   };
 
   const handleUpdateAddress = (updatedData) => {
-    // console.log("updatedData", updatedData);
     fetchUserData();
     setAddressToEdit(null);
     setShowEditAddress(false);
@@ -286,42 +196,20 @@ const AccountPage = () => {
     setShowEditAddress(true);
   };
 
- 
-
   if (isLoading || loading) {
     return <FullScreenLoader />;
   }
 
   if (showEditProfile) {
-    return (
-      <EditProfileForm
-        user={user}
-        onUpdate={handleUpdateProfile}
-        onCancel={() => setShowEditProfile(false)}
-      />
-    );
+    return <EditProfileForm user={user} onUpdate={handleUpdateProfile} onCancel={() => setShowEditProfile(false)} />;
   }
 
   if (showChangePassword) {
-    return (
-      <ChangePasswordForm
-        onCancel={() => setShowChangePassword(false)}
-        onSuccess={handlePasswordChangeSuccess}
-      />
-    );
+    return <ChangePasswordForm onCancel={() => setShowChangePassword(false)} onSuccess={handlePasswordChangeSuccess} />;
   }
 
   if (showEditAddress) {
-    return (
-      <EditAddressForm
-        address={addressToEdit}
-        onUpdate={handleUpdateAddress}
-        onCancel={() => setShowEditAddress(false)}
-        provinces={provinces}
-        cities={cities}
-        zones={zones}
-      />
-    );
+    return <EditAddressForm address={addressToEdit} onUpdate={handleUpdateAddress} onCancel={() => setShowEditAddress(false)} provinces={provinces} cities={cities} zones={zones} />;
   }
 
   return (
@@ -330,19 +218,11 @@ const AccountPage = () => {
         {/* Sidebar */}
         <aside className="w-full md:w-80 flex-shrink-0">
           <div className="bg-gray-50 rounded-xl shadow p-6 text-center">
-            <img
-              src={user.profile_image || '/assets/logo.png'}
-              alt="Profile"
-              className="w-28 h-28 rounded-full mx-auto mb-4 border-4 border-blue-100 object-contain"
-            />
-            <h3 className="font-bold text-xl text-gray-800">
-              {user.full_name}
-            </h3>
+            <img src={user.profile_image || "/assets/logo.png"} alt="Profile" className="w-28 h-28 rounded-full mx-auto mb-4 border-4 border-blue-100 object-contain" />
+            <h3 className="font-bold text-xl text-gray-800">{user.full_name}</h3>
             <p className="text-sm text-gray-500">{user.email}</p>
             <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
           </div>
-
-          
 
           <nav className="bg-gray-50 rounded-xl shadow p-4 mt-6">
             {sidebarItems.map((item) => (
@@ -353,20 +233,12 @@ const AccountPage = () => {
                   scrollToTop();
                 }}
                 className={`flex items-center w-full px-4 py-3 my-1 rounded-lg transition-colors text-left font-medium space-x-4 cursor-pointer
-                  ${
-                    activeTab === item.key
-                      ? "bg-blue-50 text-blue-800 font-bold shadow-sm"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }
+                  ${activeTab === item.key ? "bg-blue-50 text-blue-800 font-bold shadow-sm" : "hover:bg-gray-50 text-gray-700"}
                 `}
               >
                 <item.icon className="w-6 h-6" />
                 <span>{item.label}</span>
-                {item.badge !== undefined && (
-                  <span className="ml-auto bg-blue-600 text-white text-xs rounded-full px-2 py-1">
-                    {item.badge}
-                  </span>
-                )}
+                {item.badge !== undefined && <span className="ml-auto bg-blue-600 text-white text-xs rounded-full px-2 py-1">{item.badge}</span>}
               </button>
             ))}
           </nav>
@@ -374,20 +246,7 @@ const AccountPage = () => {
 
         {/* Main Content */}
         <main className="flex-1 min-w-0 bg-gray-50 rounded-xl shadow p-4 sm:p-6 lg:p-8">
-          {activeTab === "account" && (
-            <ManageMyAccount
-              onEditProfile={() => setShowEditProfile(true)}
-              user={user}
-              homeAddress={homeAddress}
-              defaultBillingAddress={defaultBillingAddress}
-              onEditAddress={() => setActiveTab("address")}
-              onChangePassword={handleChangePassword}
-              onRemoveAccount={handleRemoveAccount}
-              provinces={provinces}
-              cities={cities}
-              zones={zones}
-            />
-          )}
+          {activeTab === "account" && <ManageMyAccount onEditProfile={() => setShowEditProfile(true)} user={user} homeAddress={homeAddress} defaultBillingAddress={defaultBillingAddress} onEditAddress={() => setActiveTab("address")} onChangePassword={handleChangePassword} onRemoveAccount={handleRemoveAccount} provinces={provinces} cities={cities} zones={zones} />}
           {activeTab === "address" && (
             <AddressBook
               address={address}
@@ -404,19 +263,14 @@ const AccountPage = () => {
           )}
           {activeTab === "orders" && <MyOrders />}
           {activeTab === "wishlist" && <MyWishlist />}
-          {activeTab === "returnlist" && <Returnlist/>}
+          {activeTab === "returnlist" && <Returnlist />}
           {activeTab === "reviews" && <MyReviews />}
           {activeTab === "complaint" && <Complains />}
         </main>
       </div>
 
-      
-
       {/* Remove Account Modal */}
-      <RemoveAccountModal
-        isOpen={showRemoveAccount}
-        onClose={() => setShowRemoveAccount(false)}
-      />
+      <RemoveAccountModal isOpen={showRemoveAccount} onClose={() => setShowRemoveAccount(false)} />
     </div>
   );
 };

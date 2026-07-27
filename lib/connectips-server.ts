@@ -1,16 +1,15 @@
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 import pem, { type Pkcs12ReadResult } from 'pem';
 
-import { objectToKeyValueString } from '@/utils/payments/objectToKeyValueString';
+import { objectToKeyValueString } from "@/utils/payments/objectToKeyValueString";
 
 const CONNECTIPS_PEM_PATH = path.join(process.cwd(), 'storage', 'app', 'certificates', 'CREDITOR.pem');
 const CONNECTIPS_PFX_PATH = path.join(process.cwd(), 'signatures', 'CREDITOR.pfx');
 
-const normalizeSecret = (value?: string | null) =>
-  value?.trim().replace(/^['"]|['"]$/g, '') || '';
+const normalizeSecret = (value?: string | null) => value?.trim().replace(/^['"]|['"]$/g, "") || "";
 
 const env = (...keys: string[]) => {
   for (const key of keys) {
@@ -81,7 +80,7 @@ const readPrivateKeyFromPfx = async (pfx: Buffer, passwords: string[]) => {
             return;
           }
 
-          reject(err || new Error('Unable to read ConnectIPS private key.'));
+          reject(err || new Error("Unable to read ConnectIPS private key."));
         });
       });
 
@@ -91,12 +90,8 @@ const readPrivateKeyFromPfx = async (pfx: Buffer, passwords: string[]) => {
     }
   }
 
-  const attempted = passwords.length ? passwords.join(', ') : 'none';
-  throw new Error(
-    `Unable to open ConnectIPS PFX with the configured password candidates (${attempted}). ${
-      lastError instanceof Error ? lastError.message : 'Invalid password?'
-    }`
-  );
+  const attempted = passwords.length ? passwords.join(", ") : "none";
+  throw new Error(`Unable to open ConnectIPS PFX with the configured password candidates (${attempted}). ${lastError instanceof Error ? lastError.message : "Invalid password?"}`);
 };
 
 const getConnectipsPrivateKey = async (): Promise<crypto.KeyObject> => {
@@ -119,11 +114,7 @@ const getConnectipsPrivateKey = async (): Promise<crypto.KeyObject> => {
 };
 
 export const createConnectipsToken = async (payload: Record<string, unknown>) => {
-  const message = objectToKeyValueString(
-    Object.fromEntries(
-      Object.entries(payload).map(([key, value]) => [key, value === undefined || value === null ? '' : String(value)])
-    )
-  );
+  const message = objectToKeyValueString(Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, value === undefined || value === null ? "" : String(value)])));
 
   const privateKey = await getConnectipsPrivateKey();
   const signature = crypto.sign('sha256', Buffer.from(message, 'utf8'), privateKey);
@@ -136,21 +127,21 @@ const buildBasicAuth = () => {
   const password = env('CONNECT_IPS_PASSWORD', 'CONNECTIPS_AUTH_PASSWORD');
 
   if (!appId || !password) {
-    throw new Error('ConnectIPS auth credentials are not configured.');
+    throw new Error("ConnectIPS auth credentials are not configured.");
   }
 
-  return Buffer.from(`${appId}:${password}`).toString('base64');
+  return Buffer.from(`${appId}:${password}`).toString("base64");
 };
 
 export const postConnectipsJson = async (url: string, payload: Record<string, unknown>) => {
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Basic ${buildBasicAuth()}`,
     },
     body: JSON.stringify(payload),
-    cache: 'no-cache',
+    cache: "no-cache",
   });
 
   const rawText = await response.text();

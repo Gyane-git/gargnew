@@ -45,7 +45,6 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // console.log("Profile Photo : ",formData.profile_photo_path)
     // Validate form data
     const validation = validateProfileData(formData);
     if (!validation.isValid) {
@@ -59,7 +58,7 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
       const result = await updateCustomerProfile(formData);
 
       if (result.success) {
-        toast.success(result.message || "Profile updated successfully!");
+        // toast.success(result.message || "Profile updated successfully!");
 
         // Transform data back to match the expected format
         const updatedUser = {
@@ -77,15 +76,12 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
-      // console.error("Profile update error:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // console.log("user", user);
-
     setFormData({
       full_name: user.full_name || "",
       email: user.email || "",
@@ -129,7 +125,7 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
             htmlFor="full_name"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Full Name *
+            Full Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -151,7 +147,7 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
             htmlFor="phone"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Mobile Number *
+            Mobile Number <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -173,7 +169,7 @@ const EditProfileForm = ({ user, onUpdate, onCancel }) => {
             htmlFor="email"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Email *
+            Email <span className="text-red-500">*</span>
           </label>
           <input
             type="email"

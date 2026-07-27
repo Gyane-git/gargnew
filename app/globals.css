@@ -101,15 +101,14 @@ ul li {
 }
 .footer-list {
   list-style-type: none;
-  /* padding-left: 1.25rem; Tailwind's pl-5 */
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  color: white; /* Tailwind's text-gray-700 */
+  color: white;
   font-size: 1rem;
 }
 
 .category-list {
- list-style-type: none;
+  list-style-type: none;
 }
 .Main-Footer-title {
   /* margin-top: -1.25rem; */
@@ -127,4 +126,3 @@ ul li {
   border: 0;
   display: block;
 }
-
