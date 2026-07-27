@@ -93,7 +93,15 @@ export default function AddressCityZonePage() {
     if (search.trim()) {
       const q = search.trim().toLowerCase();
 
-      list = list.filter((z) => String(z.city || "").toLowerCase().includes(q) || String(z.zone || "").toLowerCase().includes(q));
+      list = list.filter(
+        (z) =>
+          String(z.city || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(z.zone || "")
+            .toLowerCase()
+            .includes(q),
+      );
     }
 
     list.sort((a, b) => (sortAsc ? (a.zone || "").localeCompare(b.zone || "") : (b.zone || "").localeCompare(a.zone || "")));
@@ -274,9 +282,7 @@ export default function AddressCityZonePage() {
                   <tr key={z.id}>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#2f55d4]">{(currentPage - 1) * perPage + i + 1}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.city || "-"}</td>
-                    <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">
-                      {z.zone}
-                    </td>
+                    <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.zone}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3 text-[#4b5468]">{z.createdAt}</td>
                     <td className="border-b border-[#f1f2f6] px-2 py-3">
                       <div className="flex gap-2">
@@ -357,8 +363,42 @@ export default function AddressCityZonePage() {
   );
 }
 
-function DeleteModal({ province, onConfirm, onCancel, loading }) {
-  if (!province) return null;
+// function DeleteModal({ province, onConfirm, onCancel, loading }) {
+//   if (!province) return null;
+
+//   return (
+//     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+//       <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+//         <div className="p-6">
+//           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+//             <Trash2 className="h-8 w-8 text-red-600" />
+//           </div>
+
+//           <h2 className="mt-4 text-center text-xl font-semibold text-gray-800">Delete Province?</h2>
+
+//           <p className="mt-3 text-center text-gray-600">Are you sure you want to delete</p>
+
+//           <p className="mt-1 text-center font-semibold text-gray-800">"{province.name}"</p>
+
+//           <p className="mt-2 text-center text-sm text-red-500">This action cannot be undone.</p>
+
+//           <div className="mt-6 flex justify-between">
+//             <button onClick={onCancel} disabled={loading} className="rounded-md border border-gray-300 px-5 py-2 text-gray-700 hover:bg-gray-100">
+//               Cancel
+//             </button>
+
+//             <button onClick={onConfirm} disabled={loading} className="rounded-md bg-red-600 px-5 py-2 text-white hover:bg-red-700 disabled:opacity-60">
+//               {loading ? "Deleting..." : "Delete"}
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+function DeleteModal({ zone, onConfirm, onCancel, loading }) {
+  if (!zone) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -368,11 +408,11 @@ function DeleteModal({ province, onConfirm, onCancel, loading }) {
             <Trash2 className="h-8 w-8 text-red-600" />
           </div>
 
-          <h2 className="mt-4 text-center text-xl font-semibold text-gray-800">Delete Province?</h2>
+          <h2 className="mt-4 text-center text-xl font-semibold text-gray-800">Delete Zone?</h2>
 
           <p className="mt-3 text-center text-gray-600">Are you sure you want to delete</p>
 
-          <p className="mt-1 text-center font-semibold text-gray-800">"{province.name}"</p>
+          <p className="mt-1 text-center font-semibold text-gray-800">"{zone.zone}"</p>
 
           <p className="mt-2 text-center text-sm text-red-500">This action cannot be undone.</p>
 
