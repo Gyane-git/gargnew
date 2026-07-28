@@ -14,9 +14,15 @@ function buildFullUrl(basePath, fileName) {
   return `${BASE_URL}${basePath}/${encodeURIComponent(fileName)}`;
 }
 
-export async function GET() {
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+
+  const limit = Number(searchParams.get("limit")) || 100;
+  const offset = Number(searchParams.get("offset")) || 0;
+
   try {
-    const [rows] = await pool.query(`
+    const [rows] = await pool.query(
+      `
       SELECT
         p.id AS product_id,
         p.product_code,
@@ -45,56 +51,35 @@ export async function GET() {
         p.main_image,
         p.product_catalogue,
         p.status AS product_status,
-        p.created_at AS product_created_at,
-        p.updated_at AS product_updated_at,
 
-        ci.id AS banner_id,
-        ci.product_code AS banner_product_code,
-        ci.file_path,
-        ci.mobile_file_path,
-        ci.is_offer,
-        ci.status AS banner_status,
-        ci.created_at AS banner_created_at,
-        ci.updated_at AS banner_updated_at,
+        pi.id AS image_id,
+        pi.image_path,
 
         c.id AS category_id_ref,
         c.category_name,
-        c.parent_id AS category_parent_id,
-        c.image AS category_image,
-        c.top AS category_top,
-        c.status AS category_status,
-        c.created_at AS category_created_at,
-        c.updated_at AS category_updated_at,
 
         b.id AS brand_id_ref,
-        b.brand_name,
-        b.image AS brand_image,
-        b.top AS brand_top,
-        b.status AS brand_status,
-        b.order_wise AS brand_order_wise,
-        b.created_at AS brand_created_at,
-        b.updated_at AS brand_updated_at,
+        b.brand_name
 
-        s.id AS storage_id_ref,
-        s.data_type,
-        s.data_id AS storage_data_id,
-        s.key AS storage_key,
-        s.value AS storage_value,
-        s.created_at AS storage_created_at,
-        s.updated_at AS storage_updated_at
+      FROM (
+        SELECT *
+        FROM products
+        WHERE status = 1
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+      ) p
 
-      FROM carousel_images ci
-      INNER JOIN products p
-        ON ci.product_code = p.product_code
       LEFT JOIN categories c
         ON p.category_id = c.id
+
+      LEFT JOIN product_images pi
+        ON p.product_code = pi.product_code
+
       LEFT JOIN brands b
         ON p.brand_id = b.id
-      LEFT JOIN storages s
-        ON b.id = s.data_id
-      WHERE ci.status = 1
-        AND p.status = 1
-    `);
+      `,
+      [limit, offset],
+    );
 
     // ---- Reviews ----
     const productCodes = [...new Set(rows.map((r) => r.product_code))];
@@ -225,6 +210,13 @@ export async function GET() {
 
       if (row.storage_id_ref) {
         const product = productMap.get(key);
+        if (row.image_path) {
+          const imageUrl = buildFullUrl(PRODUCT_IMAGE_PATH, row.image_path);
+
+          if (!product.files_full_url.includes(imageUrl)) {
+            product.files_full_url.push(imageUrl);
+          }
+        }
         if (product.brand) {
           product.brand.storage.push({
             id: row.storage_id_ref,

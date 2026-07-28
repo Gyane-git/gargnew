@@ -48,6 +48,12 @@ export async function GET() {
         p.created_at AS product_created_at,
         p.updated_at AS product_updated_at,
 
+        pi.id,
+        pi.product_code AS product_image_product_code,
+        pi.image_path,
+        pi.created_at AS product_image_created_at,
+        pi.updated_at AS product_image_updated_at,
+
         c.id AS category_id_ref,
         c.category_name,
         c.parent_id AS category_parent_id,
@@ -83,6 +89,8 @@ export async function GET() {
         bs.updated_at AS brand_storage_updated_at
 
       FROM products p
+      LEFT JOIN product_images pi
+        ON p.product_code = pi.product_code
       LEFT JOIN categories c
         ON p.category_id = c.id
       LEFT JOIN brands b
@@ -93,6 +101,7 @@ export async function GET() {
         ON bs.data_id = b.id
       WHERE p.status = 1
       ORDER BY p.id DESC
+      
     `);
 
     // ---- Reviews ----
@@ -221,6 +230,13 @@ export async function GET() {
       }
 
       const product = productMap.get(key);
+      if (row.image_path) {
+        const imageUrl = buildFullUrl(PRODUCT_IMAGE_PATH, row.image_path);
+
+        if (!product.files_full_url.includes(imageUrl)) {
+          product.files_full_url.push(imageUrl);
+        }
+      }
       if (row.category_storage_id && product.category && !product.category._storageSeen.has(row.category_storage_id)) {
         product.category._storageSeen.add(row.category_storage_id);
         product.category.storage.push({
