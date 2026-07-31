@@ -60,6 +60,16 @@ const nextConfig = {
         pathname: "/**",
       },
       {
+        protocol: "https",
+        hostname: "gargdental.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.gargdental.com",
+        pathname: "/**",
+      },
+      {
         protocol: "http",
         hostname: "dentalnepal.com",
         pathname: "/**",
