@@ -31,16 +31,10 @@ const HeaderBarNew = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = sessionStorage.getItem("token");
-
-      if (token) {
+      const details = await userDetails();
+      if (details) {
         setIsloggedin(true);
-        const details = await userDetails();
-        if (details) {
-          setUser(details);
-        } else {
-          handleLogout();
-        }
+        setUser(details);
       } else {
         setIsloggedin(false);
         setUser({});
@@ -109,7 +103,17 @@ const HeaderBarNew = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+    } catch {}
+
     sessionStorage.removeItem("token");
     setIsloggedin(false);
     setUser({});

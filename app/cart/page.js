@@ -37,77 +37,82 @@ export default function ShoppingCart() {
   const [billingAddress, setBillingAddress] = useState(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) {
-      useInfoModalStore.getState().open({
-        title: "Info",
-        message: "Please login to continue.",
-      });
-      router.push("/account");
-    } else {
-      const fetchCart = async () => {
-        try {
-          setIsLoading(true);
-          const response = await apiRequest(`/customer/cart/list`, true);
-          if (response?.cart?.items) {
-            const mappedCartItems = response.cart.items.map((item) => ({
-              id: item.id,
-              image: resolveProductImage(item.product, "https://dentalnepal.com/assets/logo.png"),
-              name: item.product.product_name,
-              product_code: item.product.product_code,
-              quantity: item.quantity,
-              price: item.price,
-              category: item.product.category_id,
-              stock_quantity: item.product.stock_quantity,
-              available_quantity: item.product.available_quantity,
-            }));
-
-            setCartItems(mappedCartItems);
-          } else {
-            toast.error("Cart is empty or response invalid");
-          }
-        } finally {
-          setIsLoading(false);
+    const fetchCart = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiRequest(`/customer/cart/list`, true);
+        if (response?.status === 401) {
+          useInfoModalStore.getState().open({
+            title: "Info",
+            message: "Please login to continue.",
+          });
+          router.push("/account");
+          return;
         }
-      };
+        if (response?.cart?.items) {
+          const mappedCartItems = response.cart.items.map((item) => ({
+            id: item.id,
+            image: resolveProductImage(item.product, "https://dentalnepal.com/assets/logo.png"),
+            name: item.product.product_name,
+            product_code: item.product.product_code,
+            quantity: item.quantity,
+            price: item.price,
+            category: item.product.category_id,
+            stock_quantity: item.product.stock_quantity,
+            available_quantity: item.product.available_quantity,
+          }));
 
-      fetchCart();
-      setAdded(false);
-
-      // Fetch addresses from server
-      const fetchAddresses = async () => {
-        try {
-          setIsLoading(true);
-          const { defaultBillingAddress, defaultShippingAddress, allAddresses } = await getAddress();
-          if (allAddresses && defaultBillingAddress && defaultShippingAddress) {
-            setHomeAddress(defaultShippingAddress);
-            const cost = resolveAddressShippingCost(defaultShippingAddress);
-            setShipping(cost);
-            setShowShipping(cost);
-            setBillingAddress(defaultBillingAddress);
-          }
-        } catch (error) {
-          if (error) {
-            useInfoModalStore.getState().open({
-              title: "Info",
-              message: (
-                <span>
-                  Please Add Address.{" "}
-                  <a href="/myaccount" className="text-blue-600 underline hover:text-blue-800" style={{ cursor: "pointer" }}>
-                    Go to My Account
-                  </a>{" "}
-                  to add your address.
-                </span>
-              ),
-            });
-            return;
-          }
-        } finally {
-          setIsLoading(false);
+          setCartItems(mappedCartItems);
+        } else {
+          toast.error("Cart is empty or response invalid");
         }
-      };
-      fetchAddresses();
-    }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCart();
+    setAdded(false);
+
+    const fetchAddresses = async () => {
+      try {
+        setIsLoading(true);
+        const result = await getAddress();
+        if (result?.status === 401) {
+          useInfoModalStore.getState().open({
+            title: "Info",
+            message: "Please login to continue.",
+          });
+          router.push("/account");
+          return;
+        }
+
+        const { defaultBillingAddress, defaultShippingAddress, allAddresses } = result || {};
+        if (allAddresses && defaultBillingAddress && defaultShippingAddress) {
+          setHomeAddress(defaultShippingAddress);
+          const cost = resolveAddressShippingCost(defaultShippingAddress);
+          setShipping(cost);
+          setShowShipping(cost);
+          setBillingAddress(defaultBillingAddress);
+        }
+      } catch (error) {
+        useInfoModalStore.getState().open({
+          title: "Info",
+          message: (
+            <span>
+              Please Add Address.{" "}
+              <a href="/myaccount" className="text-blue-600 underline hover:text-blue-800" style={{ cursor: "pointer" }}>
+                Go to My Account
+              </a>{" "}
+              to add your address.
+            </span>
+          ),
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAddresses();
   }, [added]);
 
   const [selectAll, setSelectAll] = useState(false);

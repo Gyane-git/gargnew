@@ -174,7 +174,7 @@ export const addToCart = async (product_code, quantity, price, variationKey = nu
       // toast.success(response.message);
       return response;
     } else {
-      // console.log(response.message);
+      return response;
     }
   } catch (err) {
     // console.error("Error adding to cart:", err);
@@ -834,12 +834,20 @@ export const getWishlist = async () => {
     if (response.success) {
       return response;
     } else {
-      toast.error(response.message || "Failed to fetch wishlist !");
-      return [];
+      return {
+        success: false,
+        status: response?.status,
+        message: response?.message || "Failed to fetch wishlist !",
+        wishlist: [],
+      };
     }
   } catch (err) {
     // console.error("Error fetching wishlist:", err);
-    return [];
+    return {
+      success: false,
+      message: err.message || "Failed to fetch wishlist !",
+      wishlist: [],
+    };
   }
 };
 

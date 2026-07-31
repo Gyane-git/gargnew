@@ -16,7 +16,10 @@ export async function GET(req) {
     );
 
     if (rows.length === 0) {
-      return Response.json({ success: false, message: "Customer not found." }, { status: 404 });
+      return Response.json(
+        { success: false, message: "Please login to continue.", errors: [{ message: "Please login to continue." }] },
+        { status: 401 },
+      );
     }
 
     const user = rows[0];

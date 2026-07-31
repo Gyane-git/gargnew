@@ -8,12 +8,11 @@ import { getFullInfo } from "@/utils/apiHelper";
 import { toast } from "react-hot-toast";
 import useWarningModalStore from "@/stores/warningModalStore";
 import useCartStore from "@/stores/useCartStore";
-import { PathnameContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 // import RefreshOnFirstLoad from "./RefreshOnFirstLoad";
 // import { Loader2 } from "lucide-react";
 
 const GoogleLoginButton = () => {
-  const { userProfile, setUserProfile } = useCartStore();
+  const { setUserProfile } = useCartStore();
   const router = useRouter();
 
   // useEffect(() => {
@@ -67,7 +66,6 @@ const GoogleLoginButton = () => {
       // console.log("Login successful:", data);
 
       if (data.token) {
-        sessionStorage.setItem("token", data.token);
         await fetch("/api/auth/set-token", {
           method: "POST",
           headers: {
