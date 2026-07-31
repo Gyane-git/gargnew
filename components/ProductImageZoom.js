@@ -3,7 +3,12 @@ import React, { useRef, useState } from "react";
 export default function ProductImageZoom({ imageUrl, alt, className = "" }) {
   const [isHovering, setIsHovering] = useState(false);
   const [objectPosition, setObjectPosition] = useState("50% 50%");
+  const [currentImage, setCurrentImage] = useState(imageUrl || "/assets/logo.png");
   const containerRef = useRef(null);
+
+  React.useEffect(() => {
+    setCurrentImage(imageUrl || "/assets/logo.png");
+  }, [imageUrl]);
 
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -28,7 +33,7 @@ export default function ProductImageZoom({ imageUrl, alt, className = "" }) {
       onMouseMove={handleMouseMove}
     >
       <img
-        src={imageUrl}
+        src={currentImage}
         alt={alt}
         className="w-full h-full object-contain transition-transform duration-300"
         style={{
@@ -36,6 +41,7 @@ export default function ProductImageZoom({ imageUrl, alt, className = "" }) {
           objectPosition: isHovering ? objectPosition : "50% 50%",
           zIndex: 1,
         }}
+        onError={() => setCurrentImage("/assets/logo.png")}
         draggable={false}
       />
     </div>

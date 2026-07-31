@@ -7,6 +7,7 @@ import GargDental from "./dashboard/GargDental";
 export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true);
   const [offerImage, setOfferImage] = useState(null);
+  const splashDurationMs = 6000;
 
   useEffect(() => {
     // Check if splash has already been shown
@@ -31,7 +32,7 @@ export default function HomePage() {
       const timer = setTimeout(() => {
         setShowSplash(false);
         sessionStorage.setItem("splashShown", "true");
-      }, 15000);
+      }, splashDurationMs);
 
       return () => clearTimeout(timer);
     }
