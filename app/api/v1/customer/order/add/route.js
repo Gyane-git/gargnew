@@ -16,6 +16,44 @@ import {
 
 const toNumber = (value) => Number(value || 0);
 
+/**
+ * @swagger
+ * /api/v1/customer/order/add:
+ *   post:
+ *     summary: Place an order from selected cart items
+ *     description: Validates the customer's cart, reserves inventory for each selected
+ *       cart item, creates shipping/billing delivery-information records, inserts the
+ *       order and order items, removes the ordered items from the cart, and e-mails the
+ *       customer an order-received confirmation with an attached invoice PDF (best-effort;
+ *       mail failures do not fail the request).
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [payment_method, billing_address, shipping_address, invoice_email, selected_items]
+ *             properties:
+ *               payment_method: { type: string, description: Payment method identifier }
+ *               billing_address: { type: integer, description: ID of the customer's saved billing address }
+ *               shipping_address: { type: integer, description: ID of the customer's saved shipping address }
+ *               invoice_email: { type: string, description: E-mail address the invoice/confirmation is sent to }
+ *               subtotal: { type: number }
+ *               grandtotal: { type: number }
+ *               shipping: { type: number, description: Shipping cost }
+ *               selected_items: { type: array, items: { type: integer }, description: Cart item IDs to convert into the order }
+ *               transaction_id: { type: string, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Order placed successfully
+ *       401: { description: Unauthorized }
+ *       404: { description: Cart not found, billing/shipping address not found, or one or more selected cart items were not found }
+ *       422: { description: Missing required fields or insufficient stock for a cart item }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   let connection = null;
   try {

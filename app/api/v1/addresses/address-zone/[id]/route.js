@@ -2,6 +2,37 @@ import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 
 // GET SINGLE ZONE
+/**
+ * @swagger
+ * /api/v1/addresses/address-zone/{id}:
+ *   get:
+ *     summary: Get a single address zone
+ *     tags: [Admin - Address Reference]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Zone found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 zone:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     city_id: { type: integer }
+ *                     zone_name: { type: string }
+ *                     created_at: { type: string, format: date-time }
+ *                     updated_at: { type: string, format: date-time }
+ *       404: { description: Zone not found }
+ *       500: { description: Server error }
+ */
 export async function GET(request, { params }) {
   try {
     const { id } = params;
@@ -44,6 +75,35 @@ export async function GET(request, { params }) {
 }
 
 // UPDATE ZONE
+/**
+ * @swagger
+ * /api/v1/addresses/address-zone/{id}:
+ *   put:
+ *     summary: Update an address zone
+ *     description: Rejects duplicate zone names within the same city (case-insensitive), excluding this zone's own id.
+ *     tags: [Admin - Address Reference]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [city_id, zone_name]
+ *             properties:
+ *               city_id: { type: integer }
+ *               zone_name: { type: string }
+ *     responses:
+ *       200: { description: Zone updated successfully. }
+ *       400: { description: "city_id or zone_name missing" }
+ *       404: { description: Zone not found }
+ *       409: { description: Zone already exists in this city }
+ *       500: { description: Server error }
+ */
 export async function PUT(req, { params }) {
   try {
     const { id } = params;
@@ -127,6 +187,22 @@ export async function PUT(req, { params }) {
 }
 
 // DELETE ZONE
+/**
+ * @swagger
+ * /api/v1/addresses/address-zone/{id}:
+ *   delete:
+ *     summary: Delete an address zone
+ *     tags: [Admin - Address Reference]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Zone deleted successfully. }
+ *       404: { description: Zone not found }
+ *       500: { description: Server error }
+ */
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;

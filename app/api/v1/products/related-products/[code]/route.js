@@ -3,6 +3,47 @@ import pool from "@/utils/db";
 import { formatProduct, parsePagination } from "@/utils/apiFormatters";
 import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
+/**
+ * @swagger
+ * /api/v1/products/related-products/{code}:
+ *   get:
+ *     summary: Get a product plus related products sharing its category or brand
+ *     description: Looks up the product by product_code, then finds other products that
+ *       share its category_id and/or brand_id (ordered so category+brand matches rank
+ *       first, then category-only, then brand-only), excluding the product itself. By
+ *       default only active related products (status = 1) are included; pass
+ *       include_inactive=1 to include inactive ones too. Public endpoint, no
+ *       authentication required.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: code, in: path, required: true, schema: { type: string }, description: product_code to look up }
+ *       - { name: limit, in: query, required: false, schema: { type: integer, default: 10 }, description: "parsePagination default 10, capped at 100" }
+ *       - { name: offset, in: query, required: false, schema: { type: integer, default: 0 } }
+ *       - { name: include_inactive, in: query, required: false, schema: { type: string, enum: ["1"] }, description: "Pass \"1\" to also include inactive related products" }
+ *     responses:
+ *       200:
+ *         description: Product and related products retrieved successfully. If the product
+ *           has neither a category_id nor a brand_id, related_products is an empty array
+ *           and count/total are 0.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 product: { type: object, description: Formatted target product (see formatProduct) }
+ *                 related_products: { type: array, items: { type: object } }
+ *                 count: { type: integer, description: Number of related rows in this page }
+ *                 total: { type: integer, description: Total matching related rows (ignores limit/offset) }
+ *                 limit: { type: integer }
+ *                 offset: { type: integer }
+ *       400:
+ *         description: product code is required
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req, { params }) {
   try {
     const { code } = await params;

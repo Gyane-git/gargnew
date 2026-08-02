@@ -98,9 +98,7 @@ export default function ReturnProduct() {
       });
       const response = await fetch("/api/v1/customer/order/return", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
+        credentials: "include",
         body: fd,
       });
 

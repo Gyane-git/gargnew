@@ -14,6 +14,21 @@ const ensureTable = async () => {
   `);
 };
 
+/**
+ * @swagger
+ * /api/v1/newsletter-subscriber/{id}:
+ *   delete:
+ *     summary: Delete a newsletter subscriber by id
+ *     description: Lazily creates the `newsletter_subscribers` table on first call before
+ *       looking up the id.
+ *     tags: [Newsletter]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: '{ success: true, message: "Subscriber deleted successfully." }' }
+ *       404: { description: '{ success: false, message: "Subscriber not found." }' }
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 export async function DELETE(_req, { params }) {
   try {
     await ensureTable();

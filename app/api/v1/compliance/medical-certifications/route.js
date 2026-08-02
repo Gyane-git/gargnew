@@ -3,6 +3,37 @@ import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
+/**
+ * @swagger
+ * /api/v1/compliance/medical-certifications:
+ *   get:
+ *     summary: Get medical certifications content
+ *     description: >
+ *       No API-layer auth enforced. Reads the `medical_certifications` row
+ *       from the compliances table. Legacy rows stored as plain HTML string
+ *       are returned as content with an empty certifications array.
+ *     tags: [CMS - Compliance]
+ *     responses:
+ *       200:
+ *         description: Medical certifications content fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 content: { type: string }
+ *                 certifications:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       title: { type: string }
+ *                       fileUrl: { type: string, example: "/uploads/certifications/<uuid>.png" }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query("SELECT `value` FROM compliances WHERE `key` = ?", ["medical_certifications"]);
@@ -43,6 +74,54 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliance/medical-certifications:
+ *   post:
+ *     summary: Create or update medical certifications content
+ *     description: >
+ *       No API-layer auth enforced. Accepts multipart/form-data. `description`
+ *       replaces the stored content, merging with any existing certifications.
+ *       New certification entries are added by including indexed fields
+ *       `certifications[<index>][title]` and `certifications[<index>][file]`
+ *       (any field whose name contains "[file]" is treated as an uploaded
+ *       certification file and saved under /public/uploads/certifications).
+ *       Upserts the `medical_certifications` row in the compliances table.
+ *     tags: [CMS - Compliance]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [description]
+ *             properties:
+ *               description: { type: string }
+ *               certifications[0][title]: { type: string }
+ *               certifications[0][file]: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Medical certifications saved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Medical certifications saved successfully." }
+ *                 certifications:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       title: { type: string }
+ *                       fileUrl: { type: string }
+ *       400:
+ *         description: Description is required.
+ *       500:
+ *         description: Internal server error.
+ */
 export async function POST(request) {
   try {
     const formData = await request.formData();

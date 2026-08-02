@@ -1,6 +1,19 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 
+/**
+ * @swagger
+ * /api/v1/inquiries/{id}:
+ *   get:
+ *     summary: Get a single inquiry by id
+ *     tags: [Contact/Inquiries]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: '{ success: true, inquiry } with the matching row.' }
+ *       404: { description: '{ success: false, message: "Inquiry not found" }' }
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 // ── GET INQUIRY BY ID ─────────────────────────────────────────────
 export async function GET(req, { params }) {
   try {
@@ -21,6 +34,19 @@ export async function GET(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/inquiries/{id}:
+ *   delete:
+ *     summary: Delete an inquiry by id
+ *     tags: [Contact/Inquiries]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: '{ success: true, message: "Inquiry deleted successfully" }' }
+ *       404: { description: '{ success: false, message: "Inquiry not found" }' }
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 // ── DELETE INQUIRY ────────────────────────────────────────────────
 export async function DELETE(req, { params }) {
   try {

@@ -69,6 +69,55 @@ async function removeUploadedFile(fileUrl) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliance/about-us:
+ *   get:
+ *     summary: Get About Us content
+ *     description: No API-layer auth enforced. Reads the `about_us` row from the compliances table.
+ *     tags: [CMS - About Us]
+ *     responses:
+ *       200:
+ *         description: About Us content fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     title: { type: string }
+ *                     youtubeLink: { type: string }
+ *                     introVideoUrl: { type: string }
+ *                     aboutUsContent: { type: string }
+ *                     story:
+ *                       type: object
+ *                       properties:
+ *                         title: { type: string }
+ *                         name: { type: string }
+ *                         designation: { type: string }
+ *                         imageUrl: { type: string }
+ *                         description: { type: string }
+ *                     about_us_title: { type: string }
+ *                     about_us: { type: string }
+ *                     youtube_video: { type: string }
+ *                     introduction_video_url: { type: string }
+ *                     story_title: { type: string }
+ *                     stories:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name: { type: string }
+ *                           designation: { type: string }
+ *                           image: { type: string }
+ *                           description: { type: string }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function GET() {
   try {
     const row = await readAboutUsRow();
@@ -99,6 +148,48 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliance/about-us:
+ *   post:
+ *     summary: Create or update About Us content
+ *     description: >
+ *       No API-layer auth enforced. Accepts multipart/form-data. Uploaded
+ *       introVideo / storyImage files are saved under
+ *       /public/uploads/about-us and merged with any existing stored values
+ *       (fields not resent keep their previous file URLs). Upserts the
+ *       `about_us` row in the compliances table.
+ *     tags: [CMS - About Us]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               youtubeLink: { type: string }
+ *               aboutUsContent: { type: string }
+ *               storyTitle: { type: string }
+ *               storyName: { type: string }
+ *               storyDesignation: { type: string }
+ *               storyDescription: { type: string }
+ *               introVideo: { type: string, format: binary }
+ *               storyImage: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: About Us saved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "About Us saved successfully." }
+ *                 data: { type: object }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -171,6 +262,29 @@ export async function POST(request) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliance/about-us:
+ *   delete:
+ *     summary: Delete About Us content
+ *     description: >
+ *       No API-layer auth enforced. Deletes the `about_us` row from the
+ *       compliances table and removes any uploaded intro video / story image
+ *       files from disk (missing files are ignored).
+ *     tags: [CMS - About Us]
+ *     responses:
+ *       200:
+ *         description: About Us content deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "About Us content deleted successfully." }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function DELETE() {
   try {
     const row = await readAboutUsRow();

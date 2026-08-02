@@ -37,6 +37,127 @@ const buildJwtToken = async (user) => {
   );
 };
 
+/**
+ * @swagger
+ * /api/v1/auth/social/google-register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register or log in a user via a Google ID token
+ *     description: >
+ *       Verifies the Google ID token via Google's tokeninfo endpoint, then either updates
+ *       a matching existing user (matched by email or the detected unique-id column) or
+ *       inserts a new user with `login_medium = "google"`. Returns a signed JWT plus
+ *       `requires_address` (true when the customer has no `customer_address_book` rows)
+ *       and `user.name` (alias of full_name).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google ID token to verify.
+ *               unique_id:
+ *                 type: string
+ *                 description: Optional provider-supplied unique id; falls back to the token's `sub` claim if omitted.
+ *     responses:
+ *       200:
+ *         description: Google login/registration successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Google login successful.
+ *                   description: "\"Google login successful.\" for an existing user, \"Google account created successfully.\" for a new user."
+ *                 requires_address:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *                   description: Signed JWT (7d expiry).
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     full_name:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                       description: Alias of full_name.
+ *                     email:
+ *                       type: string
+ *                     phone:
+ *                       type: string
+ *                       nullable: true
+ *                     login_medium:
+ *                       type: string
+ *                       example: google
+ *                     is_email_verified:
+ *                       type: integer
+ *       400:
+ *         description: Google token missing from request body.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Google token is required.
+ *       422:
+ *         description: Google account has no email address in its profile.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Google account email not found.
+ *       500:
+ *         description: Google token verification failed, or an internal/database error occurred.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Google registration failed.
+ */
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -209,13 +330,24 @@ export async function POST(req) {
     const user = userRows[0];
     const jwtToken = await buildJwtToken(user);
 
+    // Mirrors Laravel SocialAuthController::google_register's `requires_address` and
+    // `user.name` fields - additive only (components/GoogleLogin.js only reads
+    // success/token/errors, so existing fields stay untouched).
+    const [addressCountRows] = await pool.query(
+      "SELECT COUNT(*) AS count FROM customer_address_book WHERE customer_id = ?",
+      [user.id],
+    );
+    const requiresAddress = Number(addressCountRows[0]?.count || 0) === 0;
+
     return Response.json({
       success: true,
       message: existingRows.length > 0 ? "Google login successful." : "Google account created successfully.",
+      requires_address: requiresAddress,
       token: jwtToken,
       user: {
         id: user.id,
         full_name: user.full_name,
+        name: user.full_name,
         email: user.email,
         phone: user.phone || null,
         login_medium: user.login_medium || "google",

@@ -22,12 +22,15 @@ export const fetchProductImagesMap = async (productCodes = []) => {
     const key = String(row.product_code);
     if (!map.has(key)) map.set(key, []);
 
+    const resolvedImageUrl = assetUrl(row.image_path, "uploads/products");
+
     map.get(key).push({
       id: row.id,
       product_code: row.product_code,
-      image_path: row.image_path,
-      image_url: assetUrl(row.image_path, "uploads/products"),
-      image_full_url: assetUrl(row.image_path, "uploads/products"),
+      image_path: resolvedImageUrl || null,
+      image_url: resolvedImageUrl || null,
+      image_full_url: resolvedImageUrl || null,
+      original_image_path: row.image_path,
     });
   });
 

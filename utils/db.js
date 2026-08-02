@@ -11,7 +11,7 @@ const pool =
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_DATABASE || "omsokcom_gargdental",
     waitForConnections: true,
-    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 1),
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 5),
     maxIdle: 1,
     idleTimeout: 10000,
     queueLimit: 0,

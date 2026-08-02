@@ -1,0 +1,177 @@
+/* Dark theme for swagger-ui-dist. Layered on top of its default swagger-ui.css
+   (which ships light-only), so this only needs to override colors/backgrounds -
+   layout, spacing, and structure stay exactly as swagger-ui-dist defines them. */
+
+.swagger-ui {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+
+/* Top bar */
+.swagger-ui .topbar {
+  background-color: #16171a;
+  border-bottom: 1px solid #2c2f36;
+}
+
+/* Headings, info block, descriptions */
+.swagger-ui .info .title,
+.swagger-ui .info li,
+.swagger-ui .info p,
+.swagger-ui .info h1,
+.swagger-ui .info h2,
+.swagger-ui .info h3,
+.swagger-ui .info h4,
+.swagger-ui .info h5,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock .opblock-summary-operation-id,
+.swagger-ui .opblock .opblock-summary-path,
+.swagger-ui .opblock .opblock-summary-path__deprecated,
+.swagger-ui table thead tr td,
+.swagger-ui table thead tr th,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .parameter__in,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_links,
+.swagger-ui .model-title,
+.swagger-ui .model,
+.swagger-ui label,
+.swagger-ui .tab li,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .opblock-external-docs-wrapper p,
+.swagger-ui .opblock-title_normal p {
+  color: #d4d4d4;
+}
+
+.swagger-ui .info a,
+.swagger-ui .opblock-tag small,
+.swagger-ui .opblock .opblock-section-header h4 {
+  color: #9fb8e8;
+}
+
+/* Tag section headers */
+.swagger-ui .opblock-tag {
+  border-bottom-color: #33363d;
+}
+.swagger-ui .opblock-tag:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Operation rows - keep the method color bar, darken the body */
+.swagger-ui .opblock {
+  background: #26272b;
+  border-color: #3a3d45;
+  box-shadow: none;
+}
+.swagger-ui .opblock .opblock-summary {
+  border-color: #3a3d45;
+}
+.swagger-ui .opblock .opblock-section-header {
+  background: #26272b;
+  box-shadow: none;
+}
+.swagger-ui .opblock-body pre.microlight,
+.swagger-ui .highlight-code {
+  background: #16171a !important;
+  color: #d4d4d4;
+}
+.swagger-ui .opblock-body pre.microlight span {
+  color: inherit;
+}
+
+.swagger-ui .opblock.opblock-get {
+  background: rgba(97, 175, 254, 0.08);
+  border-color: #61affe;
+}
+.swagger-ui .opblock.opblock-post {
+  background: rgba(73, 204, 144, 0.08);
+  border-color: #49cc90;
+}
+.swagger-ui .opblock.opblock-put {
+  background: rgba(252, 161, 48, 0.08);
+  border-color: #fca130;
+}
+.swagger-ui .opblock.opblock-patch {
+  background: rgba(80, 227, 194, 0.08);
+  border-color: #50e3c2;
+}
+.swagger-ui .opblock.opblock-delete {
+  background: rgba(249, 62, 62, 0.08);
+  border-color: #f93e3e;
+}
+
+/* Parameters / response tables */
+.swagger-ui table tbody tr td {
+  border-color: #33363d;
+  color: #d4d4d4;
+}
+.swagger-ui .parameters-col_description input[type="text"],
+.swagger-ui .parameters-col_description textarea,
+.swagger-ui input[type="text"],
+.swagger-ui input[type="password"],
+.swagger-ui input[type="email"],
+.swagger-ui textarea,
+.swagger-ui select {
+  background: #16171a;
+  color: #d4d4d4;
+  border: 1px solid #3a3d45;
+}
+
+/* Response body / example values */
+.swagger-ui .responses-inner h4,
+.swagger-ui .responses-inner h5,
+.swagger-ui .response-col_description__inner p,
+.swagger-ui .renderedMarkdown p {
+  color: #d4d4d4;
+}
+.swagger-ui .model-box,
+.swagger-ui section.models .model-container {
+  background: #26272b;
+}
+.swagger-ui section.models {
+  border-color: #3a3d45;
+}
+.swagger-ui section.models.is-open h4 {
+  border-bottom-color: #33363d;
+  color: #d4d4d4;
+}
+.swagger-ui section.models h4 span {
+  color: #d4d4d4;
+}
+
+/* Buttons */
+.swagger-ui .btn {
+  background: #26272b;
+  color: #d4d4d4;
+  border-color: #3a3d45;
+}
+.swagger-ui .btn.execute {
+  background: #4990e2;
+  border-color: #4990e2;
+  color: #fff;
+}
+.swagger-ui .btn.authorize {
+  color: #49cc90;
+  border-color: #49cc90;
+}
+
+/* Scheme / servers dropdown, filter box */
+.swagger-ui .scheme-container {
+  background: #16171a;
+  box-shadow: none;
+  border-bottom: 1px solid #2c2f36;
+}
+.swagger-ui .servers > label,
+.swagger-ui .filter .operation-filter-input {
+  background: #16171a;
+  color: #d4d4d4;
+  border-color: #3a3d45;
+}
+
+/* Auth / lock icons stay visible against dark background */
+.swagger-ui svg:not(:root) {
+  fill: #d4d4d4;
+}
+.swagger-ui .opblock-summary-method {
+  color: #fff;
+}

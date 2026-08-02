@@ -15,6 +15,55 @@ const ensureReviewImageColumn = async () => {
   }
 };
 
+/**
+ * @swagger
+ * /api/v1/customers/reviews/add:
+ *   post:
+ *     summary: Submit a product review (admin/web variant)
+ *     description: Distinct from the singular /api/v1/customer/reviews/add mobile-app
+ *       endpoint. Requires a valid bearer token (getAuthUser); customer_id, name, and email
+ *       default to the authenticated user's values if not supplied in the body. Also
+ *       lazily widens product_reviews.image_path to LONGTEXT on first call.
+ *     tags: [Admin - Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_code, order_id, review_detail, rating]
+ *             properties:
+ *               customer_id: { type: integer, description: Defaults to the authenticated user's id }
+ *               product_code: { type: string }
+ *               order_id: { type: string }
+ *               name: { type: string, description: Defaults to the authenticated user's name }
+ *               email: { type: string, description: Defaults to the authenticated user's email }
+ *               review_detail: { type: string, maxLength: 500 }
+ *               rating: { type: number, minimum: 0, maximum: 5 }
+ *               image_path:
+ *                 description: A string, or an array of strings, describing image path(s)
+ *                 oneOf:
+ *                   - type: string
+ *                   - type: array
+ *                     items: { type: string }
+ *     responses:
+ *       201:
+ *         description: Review submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *                 review_id: { type: integer }
+ *       400: { description: Missing required fields, invalid rating, or review_detail too long }
+ *       401: { description: Unauthorized }
+ *       409: { description: Already reviewed this product for this order }
+ *       500: { description: Internal server error }
+ */
 // POST /api/v1/customers/reviews/add
 export async function POST(request) {
   try {

@@ -24,6 +24,23 @@ const resolveTable = async (connection) => {
   return null;
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/order/return-list:
+ *   get:
+ *     summary: List the authenticated customer's return requests
+ *     description: Returns all rows from the order_returns (or legacy order_retuns) table
+ *       for the authenticated customer, newest first, with each row's stored image path(s)
+ *       resolved into an image_full_url array. Returns an empty list if no returns table exists.
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of return requests
+ *       401: { description: Unauthorized }
+ *       500: { description: Failed to fetch return requests }
+ */
 export async function GET(request) {
   let connection = null;
   try {

@@ -3,6 +3,25 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET SINGLE
+/**
+ * @swagger
+ * /api/v1/banners/{id}:
+ *   get:
+ *     summary: Get a single carousel banner by id
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Banner found.
+ *       404:
+ *         description: Not found.
+ *       500:
+ *         description: Server error.
+ */
 export async function GET(req, { params }) {
   try {
     const [rows] = await pool.query("SELECT * FROM carousel_images WHERE id = ?", [params.id]);
@@ -18,6 +37,48 @@ export async function GET(req, { params }) {
 }
 
 // UPDATE
+/**
+ * @swagger
+ * /api/v1/banners/{id}:
+ *   put:
+ *     summary: Update a carousel banner
+ *     description: Accepts either multipart/form-data (to optionally replace and/or remove the
+ *       desktop and/or mobile image) or a plain JSON body with product_code/is_offer/status.
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               product_code: { type: string }
+ *               is_offer: { type: string }
+ *               status: { type: string }
+ *               remove_desktop: { type: string, description: "Pass \"true\" to remove the existing desktop image." }
+ *               remove_mobile: { type: string, description: "Pass \"true\" to remove the existing mobile image." }
+ *               desktop_image: { type: string, format: binary }
+ *               mobile_image: { type: string, format: binary }
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               product_code: { type: string }
+ *               is_offer: { type: integer }
+ *               status: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Updated successfully.
+ *       404:
+ *         description: Banner not found.
+ *       500:
+ *         description: Server error.
+ */
 export async function PUT(req, { params }) {
   try {
     const contentType = req.headers.get("content-type") || "";
@@ -107,6 +168,33 @@ export async function PUT(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/banners/{id}:
+ *   patch:
+ *     summary: Update a carousel banner's status
+ *     description: Accepts a JSON body { status } and updates only the status column.
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: integer }
+ *             required: [status]
+ *     responses:
+ *       200:
+ *         description: Status updated.
+ *       500:
+ *         description: Server error.
+ */
 export async function PATCH(req, { params }) {
   try {
     const { status } = await req.json();
@@ -123,6 +211,23 @@ export async function PATCH(req, { params }) {
 }
 
 // DELETE
+/**
+ * @swagger
+ * /api/v1/banners/{id}:
+ *   delete:
+ *     summary: Delete a carousel banner
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Deleted successfully.
+ *       500:
+ *         description: Server error.
+ */
 export async function DELETE(req, { params }) {
   try {
     await pool.query("DELETE FROM carousel_images WHERE id = ?", [params.id]);

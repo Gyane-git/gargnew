@@ -4,6 +4,63 @@ import { fetchAddressesForCustomer, normalizeFlag } from "@/utils/address";
 
 const cleanValue = (value) => (value === undefined || value === null ? "" : String(value).trim());
 
+/**
+ * @swagger
+ * /api/v1/customer/address/update/{id}:
+ *   post:
+ *     summary: Update an address in the authenticated customer's address book
+ *     description: >
+ *       Only updates an address that belongs to the authenticated customer. Any field omitted
+ *       from the request body falls back to the address's current stored value.
+ *       province_id/city_id/zone_id may also be sent as bare `province`/`city`/`zone`
+ *       (province_id ?? province ?? existing value, etc. - province_id wins if both are
+ *       present). city must belong to province, and zone must belong to city, or a 422/404
+ *       is returned.
+ *     tags: [Customer - Address]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name: { type: string }
+ *               phone: { type: string }
+ *               province_id: { type: integer, description: "Province id (fallback: province, then existing value)" }
+ *               province: { type: integer, description: "Used if province_id is absent" }
+ *               city_id: { type: integer, description: "id of a set_shipping row (fallback: city, then existing value)" }
+ *               city: { type: integer, description: "Used if city_id is absent" }
+ *               zone_id: { type: integer, description: "id of an address_zone row (fallback: zone, then existing value)" }
+ *               zone: { type: integer, description: "Used if zone_id is absent" }
+ *               address: { type: string }
+ *               address_type: { type: string }
+ *               landmark: { type: string, nullable: true }
+ *               default_shipping: { type: string, enum: [Y, N] }
+ *               default_billing: { type: string, enum: [Y, N] }
+ *     responses:
+ *       200:
+ *         description: Address updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Address updated successfully." }
+ *                 data: { type: object, description: "The updated address (same shape as an item in addresses)" }
+ *                 addresses: { type: array, items: { type: object }, description: "All addresses for this customer" }
+ *       401: { description: Unauthorized. }
+ *       404: { description: Address, province, city, or zone not found. }
+ *       422: { description: "Missing required fields, or city/zone does not belong to the selected province/city." }
+ *       500: { description: Internal server error. }
+ */
 export async function POST(req, { params }) {
   try {
     const authUser = getAuthUser(req);

@@ -18,6 +18,32 @@ function validateEnvironmentVariables() {
   }
 }
 
+/**
+ * @swagger
+ * /api/initiate-payment:
+ *   post:
+ *     summary: Initiate an eSewa or Khalti payment - builds and signs the eSewa form config, or calls the Khalti ePayment initiate API to get a redirect URL
+ *     tags: [Payment]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount, productName, transactionId, method]
+ *             properties:
+ *               amount: { type: string }
+ *               productName: { type: string }
+ *               transactionId: { type: string }
+ *               method: { type: string, enum: [esewa, khalti] }
+ *     responses:
+ *       200:
+ *         description: >
+ *           For method "esewa": { amount, esewaConfig } containing the signed eSewa form fields.
+ *           For method "khalti": { khaltiPaymentUrl } to redirect the user to.
+ *       400: { description: '{ error: "Missing required fields" } or { error: "Invalid payment method" } when amount/productName/transactionId/method are missing or method is not esewa/khalti.' }
+ *       500: { description: '{ error: "Error creating payment session", details } returned on unhandled errors, e.g. missing env vars or a failed Khalti API call.' }
+ */
 export async function POST(req: Request) {
   // // // console.log("Received POST request to /api/checkout-session");
 

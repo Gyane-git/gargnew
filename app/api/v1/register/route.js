@@ -5,6 +5,106 @@ import { sendVerificationCodeEmail } from "@/utils/mailer";
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const makeVerificationCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
+/**
+ * @swagger
+ * /api/v1/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new customer account
+ *     description: >
+ *       Creates a user (login_medium "manual", status active, is_email_verified 0), generates a
+ *       6-digit email verification code stored in `email_verifications`, and emails it via
+ *       sendVerificationCodeEmail. Validation and duplicate-account errors return HTTP 403 with a
+ *       `{ success: false, message: "Validation errors", errors: [{ code, message }] }` shape.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [first_name, last_name, email, phone, password]
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *               last_name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       201:
+ *         description: User registered successfully and verification email sent.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully
+ *                 userId:
+ *                   type: integer
+ *                 email:
+ *                   type: string
+ *                 code:
+ *                   type: string
+ *                   description: The generated 6-digit email verification code.
+ *       403:
+ *         description: Missing required fields, or an account with this email/phone already exists.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Validation errors
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       code:
+ *                         type: string
+ *                         example: required
+ *                         description: "\"required\" for missing fields, \"email\" for duplicate email/phone."
+ *                       message:
+ *                         type: string
+ *       500:
+ *         description: >
+ *           Either the user row was created but the verification email failed to send
+ *           (response includes `email`), or an unexpected internal/database error occurred.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Account created, but verification email could not be sent. Please resend code.
+ *                 email:
+ *                   type: string
+ *                   description: Only present on the mail-send-failure branch.
+ */
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -14,18 +114,22 @@ export async function POST(req) {
     // Build full_name from first + last
     const full_name = first_name && last_name ? `${first_name.trim()} ${last_name.trim()}` : null;
 
-    // Validate all required fields
+    // Validate all required fields. Status aligned to Laravel's 403 (RegistrationController's
+    // validation-failure convention) - safe additive change since app/account/signup/page.js
+    // only checks response.ok truthiness, not the exact status code.
     if (!full_name || !normalizedEmail || !password || !phone) {
       return Response.json(
         {
           success: false,
+          message: "Validation errors",
           errors: [
             {
+              code: "required",
               message: "Missing required fields: first_name, last_name, email, phone, password",
             },
           ],
         },
-        { status: 400 },
+        { status: 403 },
       );
     }
 
@@ -36,13 +140,15 @@ export async function POST(req) {
       return Response.json(
         {
           success: false,
+          message: "Validation errors",
           errors: [
             {
+              code: "email",
               message: "An account with this email or phone already exists.",
             },
           ],
         },
-        { status: 409 },
+        { status: 403 },
       );
     }
 

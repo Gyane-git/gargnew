@@ -15,18 +15,21 @@ export const useAddressStore = create(
         set({ loading: true, error: null });
 
         const response = await sortAddressDropdowns();
+        const provinces = Array.isArray(response?.provinces) ? response.provinces : [];
+        const cities = Array.isArray(response?.cities) ? response.cities : [];
+        const zones = Array.isArray(response?.zones) ? response.zones : [];
 
-        if (response.provinces.length > 0) {
+        if (provinces.length > 0) {
           // console.log("response", response);
           set({
-            provinces: response.provinces,
-            cities: response.cities,
-            zones: response.zones,
+            provinces,
+            cities,
+            zones,
             loading: false,
           });
         } else {
           set({
-            error: "Check for internet connection and try again",
+            error: response?.error || "Check for internet connection and try again",
             loading: false,
           });
         }

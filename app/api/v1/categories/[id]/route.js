@@ -4,6 +4,36 @@ import path from "path";
 import { NextResponse } from "next/server";
 import { formatCategoryRows } from "@/utils/apiFormatters";
 
+/**
+ * @swagger
+ * /api/v1/categories/{id}:
+ *   get:
+ *     summary: Get a single category by id
+ *     description: No authentication is enforced.
+ *     tags: [Categories]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Category retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 category:
+ *                   type: object
+ *                   description: Category row plus image_full_url/image_url derived
+ *                     from the stored image path.
+ *       404:
+ *         description: Category not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req, { params }) {
   try {
     const { id } = params;
@@ -24,6 +54,44 @@ export async function GET(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/categories/{id}:
+ *   put:
+ *     summary: Update a category
+ *     description: Accepts multipart/form-data. All listed fields are read from the
+ *       body and written as-is (no presence/type validation beyond the parent_id
+ *       null-normalization). `existing_image` is used to preserve the current image
+ *       when no new file is uploaded; `remove_image=1` clears the image. No
+ *       authentication is enforced.
+ *     tags: [Categories]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category_name: { type: string }
+ *               parent_id: { type: string, description: "Empty string or \"null\" means no parent" }
+ *               top: { type: string, description: "0 or 1" }
+ *               status: { type: string, description: "0 or 1" }
+ *               image: { type: string, format: binary, description: "New image file; replaces existing_image if provided" }
+ *               existing_image: { type: string, description: "Current image path to keep when no new file is uploaded" }
+ *               remove_image: { type: string, description: "Pass \"1\" to clear the image" }
+ *     responses:
+ *       200:
+ *         description: Category updated successfully
+ *       404:
+ *         description: Category not found
+ *       500:
+ *         description: Server error
+ */
 export async function PUT(req, { params }) {
   try {
     const { id } = params;
@@ -75,6 +143,40 @@ export async function PUT(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/categories/{id}:
+ *   patch:
+ *     summary: Partially update a category's top/status flags
+ *     description: Accepts a JSON body. Only `top` and `status` are accepted, and each
+ *       must be exactly the number 0 or 1 (strict === check, so booleans or "0"/"1"
+ *       strings are rejected). At least one of the two fields must be provided. No
+ *       authentication is enforced.
+ *     tags: [Categories]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               top: { type: integer, enum: [0, 1] }
+ *               status: { type: integer, enum: [0, 1] }
+ *     responses:
+ *       200:
+ *         description: Category updated successfully
+ *       400:
+ *         description: Invalid value for top/status, or no valid fields provided
+ *       404:
+ *         description: Category not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PATCH(request, { params }) {
   try {
     const { id } = params;
@@ -122,6 +224,28 @@ export async function PATCH(request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/categories/{id}:
+ *   delete:
+ *     summary: Delete a category
+ *     description: Hard-deletes the category row. No authentication is enforced.
+ *     tags: [Categories]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Category deleted successfully
+ *       400:
+ *         description: ID required
+ *       404:
+ *         description: Category not found
+ *       500:
+ *         description: Server error
+ */
 export async function DELETE(req, { params }) {
   try {
     const { id } = params;

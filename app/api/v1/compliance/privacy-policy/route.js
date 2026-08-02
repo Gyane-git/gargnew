@@ -1,5 +1,38 @@
 import pool from "@/utils/db";
 
+/**
+ * @swagger
+ * /api/v1/compliance/privacy-policy:
+ *   post:
+ *     summary: Create or update Privacy Policy content
+ *     description: >
+ *       No API-layer auth enforced. Upserts the `privacy_policy` row in the
+ *       compliances table (updates if it already exists, inserts otherwise).
+ *     tags: [CMS - Compliance]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content: { type: string, description: "Privacy Policy HTML/text." }
+ *     responses:
+ *       200:
+ *         description: Privacy Policy saved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Privacy Policy saved successfully." }
+ *       400:
+ *         description: Privacy Policy is required.
+ *       500:
+ *         description: Internal server error.
+ */
 export async function POST(request) {
   try {
     const { content } = await request.json();

@@ -12,7 +12,12 @@ export default function ProductImageMagnifier({
 }) {
   const [isHovering, setIsHovering] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+  const [currentImage, setCurrentImage] = useState(imageUrl || "/assets/logo.png");
   const containerRef = useRef(null);
+
+  React.useEffect(() => {
+    setCurrentImage(imageUrl || "/assets/logo.png");
+  }, [imageUrl]);
 
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -46,9 +51,10 @@ export default function ProductImageMagnifier({
         onMouseMove={handleMouseMove}
       >
         <img
-          src={imageUrl}
+          src={currentImage}
           alt={alt}
           className={`w-full h-full object-contain select-none ${effect}`}
+          onError={() => setCurrentImage("/assets/logo.png")}
           draggable={false}
         />
 
@@ -82,10 +88,11 @@ export default function ProductImageMagnifier({
             style={{ position: "relative" }}
           >
             <img
-              src={imageUrl}
+              src={currentImage}
               alt={alt}
               className="absolute top-0 left-0 object-cover select-none pointer-events-none"
               style={getZoomImageStyle()}
+              onError={() => setCurrentImage("/assets/logo.png")}
               draggable={false}
             />
           </div>

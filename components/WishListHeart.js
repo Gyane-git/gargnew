@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Heart } from "lucide-react";
 import {
   addToWishlist,
@@ -7,7 +7,8 @@ import {
   getWishlist,
 } from "@/utils/apiHelper";
 import { toast } from "react-hot-toast";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { getCustomerInfo } from "@/utils/customerApi";
 
 const FilledHeart = (props) => (
   <Heart stroke="red" size={25} fill="red" {...props} />
@@ -16,67 +17,39 @@ const FilledHeart = (props) => (
 export default function WishListHeart({ product }) {
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const pathname = usePathname();
-
-  //  First check if user is logged in
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = sessionStorage.getItem("token");
-      if (token) {
-        setIsLoggedIn(true);
-        // you can fetch user details if needed
-      } else {
-        setIsLoggedIn(false);
-      }
-    };
-
-    checkAuth(); //
-  }, [pathname]);
-
-  //  Then check if this product is in wishlist
-  useEffect(() => {
-    const checkWishlist = async () => {
-      if (!product || !isLoggedIn) return;
-
-      try {
-        const res = await getWishlist();
-        const wishlistArray = res?.wishlist || [];
-
-        const isWishlisted = wishlistArray.some(
-          (item) => item.product_code === product.product_code
-        );
-
-        setWishlisted(isWishlisted);
-      } catch (error) {
-        // console.error("Error checking wishlist:", error);
-      }
-    };
-
-    checkWishlist();
-  }, [product, isLoggedIn]); // also depends on isLoggedIn
+  const [wishlistItemId, setWishlistItemId] = useState(null);
+  const router = useRouter();
 
   const handleWishlist = async () => {
     if (!product) return;
     setLoading(true);
 
     try {
-      const res = await getWishlist();
-      const wishlistArray = res?.wishlist || [];
+      const auth = await getCustomerInfo();
+      if (!auth?.success) {
+        toast.error("Please login to continue");
+        router.push("/account");
+        return;
+      }
 
       if (wishlisted) {
-        const item = wishlistArray.find(
-          (item) => item.product_code === product.product_code
-        );
-        if (!item) {
+        let itemId = wishlistItemId;
+        if (!itemId) {
+          const wishlistRes = await getWishlist();
+          const wishlistArray = wishlistRes?.wishlist || [];
+          const item = wishlistArray.find(
+            (row) => row.product_code === product.product_code
+          );
+          itemId = item?.id || null;
+        }
+        if (!itemId) {
           toast.error("Item not found in wishlist");
-          setLoading(false);
           return;
         }
-        const removeRes = await removeFromWishlist(item.id);
+        const removeRes = await removeFromWishlist(itemId);
         if (removeRes.success) {
           setWishlisted(false);
+          setWishlistItemId(null);
           toast.success("Removed from wishlist");
         } else {
           toast.error(removeRes.message || "Failed to remove from wishlist");
@@ -85,6 +58,11 @@ export default function WishListHeart({ product }) {
         const addRes = await addToWishlist(product.product_code);
         if (addRes.success) {
           setWishlisted(true);
+          const wishlistArray = addRes?.wishlist || [];
+          const item = wishlistArray.find(
+            (row) => row.product_code === product.product_code
+          );
+          setWishlistItemId(item?.id || null);
           toast.success("Added to wishlist");
         } else {
           toast.error(addRes.message || "Failed to add to wishlist");

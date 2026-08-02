@@ -83,6 +83,38 @@ import pool from "@/utils/db";
 import { formatProduct } from "@/utils/apiFormatters";
 import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
+/**
+ * @swagger
+ * /api/v1/products/code/{product_code}:
+ *   get:
+ *     summary: Get a single product (any status) by product_code
+ *     description: >
+ *       Intended to look up a product by its product_code path segment, joined with
+ *       category_name and brand_name (no status filter, so inactive products are also
+ *       returned). No API-layer authentication is enforced. NOTE (documenting current
+ *       actual behavior, not changed here) - the folder is named [product_code] so
+ *       Next.js populates params.product_code, but the handler destructures `const {
+ *       code } = await params`, which is always undefined; the underlying mysql2 query
+ *       is then run with an undefined bind parameter, which mysql2 rejects. In practice
+ *       this currently throws for every request and falls into the catch block below,
+ *       returning a 500 with the driver's "Bind parameters must not contain undefined"
+ *       message, regardless of the product_code value supplied.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: product_code, in: path, required: true, schema: { type: string } }
+ *     responses:
+ *       200:
+ *         description: Product retrieved successfully (see note above about current behavior).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 product: { type: object }
+ *       404: { description: Product not found. }
+ *       500: { description: Internal error (currently hit on every request - see description). }
+ */
 export async function GET(req, { params }) {
   const { code } = await params;
   try {
