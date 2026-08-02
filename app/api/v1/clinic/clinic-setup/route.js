@@ -22,21 +22,61 @@ const ensureSettingsTable = async () => {
 
 const readSettings = async () => {
   await ensureSettingsTable();
-  const [rows] = await pool.query(`SELECT * FROM ${SETTINGS_TABLE} ORDER BY id ASC`);
 
-  return rows.map((row) => {
-    if (row.key === "clinic_cover_image") {
-      return {
-        ...row,
-        clinic_cover_image_full_url: assetUrl(row.value, "uploads/clinic-setup"),
-      };
-    }
+  const [rows] = await pool.query(
+    `
+    SELECT
+      css.id,
+      css.key,
+      css.value,
+      css.created_at,
+      css.updated_at,
 
-    return {
-      ...row,
-      value: row.value,
-    };
-  });
+      s.id AS storage_id,
+      s.data_type,
+      s.data_id,
+      s.key AS storage_key,
+      s.value AS storage_value,
+      s.created_at AS storage_created_at,
+      s.updated_at AS storage_updated_at
+
+    FROM ${SETTINGS_TABLE} css
+
+     LEFT JOIN storages s
+      ON s.data_id = css.id
+
+    WHERE css.key = 'clinic_cover_image'
+    `,
+  );
+
+  if (!rows.length) {
+    return {};
+  }
+
+  const first = rows[0];
+
+  return {
+    clinic_cover_image: {
+      id: first.id,
+      key: first.key,
+      value: first.value,
+      created_at: first.created_at,
+      updated_at: first.updated_at,
+      files_full_url: [],
+      clinic_cover_image_full_url: assetUrl(first.value, "uploads/clinic-setup"),
+      storage: rows
+        .filter((row) => row.storage_id)
+        .map((row) => ({
+          id: row.storage_id,
+          data_type: row.data_type,
+          data_id: row.data_id,
+          key: row.storage_key,
+          value: row.storage_value,
+          created_at: row.storage_created_at,
+          updated_at: row.storage_updated_at,
+        })),
+    },
+  };
 };
 
 /**
@@ -79,6 +119,7 @@ export async function GET() {
 
     return Response.json({
       success: true,
+      message: "Clinic setup fetched successfully.",
       clinic,
     });
   } catch (error) {
