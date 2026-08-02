@@ -52,7 +52,15 @@ const pickAssetPath = (value, folder = "") => {
   ]);
 
   const existing = candidates.find((candidate) => publicAssetExists(candidate));
-  return existing || candidates.find((candidate) => candidate?.startsWith("/images/") || candidate?.startsWith("/backend/") || candidate?.startsWith("/uploads/")) || candidates[0] || null;
+  if (existing) return existing;
+
+  // If we are not serving from a remote base URL, prefer a null value over
+  // handing the browser a broken local path that will 404 on every render.
+  if (!absoluteBaseUrl()) {
+    return null;
+  }
+
+  return candidates.find((candidate) => candidate?.startsWith("/images/") || candidate?.startsWith("/backend/") || candidate?.startsWith("/uploads/")) || candidates[0] || null;
 };
 
 export const assetUrl = (value, folder = "") => {

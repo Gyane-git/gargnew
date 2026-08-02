@@ -98,8 +98,7 @@
 
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { assetUrl } from "@/utils/apiFormatters";
 
 const PRODUCT_IMAGE_PATH = "/uploads/products";
 const REVIEW_IMAGE_PATH = "/uploads/reviews";
@@ -108,8 +107,7 @@ const CATEGORY_IMAGE_PATH = "/uploads/categories";
 const BRAND_IMAGE_PATH = "/uploads/brands";
 
 function buildFullUrl(basePath, fileName) {
-  if (!fileName) return null;
-  return `${BASE_URL}${basePath}/${encodeURIComponent(fileName)}`;
+  return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
 export async function GET() {

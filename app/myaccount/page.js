@@ -19,7 +19,6 @@ import MyWishlist from "./components/MyWishlist";
 import MyReviews from "./components/MyReview";
 import Returnlist from "@/app/Return-list/Returnlist";
 import Complains from "./components/Complains";
-import useInfoModalStore from "@/stores/warningModalStore";
 
 const AccountPage = () => {
   const { provinces = [], cities = [], zones = [], fetchAddressDropdowns } = useAddressStore() || {};
@@ -52,6 +51,7 @@ const AccountPage = () => {
   const [homeAddress, setHomeAddress] = useState(null);
   const [officeAddress, setOfficeAddress] = useState(null);
   const [defaultBillingAddress, setDefaultBillingAddress] = useState(null);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const sidebarItems = [
     { key: "account", label: "Manage My Account", icon: User },
     { key: "address", label: "Address Book", icon: MapPin },
@@ -71,16 +71,6 @@ const AccountPage = () => {
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) {
-      useInfoModalStore.getState().open({
-        title: "Info",
-        message: "Please login to continue.",
-      });
-      router.replace("/account");
-      return;
-    }
-
     fetchAddressDropdowns?.();
   }, [fetchAddressDropdowns]);
 
@@ -108,14 +98,15 @@ const AccountPage = () => {
         setDefaultBillingAddress(defaultBillingAddress);
         setOfficeAddress(officeAddress);
       } else {
-        toast.error("Failed to load user data");
-        // console.error("Error loading user data:", result.error);
-        router.push("/dashboard");
+        if (result.status === 401 || result.status === 404) {
+          setNeedsLogin(true);
+          return;
+        }
+        toast.error(result.error || "Failed to load user data");
       }
     } catch (error) {
       toast.error("An error occurred while loading user data");
-      // console.error("Error fetching user data:", error);
-      router.push("/account");
+      setNeedsLogin(true);
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +123,10 @@ const AccountPage = () => {
       if (result.success) {
         setOrderlength(orderCount);
       } else {
+        if (result.status === 401 || result.status === 404) {
+          setNeedsLogin(true);
+          return;
+        }
         setError(result.error);
         toast.error(result.error);
       }
@@ -198,6 +193,25 @@ const AccountPage = () => {
 
   if (isLoading || loading) {
     return <FullScreenLoader />;
+  }
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-xl border bg-white p-6 text-center shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900">Please login to continue.</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            You need to sign in before viewing your account page.
+          </p>
+          <button
+            onClick={() => router.push("/account")}
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-white hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (showEditProfile) {

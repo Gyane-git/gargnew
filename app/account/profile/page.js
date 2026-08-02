@@ -24,6 +24,7 @@ export default function CustomerProfilePage() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showRemoveAccount, setShowRemoveAccount] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,12 +40,15 @@ export default function CustomerProfilePage() {
       if (result.success) {
         setUser(result.data);
       } else {
-        toast.error("Failed to load profile");
-        // console.error("Error loading profile:", result.error);
+        if (result.status === 401 || result.status === 404) {
+          setNeedsLogin(true);
+          return;
+        }
+        toast.error(result.error || "Failed to load profile");
       }
     } catch (error) {
       toast.error("An error occurred while loading profile");
-      // console.error("Error fetching profile:", error);
+      setNeedsLogin(true);
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +79,6 @@ export default function CustomerProfilePage() {
       if (data.success) {
         // Clear localStorage
         // localStorage.removeItem("token");
-        sessionStorage.removeItem("token");
-
         // Clear cart store
         const useCartStore = await import("@/stores/useCartStore");
         useCartStore.default.getState().clearCart();
@@ -95,6 +97,25 @@ export default function CustomerProfilePage() {
 
   if (isLoading) {
     return <FullScreenLoader />;
+  }
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-xl border bg-white p-6 text-center shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900">Please login to continue.</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            You need to sign in before viewing your profile.
+          </p>
+          <button
+            onClick={() => router.push("/account")}
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-white hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

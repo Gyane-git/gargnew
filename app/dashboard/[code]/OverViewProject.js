@@ -13,14 +13,15 @@ const OverViewProject = ({ product }) => {
         item.image_full_url ||
         item.full_url ||
         item.url ||
-        item.path ||
-        item.image_path ||
-        item.file_url ||
-        item.file_path ||
-        item.src ||
-        item.image ||
         item.main_image_full_url ||
         item.main_image_url ||
+        item.image_url ||
+        item.file_url ||
+        item.file_path ||
+        item.path ||
+        item.image_path ||
+        item.src ||
+        item.image ||
         null
       );
     }

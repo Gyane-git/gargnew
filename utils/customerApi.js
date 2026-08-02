@@ -10,6 +10,14 @@ import { apiRequest, apiPostRequest } from "./ApiSafeCalls";
 export const getCustomerInfo = async () => {
   try {
     const response = await apiRequest("/customer/info", true);
+    if (!response?.success) {
+      return {
+        success: false,
+        error: response?.message || "Failed to fetch customer information",
+        status: response?.status,
+      };
+    }
+
     return {
       success: true,
       data: response.data || response,
@@ -19,6 +27,7 @@ export const getCustomerInfo = async () => {
     return {
       success: false,
       error: error.message || "Failed to fetch customer information",
+      status: error?.status,
     };
   }
 };
