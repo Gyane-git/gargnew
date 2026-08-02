@@ -31,9 +31,7 @@ import { baseUrl } from "./config";
 
 // export const apiPostRequest = async (url, data, tokenReq = true) =>
 //   apiRequest(url, tokenReq, { method: "POST", body: JSON.stringify(data) });
-export const getToken = () => {
-  return sessionStorage.getItem("token");
-}
+export const getToken = () => null;
 
 const getApiBaseUrl = () => {
   if (typeof window === "undefined") return baseUrl;
@@ -52,9 +50,8 @@ const getApiBaseUrl = () => {
 
 export const apiRequest = async (url, tokenReq = true, options = {}) => {
   url = `${getApiBaseUrl()}${url}`;
-  const token = sessionStorage.getItem("token");
+
   const headers = {
-    ...(tokenReq && token && { Authorization: `Bearer ${token}` }),
     ...(options.method !== "GET" && { "Content-Type": "application/json" }),
     ...options.headers,
   };
@@ -67,6 +64,7 @@ export const apiRequest = async (url, tokenReq = true, options = {}) => {
       ...options,
       headers,
       signal: controller.signal,
+      credentials: "include",
     });
   } catch (err) {
     clearTimeout(timeoutId);
@@ -100,12 +98,20 @@ export const apiRequest = async (url, tokenReq = true, options = {}) => {
   clearTimeout(timeoutId);
 
   if (data.success || response.ok) {
-    return data;
+    return {
+      ...data,
+      status: data?.status ?? response.status,
+      ok: response.ok,
+    };
   } else {
     // Log detailed error
     // console.log("API error response:", data);
     // console.warn(data);
-    return data;
+    return {
+      ...data,
+      status: data?.status ?? response.status,
+      ok: response.ok,
+    };
   }
 };
 

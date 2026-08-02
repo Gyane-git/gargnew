@@ -16,6 +16,43 @@ async function upsertByKey(key, value) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliances/{key}:
+ *   get:
+ *     summary: Get a compliance record by key
+ *     description: No API-layer auth enforced. Reads a single row from the compliances table by its `key`.
+ *     tags: [CMS - Compliance]
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema: { type: string }
+ *         description: Compliance key (e.g. about_us, about_company, privacy_policy, medical_certifications).
+ *     responses:
+ *       200:
+ *         description: Compliance record fetched successfully (compliance is null if not found).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 compliance:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id: { type: integer }
+ *                     key: { type: string }
+ *                     value: { type: string }
+ *                     raw_value: { type: string }
+ *                     compliancefiles: { type: array, items: { type: object } }
+ *                     data: { type: object, nullable: true }
+ *                     created_at: { type: string, format: date-time }
+ *                     updated_at: { type: string, format: date-time }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function GET(_request, { params }) {
   try {
     const row = await fetchComplianceRowByKey(params.key);
@@ -42,6 +79,50 @@ export async function GET(_request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliances/{key}:
+ *   put:
+ *     summary: Update (or create) a compliance record by key
+ *     description: >
+ *       No API-layer auth enforced. Upserts a row in the compliances table
+ *       keyed by the `key` path parameter. If `value` is not a string it is
+ *       JSON.stringified before being stored.
+ *     tags: [CMS - Compliance]
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema: { type: string }
+ *         description: Compliance key (e.g. about_us, about_company, privacy_policy, medical_certifications).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [value]
+ *             properties:
+ *               value:
+ *                 description: String or JSON-serializable object; stored as-is if a string, otherwise JSON.stringified.
+ *                 oneOf:
+ *                   - type: string
+ *                   - type: object
+ *     responses:
+ *       200:
+ *         description: Compliance updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Compliance updated successfully." }
+ *       400:
+ *         description: Compliance value is required.
+ *       500:
+ *         description: Internal server error.
+ */
 export async function PUT(request, { params }) {
   try {
     const body = await request.json();
@@ -73,6 +154,34 @@ export async function PUT(request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/compliances/{key}:
+ *   delete:
+ *     summary: Delete a compliance record by key
+ *     description: >
+ *       No API-layer auth enforced. Deletes the row from the compliances
+ *       table matching `key`. Returns success even if no row existed.
+ *     tags: [CMS - Compliance]
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema: { type: string }
+ *         description: Compliance key (e.g. about_us, about_company, privacy_policy, medical_certifications).
+ *     responses:
+ *       200:
+ *         description: Compliance deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Compliance deleted successfully." }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function DELETE(_request, { params }) {
   try {
     const row = await fetchComplianceRowByKey(params.key);

@@ -2,6 +2,35 @@ import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 
 // ── GET ALL ZONES ─────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/v1/addresses/address-zone:
+ *   get:
+ *     summary: List all address zones
+ *     description: Returns every row in address_zone, joined with set_shipping for the city name, ordered by id descending.
+ *     tags: [Admin - Address Reference]
+ *     responses:
+ *       200:
+ *         description: Zones fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 zones:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       city_id: { type: integer }
+ *                       city_name: { type: string, nullable: true }
+ *                       zone_name: { type: string }
+ *                       created_at: { type: string, format: date-time }
+ *                       updated_at: { type: string, format: date-time }
+ *       500: { description: Server error }
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(
@@ -33,6 +62,38 @@ export async function GET() {
 }
 
 // ── CREATE ZONE ───────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/v1/addresses/address-zone:
+ *   post:
+ *     summary: Create an address zone
+ *     description: Creates a new zone under a city (set_shipping row). Rejects duplicate zone names within the same city (case-insensitive).
+ *     tags: [Admin - Address Reference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [city_id, zone_name]
+ *             properties:
+ *               city_id: { type: integer, description: "id of a set_shipping row" }
+ *               zone_name: { type: string }
+ *     responses:
+ *       201:
+ *         description: Zone created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Zone created successfully" }
+ *                 zoneId: { type: integer }
+ *       400: { description: "city_id or zone_name missing" }
+ *       409: { description: Zone already exists in this city }
+ *       500: { description: Server error }
+ */
 export async function POST(req) {
   try {
     const body = await req.json();

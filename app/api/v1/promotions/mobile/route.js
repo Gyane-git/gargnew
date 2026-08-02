@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { assetUrl } from "@/utils/apiFormatters";
 
 const PROMOTION_PATH = "/uploads/promotion";
 const PRODUCT_IMAGE_PATH = "/uploads/products";
@@ -9,10 +8,23 @@ const REVIEW_IMAGE_PATH = "/uploads/reviews";
 const CATALOGUE_PATH = "/uploads/catalogues";
 
 function buildFullUrl(basePath, fileName) {
-  if (!fileName) return null;
-  return `${BASE_URL}${basePath}/${encodeURIComponent(fileName)}`;
+  return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
+/**
+ * @swagger
+ * /api/v1/promotions/mobile:
+ *   get:
+ *     summary: Get active promotions with product, review, and storage details
+ *     description: Joins promotion_images (status = 1) with products (status = 1), left joins
+ *       storages by data_id, and attaches aggregated product_reviews per product_code.
+ *     tags: [Promotions]
+ *     responses:
+ *       200:
+ *         description: Mobile promotions fetched successfully.
+ *       500:
+ *         description: Failed to fetch promotion products.
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(`
@@ -69,9 +81,10 @@ export async function GET() {
         ON pi.product_code = p.product_code
       LEFT JOIN storages s
         ON s.data_id = pi.id
+        AND s.data_type = ?
       WHERE pi.status = 1
         AND p.status = 1
-    `);
+    `, ["App\\Models\\Promotion"]);
 
     // ---- Reviews ----
     const productCodes = [...new Set(rows.map((r) => r.product_code))];

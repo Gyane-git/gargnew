@@ -37,6 +37,16 @@ async function ensureTable() {
   };
 }
 
+/**
+ * @swagger
+ * /api/shipping-carriers:
+ *   get:
+ *     summary: List all shipping carriers (creates the shipping_carriers table if it doesn't exist yet)
+ *     tags: [Admin - Shipping]
+ *     responses:
+ *       200: { description: '{ success: true, carriers: [...] } list of carriers ordered by id descending, each with id, name, address, phone, type, publish, created_at, updated_at.' }
+ *       500: { description: '{ success: false, message } returned on a database error.' }
+ */
 export async function GET() {
   try {
     await ensureTable();
@@ -64,6 +74,30 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/shipping-carriers:
+ *   post:
+ *     summary: Create a new shipping carrier and record an audit log entry for the creation
+ *     tags: [Admin - Shipping]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, type]
+ *             properties:
+ *               name: { type: string }
+ *               address: { type: string }
+ *               phone: { type: string }
+ *               type: { type: string }
+ *               publish: { type: integer, enum: [0, 1], description: Defaults to 1 (published) when omitted. }
+ *     responses:
+ *       200: { description: '{ success: true, message: "Carrier created successfully.", carrierId } on success.' }
+ *       400: { description: '{ success: false, message } returned when name or type is missing.' }
+ *       500: { description: '{ success: false, message } returned on a database error.' }
+ */
 export async function POST(req) {
   try {
     const { hasStatus } = await ensureTable();

@@ -72,6 +72,37 @@ function toBoolInt(value) {
 
 // ---- GET ------------------------------------------------------------------
 
+/**
+ * @swagger
+ * /api/v1/products:
+ *   get:
+ *     summary: List products (paginated)
+ *     description: >
+ *       Returns products joined with category and brand info, enriched with gallery
+ *       images (from product_images) and formatted asset URLs. By default only active
+ *       products (status = 1) are returned; pass include_inactive=1 to include all.
+ *       No API-layer authentication is enforced (public endpoint).
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: limit, in: query, required: false, schema: { type: integer, default: 20, maximum: 100 }, description: Max rows to return (capped at 100). }
+ *       - { name: offset, in: query, required: false, schema: { type: integer, default: 0 } }
+ *       - { name: include_inactive, in: query, required: false, schema: { type: string, enum: ["1"] }, description: Pass "1" to include products with status != 1. }
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 products: { type: array, items: { type: object } }
+ *                 count: { type: integer, description: Number of rows in this page. }
+ *                 total: { type: integer, description: Total matching rows across all pages. }
+ *                 limit: { type: integer }
+ *                 offset: { type: integer }
+ *       500: { description: Failed to fetch products. }
+ */
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -114,6 +145,73 @@ export async function GET(req) {
 }
 
 // ---- POST -------------------------------------------------------------
+/**
+ * @swagger
+ * /api/v1/products:
+ *   post:
+ *     summary: Create a new product
+ *     description: >
+ *       Reads a multipart/form-data payload (via req.formData()). Requires product_name
+ *       (falls back to a "name" field) and product_code; returns 409 if product_code
+ *       already exists. When has_variations=1, a "variations" field must be a JSON-encoded
+ *       array - each item may have an accompanying file field named variation_image_{index}
+ *       (0-based) - and actual_price/sell_price/available_quantity/stock_quantity are then
+ *       derived from the variations (max actual_price, min sell_price, summed quantities)
+ *       instead of the top-level fields. Product, variations and gallery images are written
+ *       inside a single DB transaction. No API-layer authentication is enforced.
+ *     tags: [Products]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [product_code]
+ *             properties:
+ *               product_name: { type: string, description: "Required (or provide 'name' instead)." }
+ *               name: { type: string, description: Fallback for product_name. }
+ *               product_code: { type: string, description: Must be unique. }
+ *               slug: { type: string }
+ *               product_description: { type: string }
+ *               key_specifications: { type: string }
+ *               packaging: { type: string }
+ *               warranty: { type: string }
+ *               brand_id: { type: integer, nullable: true }
+ *               category_id: { type: integer, nullable: true }
+ *               delivery_target_days: { type: integer, nullable: true }
+ *               product_location: { type: string, nullable: true }
+ *               actual_price: { type: number, default: 0 }
+ *               sell_price: { type: number, default: 0 }
+ *               discount: { type: number, default: 0 }
+ *               available_quantity: { type: integer, default: 0 }
+ *               stock_quantity: { type: integer, default: 0 }
+ *               status: { type: integer, default: 1 }
+ *               has_variations: { type: integer, enum: [0, 1], default: 0 }
+ *               flash_sale: { type: integer, enum: [0, 1], default: 0 }
+ *               weekly_offer: { type: integer, enum: [0, 1], default: 0 }
+ *               special_offer: { type: integer, enum: [0, 1], default: 0 }
+ *               today_deals: { type: integer, enum: [0, 1], default: 0 }
+ *               variations: { type: string, description: "JSON-encoded array, required only when has_variations=1. Each item may include name, actual_price, sell_price, available_qty, stock_qty." }
+ *               variation_image_0: { type: string, format: binary, description: "Image for variations[0]; repeat as variation_image_1, variation_image_2, ... aligned by array index." }
+ *               main_image: { type: string, format: binary, description: "Main product image (or provide 'image' instead)." }
+ *               image: { type: string, format: binary, description: Fallback for main_image. }
+ *               product_catalogue: { type: string, format: binary, description: "Catalogue file (.pdf, .doc, .docx, .xls, .xlsx)." }
+ *               gallery_images: { type: array, items: { type: string, format: binary }, description: Multiple gallery image files. }
+ *     responses:
+ *       200:
+ *         description: Product created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Product created successfully }
+ *                 product: { type: object, nullable: true }
+ *       400: { description: Product name or product code missing, or invalid variations JSON. }
+ *       409: { description: Product code already exists. }
+ *       500: { description: Failed to create product. }
+ */
 export async function POST(req) {
   const writtenFiles = [];
 

@@ -5,6 +5,25 @@ import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { invalidateOffersCache } from "@/utils/offersCache";
 
+/**
+ * @swagger
+ * /api/v1/offers/{id}:
+ *   get:
+ *     summary: Get a single offer by id
+ *     tags: [Offers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Offer found.
+ *       404:
+ *         description: Offer not found.
+ *       500:
+ *         description: Server error.
+ */
 export async function GET(_req, context) {
   try {
     const { id } = await context.params;
@@ -23,6 +42,51 @@ export async function GET(_req, context) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/offers/{id}:
+ *   put:
+ *     summary: Update an offer
+ *     description: Accepts either multipart/form-data (with an optional offer_image file) or a
+ *       plain JSON body, and delegates persistence to saveOffer(). Also records an audit log
+ *       entry using the bearer token's user info if present, otherwise "System" (not enforced -
+ *       requests without a token still succeed).
+ *     tags: [Offers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               start_date: { type: string, format: date }
+ *               end_date: { type: string, format: date }
+ *               is_active: { type: string }
+ *               is_offer: { type: string }
+ *               offer_image: { type: string, format: binary }
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               start_date: { type: string, format: date }
+ *               end_date: { type: string, format: date }
+ *               is_active: { type: integer }
+ *               is_offer: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Offer updated successfully.
+ *       400:
+ *         description: Save failed (e.g. validation error from saveOffer).
+ *       500:
+ *         description: Server error.
+ */
 export async function PUT(request, context) {
   try {
     const { id } = await context.params;
@@ -80,6 +144,36 @@ export async function PUT(request, context) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/offers/{id}:
+ *   patch:
+ *     summary: Update an offer's active status
+ *     description: Accepts a JSON body { is_active } and updates the offer via saveOffer().
+ *       Also records an audit log entry.
+ *     tags: [Offers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_active: { type: integer }
+ *             required: [is_active]
+ *     responses:
+ *       200:
+ *         description: Status updated.
+ *       400:
+ *         description: Save failed.
+ *       500:
+ *         description: Server error.
+ */
 export async function PATCH(request, context) {
   try {
     const { id } = await context.params;
@@ -119,6 +213,26 @@ export async function PATCH(request, context) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/offers/{id}:
+ *   delete:
+ *     summary: Delete an offer
+ *     description: Deletes the offer row and records an audit log entry.
+ *     tags: [Offers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Offer deleted successfully.
+ *       404:
+ *         description: Offer not found.
+ *       500:
+ *         description: Server error.
+ */
 export async function DELETE(_request, context) {
   try {
     const { id } = await context.params;

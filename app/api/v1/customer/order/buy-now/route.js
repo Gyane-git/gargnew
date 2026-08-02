@@ -15,6 +15,46 @@ import {
 
 const toNumber = (value) => Number(value || 0);
 
+/**
+ * @swagger
+ * /api/v1/customer/order/buy-now:
+ *   post:
+ *     summary: Place an order for a single product directly (bypassing the cart)
+ *     description: Looks up the product by code, reserves inventory for the requested
+ *       quantity, creates shipping/billing delivery-information records, inserts the order
+ *       and its single order item, and e-mails the customer an order-received confirmation
+ *       with an attached invoice PDF (best-effort; mail failures do not fail the request).
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [payment_method, billing_address, shipping_address, invoice_email, buy_now_item]
+ *             properties:
+ *               payment_method: { type: string, description: Payment method identifier }
+ *               billing_address: { type: integer, description: ID of the customer's saved billing address }
+ *               shipping_address: { type: integer, description: ID of the customer's saved shipping address }
+ *               invoice_email: { type: string, description: E-mail address the invoice/confirmation is sent to }
+ *               transaction_id: { type: string, nullable: true }
+ *               shipping: { type: number, description: Optional shipping cost override; defaults to the address's shipping cost }
+ *               buy_now_item:
+ *                 type: object
+ *                 required: [product_code, quantity]
+ *                 properties:
+ *                   product_code: { type: string }
+ *                   quantity: { type: integer, minimum: 1 }
+ *     responses:
+ *       200:
+ *         description: Order placed successfully
+ *       401: { description: Unauthorized }
+ *       404: { description: Billing/shipping address not found, or product not found }
+ *       422: { description: Missing required fields or insufficient stock }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   let connection = null;
   try {

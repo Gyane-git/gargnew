@@ -3,6 +3,119 @@ import bcrypt from "bcryptjs";
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 
+/**
+ * @swagger
+ * /api/v1/auth/reset-password-verify:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify a password reset code and set a new password
+ *     description: Validates the reset code issued by /api/v1/auth/forgot-password-code, then updates the user's password and re-activates the account (`status = 1`).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, reset_code, new_password, confirm_new_password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               reset_code:
+ *                 type: string
+ *               new_password:
+ *                 type: string
+ *                 format: password
+ *               confirm_new_password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Password reset successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password has been reset successfully.
+ *       400:
+ *         description: One or more required fields missing from request body.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Email, reset code, and new password are required.
+ *       404:
+ *         description: No account found for the given email.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Account not found.
+ *       422:
+ *         description: New password shorter than 6 characters, passwords do not match, or the reset code is invalid/expired.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Invalid reset code.
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       message:
+ *                         type: string
+ *                         example: Internal server error. Please try again.
+ */
 export async function POST(req) {
   try {
     const body = await req.json();

@@ -15,7 +15,8 @@ export default function TawkToWidget() {
     const fetchSettings = async () => {
       const response = await apiRequest("/settings", false);
       if (response.success) {
-        const { whatsapp } = response.settings;
+        const settings = response?.settings || {};
+        const whatsapp = settings.whatsapp || {};
         const number = whatsapp?.value || "98"; // fallback number
         // console.log("Fetched settings:", number);
 

@@ -2,6 +2,39 @@ import pool from "@/utils/db";
 import { formatProduct } from "@/utils/apiFormatters";
 import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
 
+/**
+ * @swagger
+ * /api/v1/brands/products:
+ *   get:
+ *     summary: List active products for a brand
+ *     description: NOTE - this route lives at the static path /api/v1/brands/products
+ *       (the folder has no dynamic [id] segment), yet the handler destructures `id`
+ *       from `params`, which Next.js will always resolve to undefined here. As
+ *       currently routed this endpoint cannot receive a brand id and will always fall
+ *       through to the 404 "Brand not found" response; it appears to be a leftover or
+ *       misplaced file (likely intended as /api/v1/brands/{id}/products). Documented
+ *       as-is, without changing the route. No authentication is enforced.
+ *     tags: [Brands]
+ *     responses:
+ *       200:
+ *         description: Products for the brand retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 brand_name: { type: string }
+ *                 products:
+ *                   type: array
+ *                   description: Active products for the brand, formatted via
+ *                     formatProduct and enriched with additional images.
+ *                   items: { type: object }
+ *       404:
+ *         description: Brand not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req, { params }) {
   try {
     const { id } = params;

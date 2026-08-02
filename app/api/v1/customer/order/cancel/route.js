@@ -11,6 +11,39 @@ const getTableColumns = async (connection, tableName) => {
   return rows.map((row) => row.Field);
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/order/cancel:
+ *   post:
+ *     summary: Cancel a customer's own order
+ *     description: Validates the given cancel reason (must be reason_type=cancel and
+ *       reason_for=customer), locates the order (matching by order_id in various formats
+ *       or by numeric id), inserts an order_cancel record (columns are detected dynamically
+ *       from the table schema), marks the order as cancelled, and records an audit log entry
+ *       (best-effort).
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [order_id, reason_id]
+ *             properties:
+ *               order_id: { type: string, description: "Order id/number (accepts orderId as an alias)" }
+ *               reason_id: { type: integer, description: "ID of a cancel reason (accepts reasonId as an alias)" }
+ *               reason_description: { type: string, nullable: true, description: "Accepts reasonDescription as an alias" }
+ *               policy_checked: { type: string, default: Y, description: "Y/N; accepts policyChecked as an alias" }
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *       401: { description: Unauthorized }
+ *       404: { description: Cancel reason not found, or order not found }
+ *       422: { description: order_id/reason_id missing, or the selected reason is not a valid customer cancel reason }
+ *       500: { description: Internal server error }
+ */
 export async function POST(request) {
   let connection = null;
   try {
@@ -104,10 +137,11 @@ export async function POST(request) {
     if (columns.includes("phone")) insertData.phone = customerPhone;
     if (columns.includes("order_id")) insertData.order_id = order.order_id || order.id;
     if (columns.includes("order_number")) insertData.order_number = order.order_id || order.id;
-    if (columns.includes("customer_id")) insertData.customer_id = order.customer_id || null;
+    if (columns.includes("customer_id")) insertData.customer_id = order.customer_id || authUser.id;
     if (columns.includes("reason_id")) insertData.reason_id = reason.id;
     if (columns.includes("reason")) insertData.reason = reasonLabel;
-    if (columns.includes("cancel_reason")) insertData.cancel_reason = reasonLabel;
+    if (columns.includes("cancel_reason")) insertData.cancel_reason = reason.id;
+    if (columns.includes("cancel_reason_text")) insertData.cancel_reason_text = reasonLabel;
     if (columns.includes("reason_name")) insertData.reason_name = reasonLabel;
     if (columns.includes("cancel_reason_name")) insertData.cancel_reason_name = reasonLabel;
     if (columns.includes("reason_description")) insertData.reason_description = reasonText;
@@ -116,6 +150,7 @@ export async function POST(request) {
     if (columns.includes("policy_checked")) insertData.policy_checked = policyChecked;
     if (columns.includes("status")) insertData.status = "cancelled";
     if (columns.includes("order_status")) insertData.order_status = "cancelled";
+    if (columns.includes("orderStatus")) insertData.orderStatus = "cancelled";
     if (columns.includes("created_at")) insertData.created_at = new Date();
     if (columns.includes("updated_at")) insertData.updated_at = new Date();
 
@@ -143,6 +178,10 @@ export async function POST(request) {
       updateFields.push("order_status = ?");
       updateValues.push("cancelled");
     }
+    if (orderColumns.includes("status")) {
+      updateFields.push("status = ?");
+      updateValues.push("cancelled");
+    }
 
     if (orderColumns.includes("updated_at")) {
       updateFields.push("updated_at = NOW()");
@@ -157,27 +196,25 @@ export async function POST(request) {
 
     await connection.commit();
 
-    try {
-      await recordAuditLog(connection, {
-        admin_name: authUser?.name || authUser?.full_name || authUser?.email || "Customer",
-        role: authUser?.role || authUser?.user_role || "Customer",
-        action: "Cancelled",
-        module: "orders",
-        model: "Order",
-        record_id: order.order_id,
-        summary: `Order ${order.order_id} cancelled`,
-        ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
-        metadata: {
-          order_id: order.order_id,
-          reason_id: reason.id,
-          reason: reasonLabel,
-          reason_description: reasonText,
-          policy_checked: policyChecked,
-        },
-      });
-    } catch (auditError) {
+    void recordAuditLog(pool, {
+      admin_name: authUser?.name || authUser?.full_name || authUser?.email || "Customer",
+      role: authUser?.role || authUser?.user_role || "Customer",
+      action: "Cancelled",
+      module: "orders",
+      model: "Order",
+      record_id: order.order_id,
+      summary: `Order ${order.order_id} cancelled`,
+      ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "",
+      metadata: {
+        order_id: order.order_id,
+        reason_id: reason.id,
+        reason: reasonLabel,
+        reason_description: reasonText,
+        policy_checked: policyChecked,
+      },
+    }).catch((auditError) => {
       console.error("CANCEL AUDIT LOG ERROR:", auditError.message);
-    }
+    });
 
     return NextResponse.json({
       success: true,

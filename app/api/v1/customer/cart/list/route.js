@@ -19,6 +19,48 @@ const attachProducts = async (rows) =>
     })),
   );
 
+/**
+ * @swagger
+ * /api/v1/customer/cart/list:
+ *   get:
+ *     summary: Get the authenticated customer's cart
+ *     description: Returns an empty cart (id null, no items, subtotal 0) if the
+ *       customer has no cart yet. Each cart item is enriched with its full
+ *       product (or resolved variation) record.
+ *     tags: [Customer - Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Cart retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 cart:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer, nullable: true }
+ *                     subtotal: { type: number }
+ *                     items:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: integer }
+ *                           cart_id: { type: integer }
+ *                           product_code: { type: string }
+ *                           variation_key: { type: string, nullable: true }
+ *                           quantity: { type: integer }
+ *                           price: { type: number }
+ *                           actual_price: { type: number }
+ *                           created_at: { type: string, format: date-time }
+ *                           updated_at: { type: string, format: date-time }
+ *                           product: { type: object, nullable: true, description: Full product (or resolved variation) record }
+ *       500: { description: Internal server error }
+ */
 export async function GET(req) {
   try {
     const authUser = getAuthUser(req);

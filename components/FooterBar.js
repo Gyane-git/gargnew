@@ -64,19 +64,18 @@ export default function FooterBar() {
     const fetchSettings = async () => {
       const response = await apiRequest("/settings", false);
       if (response.success) {
-        const {
-          company_logo_footer,
-          company_name,
-          primary_phone,
-          primary_email,
-          address,
-        } = response.settings;
+        const settings = response?.settings || {};
+        const companyLogoFooter = settings.company_logo_footer || {};
+        const companyNameSetting = settings.company_name || {};
+        const primaryPhoneSetting = settings.primary_phone || {};
+        const primaryEmailSetting = settings.primary_email || {};
+        const addressSetting = settings.address || {};
 
-        const footerLogo = company_logo_footer?.footer_logo_full_url || "";
-        const primaryPhone = primary_phone?.value || "";
-        const primaryEmail = primary_email?.value || "";
-        const addressData = address?.value || "";
-        const companyName = company_name?.value || "";
+        const footerLogo = companyLogoFooter?.footer_logo_full_url || "";
+        const primaryPhone = primaryPhoneSetting?.value || "";
+        const primaryEmail = primaryEmailSetting?.value || "";
+        const addressData = addressSetting?.value || "";
+        const companyName = companyNameSetting?.value || "";
         setSettings({
           company_name: companyName,
           primary_phone: primaryPhone,
@@ -85,7 +84,8 @@ export default function FooterBar() {
           address: addressData,
         });
       } else {
-        toast.error(response?.errors[0]?.message || "Failed to fetch settings");
+        // console.error("Failed to fetch settings:", response.error);
+        toast.error(response?.errors?.[0]?.message || response?.message || "Failed to fetch settings");
       }
     };
     fetchSettings();

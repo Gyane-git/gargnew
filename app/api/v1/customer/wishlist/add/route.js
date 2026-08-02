@@ -3,6 +3,51 @@ import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 import { formatWishlistItem } from "@/utils/wishlist";
 import { getProductByCode } from "@/utils/cart";
 
+/**
+ * @swagger
+ * /api/v1/customer/wishlist/add:
+ *   post:
+ *     summary: Add a product to the authenticated customer's wishlist
+ *     description: If the product is already wishlisted for this customer, no
+ *       duplicate row is inserted and the response message reflects that. Always
+ *       returns the customer's full, up-to-date wishlist.
+ *     tags: [Customer - Wishlist]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_code]
+ *             properties:
+ *               product_code: { type: string, description: Code of the product to wishlist }
+ *     responses:
+ *       200:
+ *         description: Added to wishlist successfully (or already present)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Added to wishlist successfully. }
+ *                 wishlist:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       customer_id: { type: integer }
+ *                       product_code: { type: string }
+ *                       created_at: { type: string, format: date-time }
+ *                       updated_at: { type: string, format: date-time }
+ *                       product: { type: object, nullable: true, description: Full product record }
+ *       400: { description: product_code is required. }
+ *       404: { description: Product not found. }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   try {
     const authUser = getAuthUser(req);

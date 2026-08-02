@@ -1,21 +1,23 @@
 "use client";
-import { useState } from "react";
 import { toast } from "react-hot-toast";
 import useCartStore from "@/stores/useCartStore";
 import { Eye, ShoppingCart } from "lucide-react";
 import { addToCart } from "@/utils/apiHelper";
 import { useRouter } from "next/navigation";
+import { getCustomerInfo } from "@/utils/customerApi";
 
 const AddToCartButton = ({ product }) => {
   const addToCart = useCartStore((state) => state.addToCart);
+  const router = useRouter();
 
-  const handleAddToCart = () => {
-    const token =
-      typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
-    if (!token) {
-      window.location.href = "/account";
+  const handleAddToCart = async () => {
+    const auth = await getCustomerInfo();
+    if (!auth?.success) {
+      toast.error("Please login to continue");
+      router.push("/account");
       return;
     }
+
     addToCart(product);
   };
 
@@ -41,13 +43,8 @@ export default AddToCartButton;
 
 //using this only for products
 export function AddToCart({ product, quantity = 1 }) {
+  const router = useRouter();
   const handleAdd = async () => {
-    const token =
-      typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
-    if (!token) {
-      window.location.href = "/account";
-      return;
-    }
     // setAdded(true);
     console.warn(product.sell_price + " inside add to cart ");
     const response = await addToCart(
@@ -56,6 +53,10 @@ export function AddToCart({ product, quantity = 1 }) {
       product.sell_price,
       product.variation_key || product.variation_sku || product.sku || null
     );
+    if (response?.status === 401) {
+      router.push("/account");
+      return;
+    }
     if (response && response.success) {
       useCartStore.getState().setCart(response.cart);
       // console.log(response);
@@ -83,13 +84,8 @@ export function AddToCart({ product, quantity = 1 }) {
 
 //using this for featured products
 export function AddtoCartFeatured({ product }) {
+  const router = useRouter();
   const handleAdd = async () => {
-    const token =
-      typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
-    if (!token) {
-      window.location.href = "/account";
-      return;
-    }
     // addToCart(product);
     // console.warn(product.sell_price + " inside add to cart featured");
     const response = await addToCart(
@@ -98,6 +94,10 @@ export function AddtoCartFeatured({ product }) {
       product.sell_price,
       product.variation_key || product.variation_sku || product.sku || null
     );
+    if (response?.status === 401) {
+      router.push("/account");
+      return;
+    }
 
     if (response && response.success) {
       useCartStore.getState().setCart(response.cart);

@@ -1,6 +1,51 @@
 import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 
+/**
+ * @swagger
+ * /api/v1/customer/address/load-address-dropdowns:
+ *   get:
+ *     summary: Load nested province -> city -> zone dropdown data for the address form
+ *     description: Returns every province, each with its cities (from set_shipping), each with its zones (from address_zone), nested for cascading dropdowns.
+ *     tags: [Customer - Address]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dropdown data fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       name: { type: string, description: "province_name" }
+ *                       cities:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id: { type: integer }
+ *                             province_id: { type: integer }
+ *                             city: { type: string }
+ *                             shipping_cost: { type: number }
+ *                             zones:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   id: { type: integer }
+ *                                   city_id: { type: integer }
+ *                                   zone_name: { type: string }
+ *       401: { description: Unauthorized. }
+ *       500: { description: Internal server error. }
+ */
 export async function GET(req) {
   try {
     const authUser = getAuthUser(req);

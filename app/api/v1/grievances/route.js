@@ -50,6 +50,20 @@ const getColumns = async () => {
   return rows.map((row) => row.Field);
 };
 
+/**
+ * @swagger
+ * /api/v1/grievances:
+ *   get:
+ *     summary: List all grievances
+ *     description: Lazily creates/migrates the `grievances` table on first call, then
+ *       returns every row (all customers, all statuses), newest first. Selects `full_name`
+ *       if present, falling back to a legacy `name` column, or NULL if neither exists.
+ *     tags: [Grievances]
+ *     responses:
+ *       200:
+ *         description: '{ success: true, grievances } - array of grievance rows.'
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 export async function GET() {
   try {
     await ensureTable();

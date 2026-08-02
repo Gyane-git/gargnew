@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import { fetchOrderCancelReasons, normalizeReasonText } from "@/utils/orderCancelReasons";
 
+/**
+ * @swagger
+ * /api/v1/customer/order/reasons-list:
+ *   get:
+ *     summary: List available order cancellation reasons
+ *     description: Returns cancellation reasons filtered to reason_type=cancel and
+ *       reason_for=customer. No authentication is required.
+ *     tags: [Customer - Orders]
+ *     responses:
+ *       200:
+ *         description: List of cancellation reasons
+ *       500: { description: Failed to fetch cancellation reasons }
+ */
 export async function GET() {
   try {
     const reasons = await fetchOrderCancelReasons();

@@ -10,6 +10,14 @@ import { apiRequest, apiPostRequest } from "./ApiSafeCalls";
 export const getCustomerInfo = async () => {
   try {
     const response = await apiRequest("/customer/info", true);
+    if (!response?.success) {
+      return {
+        success: false,
+        error: response?.message || "Failed to fetch customer information",
+        status: response?.status,
+      };
+    }
+
     return {
       success: true,
       data: response.data || response,
@@ -19,6 +27,7 @@ export const getCustomerInfo = async () => {
     return {
       success: false,
       error: error.message || "Failed to fetch customer information",
+      status: error?.status,
     };
   }
 };
@@ -88,7 +97,7 @@ export const removeCustomerAccount = async () => {
       // toast.error(response?.errors[0].message || "Failed to remove account");
       return {
         success: false,
-        error: response?.errors[0].message || "Failed to remove account",
+        error: response?.errors?.[0]?.message || response?.message || "Failed to remove account",
       };
     } else {
       return {

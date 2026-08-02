@@ -21,11 +21,17 @@ export async function POST(req) {
     if (!authUser?.id) return unauthorizedResponse();
 
     const body = await req.json();
+    // current_password is optional: Laravel's CustomerController::change_password only
+    // validates new_password + confirmation, with no old-password check at all. The mobile
+    // app (built against Laravel) won't send current_password. The web app
+    // (components/ChangePasswordForm.js) always sends it and expects it verified, so when
+    // present we still check it - only skip the check when it's genuinely absent.
+    const hasCurrentPassword = Object.prototype.hasOwnProperty.call(body, "current_password") && body.current_password;
     const currentPassword = String(body.current_password || "");
     const newPassword = String(body.new_password || "");
     const confirmPassword = String(body.new_password_confirmation || "");
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if ((hasCurrentPassword && !currentPassword) || !newPassword || !confirmPassword) {
       return Response.json(
         { success: false, message: "All password fields are required." },
         { status: 400 },
@@ -49,12 +55,14 @@ export async function POST(req) {
     const [rows] = await pool.execute("SELECT id, password FROM users WHERE id = ? LIMIT 1", [authUser.id]);
     if (rows.length === 0) return unauthorizedResponse();
 
-    const passwordMatches = await comparePassword(currentPassword, rows[0].password);
-    if (!passwordMatches) {
-      return Response.json(
-        { success: false, message: "Current password is incorrectfffffffffffff." },
-        { status: 422 },
-      );
+    if (hasCurrentPassword) {
+      const passwordMatches = await comparePassword(currentPassword, rows[0].password);
+      if (!passwordMatches) {
+        return Response.json(
+          { success: false, message: "Current password is incorrect!" },
+          { status: 422 },
+        );
+      }
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

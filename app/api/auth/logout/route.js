@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log the current user out by clearing the "token" auth cookie
+ *     tags: [Auth]
+ *     responses:
+ *       200: { description: Logged out successfully; the "token" cookie is cleared (maxAge 0). }
+ */
 export async function POST() {
   const response = NextResponse.json({
     success: true,

@@ -1,18 +1,21 @@
 import { ShoppingCart } from "lucide-react";
 import useCartStore from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { getCustomerInfo } from "@/utils/customerApi";
 // import { toast } from "react-toastify";
 
 export function BuyNow({ product }) {
   const router = useRouter();
   const setSelectedItemsStore = useCartStore((state) => state.setSelectedItems);
   const handleAdd = async () => {
-    const token =
-      typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
-    if (!token) {
-      window.location.href = "/account";
+    const auth = await getCustomerInfo();
+    if (!auth?.success) {
+      toast.error("Please login to continue");
+      router.push("/account");
       return;
     }
+
     console.warn(product.sell_price + " inside buy now ! ");
     const formattedProduct = {
       id: product.id,
@@ -26,6 +29,7 @@ export function BuyNow({ product }) {
       stock_quantity: product.stock_quantity,
     };
     setSelectedItemsStore([formattedProduct]);
+    toast.success("Product added for checkout");
     // console.log("selectedItems after", formattedProduct);
     router.push("/cart/checkout-buy-now");
   };

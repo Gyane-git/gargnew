@@ -4,6 +4,58 @@ import { ensureAddressDefaults, fetchAddressesForCustomer, normalizeFlag } from 
 
 const cleanValue = (value) => (value === undefined || value === null ? "" : String(value).trim());
 
+/**
+ * @swagger
+ * /api/v1/customer/address/add:
+ *   post:
+ *     summary: Add a new address to the authenticated customer's address book
+ *     description: >
+ *       province_id/city_id/zone_id may also be sent as bare `province`/`city`/`zone`
+ *       (province_id ?? province, etc. - province_id wins if both are present). city must
+ *       belong to province, and zone must belong to city, or a 422/404 is returned.
+ *       Response status is 201 to match the legacy Laravel AddressController::add_address
+ *       behaviour, even though this creates a resource (kept for parity with the mobile app).
+ *     tags: [Customer - Address]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [full_name, phone, address]
+ *             properties:
+ *               full_name: { type: string }
+ *               phone: { type: string }
+ *               province_id: { type: integer, description: "Province id (fallback: province)" }
+ *               province: { type: integer, description: "Used if province_id is absent" }
+ *               city_id: { type: integer, description: "id of a set_shipping row (fallback: city)" }
+ *               city: { type: integer, description: "Used if city_id is absent" }
+ *               zone_id: { type: integer, description: "id of an address_zone row (fallback: zone)" }
+ *               zone: { type: integer, description: "Used if zone_id is absent" }
+ *               address: { type: string }
+ *               address_type: { type: string, description: "Defaults to \"H\"" }
+ *               landmark: { type: string, nullable: true }
+ *               default_shipping: { type: string, enum: [Y, N], description: "Defaults to N" }
+ *               default_billing: { type: string, enum: [Y, N], description: "Defaults to N" }
+ *     responses:
+ *       201:
+ *         description: Address added successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Address added successfully." }
+ *                 data: { type: object, description: "The newly created address (same shape as an item in addresses)" }
+ *                 addresses: { type: array, items: { type: object }, description: "All addresses for this customer" }
+ *       401: { description: Unauthorized. }
+ *       404: { description: Province, city, or zone not found. }
+ *       422: { description: "Missing required fields, or city/zone does not belong to the selected province/city." }
+ *       500: { description: Internal server error. }
+ */
 export async function POST(req) {
   try {
     const authUser = getAuthUser(req);
@@ -108,12 +160,17 @@ export async function POST(req) {
     const addresses = await fetchAddressesForCustomer(authUser.id);
     const createdAddress = addresses.find((item) => Number(item.id) === Number(insertResult.insertId)) || null;
 
-    return Response.json({
-      success: true,
-      message: "Address added successfully.",
-      data: createdAddress,
-      addresses,
-    });
+    // Status 201 matches Laravel's AddressController::add_address (which returns 201 even
+    // though this is a create - kept for parity). Additive only: response body unchanged.
+    return Response.json(
+      {
+        success: true,
+        message: "Address added successfully.",
+        data: createdAddress,
+        addresses,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("ADDRESS ADD ERROR:", error);
     return Response.json(

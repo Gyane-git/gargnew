@@ -24,8 +24,11 @@ export default function MyWishlist() {
       setError(null);
       try {
         const data = await getWishlist();
-        // console.log(data.wishlist);
-        setWishlist(data.wishlist);
+        if (data?.status === 401) {
+          setWishlist([]);
+          return;
+        }
+        setWishlist(Array.isArray(data?.wishlist) ? data.wishlist : []);
       } catch (err) {
         setError("Failed to load wishlist");
       } finally {
@@ -41,6 +44,10 @@ export default function MyWishlist() {
     setRemovingId(item_id);
     try {
       const res = await removeFromWishlist(item_id);
+      if (res?.status === 401) {
+        router.push("/account");
+        return;
+      }
       if (res.success) {
         setWishlist((prev) => prev.filter((item) => item.id !== item_id));
       } else {
