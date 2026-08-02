@@ -5,7 +5,7 @@ const nextConfig = {
     "www.dentalnepal.com",
     "gargdental.vercel.app",
     "localhost:3000",
-    "192.168.1.220:3000",
+    "192.168.56.1:3000",
   ],
 
   async redirects() {

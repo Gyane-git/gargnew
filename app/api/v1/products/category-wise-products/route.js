@@ -1,98 +1,3 @@
-// import { NextResponse } from "next/server";
-// import pool from "@/utils/db";
-// import { formatProduct, parsePagination } from "@/utils/apiFormatters";
-// import { enrichProductsWithImages, fetchProductImagesMap } from "@/utils/productImages";
-
-// const collectCategoryIds = (rows, categoryId) => {
-//   const targetId = Number(categoryId);
-//   const childrenByParent = new Map();
-
-//   rows.forEach((row) => {
-//     const parentId = row.parent_id == null ? null : Number(row.parent_id);
-//     if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
-//     childrenByParent.get(parentId).push(Number(row.id));
-//   });
-
-//   const ids = new Set([targetId]);
-//   const stack = [targetId];
-
-//   while (stack.length > 0) {
-//     const currentId = stack.pop();
-//     const children = childrenByParent.get(currentId) || [];
-
-//     children.forEach((childId) => {
-//       if (!ids.has(childId)) {
-//         ids.add(childId);
-//         stack.push(childId);
-//       }
-//     });
-//   }
-
-//   return Array.from(ids);
-// };
-
-// export async function GET(req) {
-//   try {
-//     const { searchParams } = new URL(req.url);
-//     const categoryId = searchParams.get("category_id");
-//     const { limit, offset } = parsePagination(searchParams, { defaultLimit: 10 });
-//     const includeInactive = searchParams.get("include_inactive") === "1";
-
-//     if (!categoryId) {
-//       return NextResponse.json({ success: false, message: "category_id is required" }, { status: 400 });
-//     }
-
-//     const [categoryRows] = await pool.query("SELECT id, parent_id FROM categories");
-//     const categoryIds = collectCategoryIds(categoryRows, categoryId);
-//     const placeholders = categoryIds.map(() => "?").join(", ");
-
-//     const [rows] = await pool.query(
-//       `SELECT
-//         p.*,
-//         c.category_name,
-//         c.parent_id AS category_parent_id,
-//         c.image AS category_image,
-//         c.top AS category_top,
-//         c.status AS category_status,
-//         b.brand_name,
-//         b.image AS brand_image,
-//         b.top AS brand_top,
-//         b.status AS brand_status
-//        FROM products p
-//        LEFT JOIN categories c ON p.category_id = c.id
-//        LEFT JOIN brands b ON p.brand_id = b.id
-//        WHERE p.category_id IN (${placeholders})
-//        ${includeInactive ? "" : "AND p.status = 1"}
-//        ORDER BY p.id DESC
-//        LIMIT ? OFFSET ?`,
-//       [...categoryIds, limit, offset],
-//     );
-
-//     const [[totalRow]] = await pool.query(
-//       `SELECT COUNT(*) AS total
-//        FROM products p
-//        WHERE p.category_id IN (${placeholders})
-//        ${includeInactive ? "" : "AND p.status = 1"}`,
-//       categoryIds,
-//     );
-
-//     const imageMap = await fetchProductImagesMap(rows.map((row) => row.product_code));
-//     const enrichedRows = enrichProductsWithImages(rows, imageMap);
-
-//     return NextResponse.json({
-//       success: true,
-//       products: enrichedRows.map(formatProduct),
-//       count: rows.length,
-//       total: totalRow.total,
-//       limit,
-//       offset,
-//     });
-//   } catch (error) {
-//     console.error("category-wise-products error:", error);
-//     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-//   }
-// }
-
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { parsePagination } from "@/utils/apiFormatters";
@@ -354,37 +259,122 @@ export async function GET(req) {
     }
 
     // ---- Variations ----
+    // ---- Variations ----
     let variationsByProduct = {};
 
     if (productCodes.length > 0) {
       const [variationRows] = await pool.query(
-        `SELECT id, product_code, attributes, price, stock, sku, created_at, updated_at
-         FROM product_variations
-         WHERE product_code IN (?)`,
+        `
+    SELECT
+      pv.id,
+      pv.product_code,
+      pv.attributes,
+      pv.price,
+      pv.stock,
+      pv.sku,
+      pv.created_at,
+      pv.updated_at
+    FROM product_variations pv
+    WHERE pv.product_code IN (?)
+    `,
         [productCodes],
       );
 
       variationsByProduct = variationRows.reduce((acc, variation) => {
         const code = variation.product_code;
+
         if (!acc[code]) acc[code] = [];
 
         let parsedAttributes = variation.attributes;
+
         try {
           parsedAttributes = JSON.parse(variation.attributes);
-        } catch {
-          // leave as raw string if it's not valid JSON
-        }
+        } catch {}
+
+        // find parent product
+        const parent = rows.find((r) => r.product_code === variation.product_code);
+
+        if (!parent) return acc;
 
         acc[code].push({
           id: variation.id,
+
           product_code: variation.product_code,
+
+          parent_id: parent.product_id,
+
+          product_name: parent.product_name,
+          slug: parent.slug,
+
           attributes: parsedAttributes,
+
           price: variation.price,
+          sell_price: parent.sell_price,
+          actual_price: parent.actual_price,
+          discount: parent.discount,
+
           stock: variation.stock,
+          available_quantity: parent.available_quantity,
+          stock_quantity: parent.stock_quantity,
+
           sku: variation.sku,
+
           created_at: variation.created_at,
           updated_at: variation.updated_at,
+
+          parent: {
+            id: parent.product_id,
+            product_code: parent.product_code,
+            parent_id: parent.parent_id,
+
+            product_name: parent.product_name,
+            slug: parent.slug,
+
+            product_description: parent.product_description,
+            key_specifications: parent.key_specifications,
+            packaging: parent.packaging,
+            warranty: parent.warranty,
+
+            category_id: parent.category_id,
+            delivery_target_days: parent.delivery_target_days,
+
+            discount: parent.discount,
+            actual_price: parent.actual_price,
+            sell_price: parent.sell_price,
+
+            available_quantity: parent.available_quantity,
+            stock_quantity: parent.stock_quantity,
+
+            brand_id: parent.brand_id,
+            product_location: parent.product_location,
+
+            has_variations: parent.has_variations,
+            flash_sale: parent.flash_sale,
+            weekly_offer: parent.weekly_offer,
+            special_offer: parent.special_offer,
+            sell_count: parent.sell_count,
+            today_deals: parent.today_deals,
+
+            main_image: parent.main_image,
+            product_catalogue: parent.product_catalogue,
+
+            status: parent.product_status,
+            created_at: parent.product_created_at,
+            updated_at: parent.product_updated_at,
+
+            files_full_url: [],
+            main_image_full_url: buildFullUrl(PRODUCT_IMAGE_PATH, parent.main_image),
+
+            image_full_url: null,
+
+            catalogue_full_url: buildFullUrl(CATALOGUE_PATH, parent.product_catalogue),
+
+            average_rating: "0.00",
+            review_count: 0,
+            reviews: [],
+          },
         });
+
         return acc;
       }, {});
     }
@@ -460,7 +450,7 @@ export async function GET(req) {
           created_at: row.product_created_at,
           updated_at: row.product_updated_at,
 
-          starting_price: row.sell_price,
+          starting_price: row.has_variations && variationsByProduct[row.product_code]?.length ? Math.min(...variationsByProduct[row.product_code].map((v) => Number(v.sell_price)).filter(Boolean)).toFixed(2) : row.sell_price,
           is_wishlisted: false,
 
           files_full_url: [],

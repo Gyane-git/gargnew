@@ -47,17 +47,16 @@ export async function POST(req) {
 
     const body = await req.json();
     const fullName = String(body.full_name || "").trim();
-    const email = String(body.email || "").trim().toLowerCase();
+    const email = String(body.email || "")
+      .trim()
+      .toLowerCase();
     const phone = String(body.phone || "").trim();
     const budget = String(body.budget || "").trim();
     const city = String(body.city || "").trim();
     const remarks = String(body.remarks || "").trim();
 
     if (!fullName || !email || !phone) {
-      return Response.json(
-        { success: false, message: "Full name, email, and phone are required." },
-        { status: 400 },
-      );
+      return Response.json({ success: false, message: "Full name, email, and phone are required." }, { status: 400 });
     }
 
     const [result] = await pool.execute(
@@ -67,11 +66,14 @@ export async function POST(req) {
       [fullName, email, phone, budget || null, city || null, remarks || null],
     );
 
-    return Response.json({
-      success: true,
-      message: "Clinic setup request submitted successfully.",
-      request_id: result.insertId,
-    }, { status: 201 });
+    return Response.json(
+      {
+        success: true,
+        message: "Clinic setup request submitted successfully.",
+        request_id: result.insertId,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("CLINIC SETUP STORE ERROR:", error);
     return Response.json({ success: false, message: error.message }, { status: 500 });
