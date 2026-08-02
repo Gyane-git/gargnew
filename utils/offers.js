@@ -66,7 +66,7 @@ export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
 
   if (limitSql) params.push(Number(limit));
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.query(n
     `
     SELECT
       o.*,
