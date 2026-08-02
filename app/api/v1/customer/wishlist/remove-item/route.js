@@ -2,6 +2,50 @@ import pool from "@/utils/db";
 import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 import { formatWishlistItem } from "@/utils/wishlist";
 
+/**
+ * @swagger
+ * /api/v1/customer/wishlist/remove-item:
+ *   delete:
+ *     summary: Remove a single item from the authenticated customer's wishlist
+ *     description: Deletes one wishlist row (scoped to the customer's own
+ *       wishlist) identified by item_id, then returns the updated wishlist.
+ *     tags: [Customer - Wishlist]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [item_id]
+ *             properties:
+ *               item_id: { type: integer, description: wishlist row id to remove }
+ *     responses:
+ *       200:
+ *         description: Wishlist item removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Wishlist item removed successfully. }
+ *                 wishlist:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       customer_id: { type: integer }
+ *                       product_code: { type: string }
+ *                       created_at: { type: string, format: date-time }
+ *                       updated_at: { type: string, format: date-time }
+ *                       product: { type: object, nullable: true, description: Full product record }
+ *       400: { description: item_id is required. }
+ *       404: { description: Wishlist item not found. }
+ *       500: { description: Internal server error }
+ */
 export async function DELETE(req) {
   try {
     const authUser = getAuthUser(req);

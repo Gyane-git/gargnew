@@ -12,6 +12,46 @@ function buildFullUrl(basePath, fileName) {
   return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
+/**
+ * @swagger
+ * /api/v1/products/all-products:
+ *   get:
+ *     summary: List active products with embedded reviews, category and brand detail
+ *     description: >
+ *       Returns only active (status = 1) products, ordered newest first, joined with
+ *       category, brand and product_images, plus each product's own product_reviews
+ *       (with computed average_rating and review_count). Note - unlike the other product
+ *       list endpoints, "variations" is always an empty array here (not populated from
+ *       product_variations) and is_wishlisted is always false. limit/offset are parsed
+ *       with plain Number() (not the shared pagination helper): non-numeric values fall
+ *       back to the defaults below rather than being clamped/validated. No API-layer
+ *       authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: limit, in: query, required: false, schema: { type: integer, default: 100 } }
+ *       - { name: offset, in: query, required: false, schema: { type: integer, default: 0 } }
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Products fetched successfully. }
+ *                 products: { type: array, items: { type: object } }
+ *       500:
+ *         description: Failed to fetch products.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string, example: Failed to fetch products. }
+ *                 error: { type: string }
+ */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
 

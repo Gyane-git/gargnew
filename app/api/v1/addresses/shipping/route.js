@@ -2,6 +2,38 @@ import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 
 // GET ALL SHIPPING
+/**
+ * @swagger
+ * /api/v1/addresses/shipping:
+ *   get:
+ *     summary: List all shipping/city rows
+ *     description: Returns every row in set_shipping, joined with provinces for the province name, ordered by id descending.
+ *     tags: [Admin - Address Reference]
+ *     responses:
+ *       200:
+ *         description: Shipping rows fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 shipping:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       province_id: { type: integer }
+ *                       province_name: { type: string, nullable: true }
+ *                       city: { type: string }
+ *                       shipping_cost: { type: number }
+ *                       apply_shipping: { type: integer }
+ *                       remarks: { type: string, nullable: true }
+ *                       created_at: { type: string, format: date-time }
+ *                       updated_at: { type: string, format: date-time }
+ *       500: { description: Server error }
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(`
@@ -37,6 +69,34 @@ export async function GET() {
 }
 
 // CREATE SHIPPING
+/**
+ * @swagger
+ * /api/v1/addresses/shipping:
+ *   post:
+ *     summary: Create a shipping/city row
+ *     description: Accepts either `province_id` (numeric id) or `province` (numeric id, or a province name string which is resolved case-insensitively to an id). `shipping_cost` may also be sent as `cost`.
+ *     tags: [Admin - Address Reference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [city, shipping_cost]
+ *             properties:
+ *               province_id: { type: integer, description: "Province id (fallback: province)" }
+ *               province: { type: string, description: "Province id or province name; used if province_id is absent" }
+ *               city: { type: string }
+ *               shipping_cost: { type: number, description: "(fallback: cost)" }
+ *               cost: { type: number }
+ *               apply_shipping: { type: integer, default: 1 }
+ *               remarks: { type: string }
+ *     responses:
+ *       200: { description: Shipping added successfully. }
+ *       400: { description: Province, city and shipping cost are required. }
+ *       404: { description: Province not found. }
+ *       500: { description: Server error }
+ */
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -97,6 +157,35 @@ export async function POST(req) {
 }
 
 // UPDATE SHIPPING
+/**
+ * @swagger
+ * /api/v1/addresses/shipping:
+ *   put:
+ *     summary: Update a shipping/city row
+ *     description: Accepts either `province_id` (numeric id) or `province` (numeric id, or a province name string which is resolved case-insensitively to an id). `shipping_cost` may also be sent as `cost`. The row id is passed in the request body (not the URL).
+ *     tags: [Admin - Address Reference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id, city, shipping_cost]
+ *             properties:
+ *               id: { type: integer, description: "id of the set_shipping row to update" }
+ *               province_id: { type: integer, description: "Province id (fallback: province)" }
+ *               province: { type: string, description: "Province id or province name; used if province_id is absent" }
+ *               city: { type: string }
+ *               shipping_cost: { type: number, description: "(fallback: cost)" }
+ *               cost: { type: number }
+ *               apply_shipping: { type: integer, default: 1 }
+ *               remarks: { type: string }
+ *     responses:
+ *       200: { description: Shipping updated successfully. }
+ *       400: { description: "Shipping id is required, or province/city/cost missing" }
+ *       404: { description: Province not found, or shipping row not found. }
+ *       500: { description: Server error }
+ */
 export async function PUT(req) {
   try {
     const body = await req.json();
@@ -166,6 +255,33 @@ export async function PUT(req) {
 }
 
 // DELETE SHIPPING
+/**
+ * @swagger
+ * /api/v1/addresses/shipping:
+ *   delete:
+ *     summary: Delete a shipping/city row
+ *     description: The row id may be supplied either in the JSON request body or as an `id` query-string parameter.
+ *     tags: [Admin - Address Reference]
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: false
+ *         schema: { type: integer }
+ *         description: Alternative to passing id in the request body.
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id: { type: integer }
+ *     responses:
+ *       200: { description: Shipping deleted successfully. }
+ *       400: { description: Shipping id is required. }
+ *       404: { description: Shipping row not found. }
+ *       500: { description: Server error }
+ */
 export async function DELETE(req) {
   try {
     const body = await req.json().catch(() => ({}));

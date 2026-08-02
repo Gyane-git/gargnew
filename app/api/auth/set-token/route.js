@@ -1,5 +1,24 @@
 import { NextResponse } from "next/server";
 
+/**
+ * @swagger
+ * /api/auth/set-token:
+ *   post:
+ *     summary: Store an auth token as an httpOnly "token" cookie
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200: { description: Token set successfully; "token" cookie is set (httpOnly, 7 day maxAge). }
+ *       400: { description: Token missing from request body, or request body was not valid JSON. }
+ */
 export async function POST(req) {
   try {
     const { token } = await req.json();

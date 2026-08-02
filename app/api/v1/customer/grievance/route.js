@@ -51,6 +51,50 @@ const getColumns = async () => {
   return rows.map((row) => row.Field);
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/grievance:
+ *   post:
+ *     summary: Submit a customer grievance
+ *     description: Auth is optional here - getAuthUser(req) is called but its result is
+ *       never checked, so the request succeeds whether or not a valid bearer token is
+ *       present. If a valid token IS present, the grievance is linked to that customer_id;
+ *       otherwise customer_id is left unset. Also lazily creates/migrates the `grievances`
+ *       table on first call.
+ *     tags: [Customer - Profile]
+ *     security:
+ *       - bearerAuth: []
+ *       - {}
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [full_name, email, phone, city, remarks]
+ *             properties:
+ *               full_name: { type: string, description: "Alias: name" }
+ *               name: { type: string, description: Accepted as a fallback for full_name }
+ *               email: { type: string }
+ *               phone: { type: string }
+ *               city: { type: string }
+ *               remarks: { type: string }
+ *               document: { type: array, items: { type: string }, description: "Alias: documents" }
+ *               documents: { type: array, items: { type: string } }
+ *     responses:
+ *       201:
+ *         description: Grievance submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *                 grievanceId: { type: integer }
+ *       422: { description: One or more required fields missing }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   try {
     const authUser = getAuthUser(req);

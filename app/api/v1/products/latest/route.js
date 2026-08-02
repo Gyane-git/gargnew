@@ -110,6 +110,50 @@ function buildFullUrl(basePath, fileName) {
   return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
+/**
+ * @swagger
+ * /api/v1/products/latest:
+ *   get:
+ *     summary: List all active products with full category/brand/review detail
+ *     description: Despite the "latest" name and the commented-out draft implementations
+ *       earlier in this file (which supported limit/offset/include_inactive pagination),
+ *       the currently active implementation takes NO query parameters and returns every
+ *       product with status = 1 (ORDER BY p.id DESC, unpaginated), INNER JOINed with
+ *       categories, LEFT JOINed with product_images, carousel_images, brands, and the
+ *       generic `storages` table (brand storage only). Includes aggregated
+ *       product_reviews (average_rating, review_count, reviews array). Public endpoint,
+ *       no authentication required (is_wishlisted is always returned as false).
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Products fetched successfully." }
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     description: >
+ *                       Product with nested category and brand objects (each with a storage
+ *                       array), reviews array, average_rating, review_count, files_full_url,
+ *                       main_image_full_url, catalogue_full_url, is_wishlisted (always false),
+ *                       variations (always empty)
+ *       500:
+ *         description: Failed to fetch products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string, example: "Failed to fetch products." }
+ *                 error: { type: string }
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(`
@@ -201,10 +245,11 @@ export async function GET() {
 
       LEFT JOIN storages s
           ON b.id = s.data_id
+          AND s.data_type = ?
             WHERE p.status = 1
               AND p.status = 1
-              
-          `);
+
+          `, ["App\\Models\\Brand"]);
 
     // ---- Reviews ----
     const productCodes = [...new Set(rows.map((r) => r.product_code))];

@@ -12,6 +12,22 @@ const normalizeStoredUrl = (value, folder = "system-settings") => {
   return raw.startsWith("/") ? raw : `/uploads/${folder}/${raw}`;
 };
 
+/**
+ * @swagger
+ * /api/v1/settings:
+ *   get:
+ *     summary: Get all system settings as a key-value map
+ *     description: Reads every row from system_settings and reshapes it into an object
+ *       keyed by each row's `key` column. company_logo_header and company_logo_footer get
+ *       extra derived URL fields (header_logo_full_url / footer_logo_full_url) via
+ *       normalizeStoredUrl, which resolves relative/uploads/public paths to a usable URL;
+ *       every other key is returned as plain { value }.
+ *     tags: [Settings]
+ *     responses:
+ *       200:
+ *         description: '{ success: true, settings } where settings is a { [key]: { value, ... } } map.'
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query("SELECT * FROM system_settings");

@@ -1,6 +1,32 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 
+/**
+ * @swagger
+ * /api/v1/customers/reviews/{id}:
+ *   delete:
+ *     summary: Delete a product review by ID
+ *     description: No API-layer authentication is enforced on this route.
+ *     tags: [Admin - Reviews]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Review deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       400: { description: Invalid ID }
+ *       404: { description: Review not found }
+ *       500: { description: Failed to delete review }
+ */
 // DELETE /api/v1/customers/reviews/[id]
 export async function DELETE(request, { params }) {
   try {
@@ -22,6 +48,33 @@ export async function DELETE(request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/customers/reviews/{id}:
+ *   get:
+ *     summary: Get a product review by ID
+ *     description: No API-layer authentication is enforced on this route. Returns the full
+ *       row (SELECT *) from product_reviews.
+ *     tags: [Admin - Reviews]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Review found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 review: { type: object }
+ *       400: { description: Invalid ID }
+ *       404: { description: Review not found }
+ *       500: { description: Failed to fetch review }
+ */
 // GET /api/v1/customers/reviews/[id]
 export async function GET(request, { params }) {
   try {

@@ -31,6 +31,39 @@ const collectCategoryIds = (rows, categoryId) => {
   return Array.from(ids);
 };
 
+/**
+ * @swagger
+ * /api/v1/products/category-wise-products:
+ *   get:
+ *     summary: List products for a category and all its descendant categories (paginated)
+ *     description: >
+ *       Same shape as GET /api/v1/products, filtered to category_id plus every category
+ *       recursively nested under it (via categories.parent_id). By default only active
+ *       products (status = 1) are returned; pass include_inactive=1 to include all. No
+ *       API-layer authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: category_id, in: query, required: true, schema: { type: integer } }
+ *       - { name: limit, in: query, required: false, schema: { type: integer, default: 10, maximum: 100 } }
+ *       - { name: offset, in: query, required: false, schema: { type: integer, default: 0 } }
+ *       - { name: include_inactive, in: query, required: false, schema: { type: string, enum: ["1"] }, description: Pass "1" to include products with status != 1. }
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 products: { type: array, items: { type: object } }
+ *                 count: { type: integer }
+ *                 total: { type: integer }
+ *                 limit: { type: integer }
+ *                 offset: { type: integer }
+ *       400: { description: category_id is required. }
+ *       500: { description: Internal error. }
+ */
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);

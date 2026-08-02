@@ -61,6 +61,43 @@ const normalizeVariationRow = (row, product) => {
   };
 };
 
+/**
+ * @swagger
+ * /api/v1/products/details/{product_code}:
+ *   get:
+ *     summary: Get full product details by product_code (gallery, variations, reviews)
+ *     description: >
+ *       By default only an active product (status = 1) is matched; pass include_inactive=1
+ *       to also match inactive ones. If no row matches, this returns HTTP 200 with
+ *       product:null (it does NOT 404) - this mirrors the Laravel ProductController::get_product
+ *       behavior and is the current, intentional behavior of this route. When a product is
+ *       found, the response also includes its gallery images, a "variations" array (built
+ *       from product_variations, or a single synthetic default variation when
+ *       has_variations=1 but no variation rows exist), all product_reviews rows for the
+ *       product_code, review_count and a computed average_rating. No API-layer
+ *       authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: product_code, in: path, required: true, schema: { type: string } }
+ *       - { name: include_inactive, in: query, required: false, schema: { type: string, enum: ["1"] }, description: Pass "1" to also match an inactive product. }
+ *     responses:
+ *       200:
+ *         description: >
+ *           Always 200 on success - product is either the full detail object or null
+ *           when no (matching, active-unless-include_inactive) product exists.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 product:
+ *                   nullable: true
+ *                   type: object
+ *                   description: null when no matching product is found.
+ *       400: { description: product_code is required (missing path segment). }
+ *       500: { description: Internal error. }
+ */
 export async function GET(req, { params }) {
   const { product_code } = await params;
 
@@ -81,7 +118,11 @@ export async function GET(req, { params }) {
     );
 
     if (rows.length === 0) {
-      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+      // Matches Laravel's ProductController::get_product, which never 404s here - it
+      // returns 200 with product:null. Verified safe for the web app: app/dashboard/[code]/
+      // page.js already treats a non-ok fetch and a null product identically (both hit the
+      // same `return null` -> "Product not found" render path), so this is a pure parity fix.
+      return NextResponse.json({ success: true, product: null });
     }
 
     const imageMap = await fetchProductImagesMap([product_code]);

@@ -12,6 +12,48 @@ function buildFullUrl(basePath, fileName) {
   return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
+/**
+ * @swagger
+ * /api/v1/products/get-random-wise-products:
+ *   get:
+ *     summary: List all active products with full category/brand/review detail
+ *     description: Despite the route name, this does NOT randomize or limit results - it
+ *       queries every product with status = 1 (ORDER BY p.id DESC), joined with product
+ *       images, categories, brands, and the generic `storages` key/value table for both
+ *       category and brand, plus aggregated product_reviews (average_rating, review_count,
+ *       reviews array). No query parameters are read. Public endpoint, no authentication
+ *       required (is_wishlisted is always returned as false).
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Products fetched successfully." }
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     description: >
+ *                       Product with nested category (with a storage array) and brand (with a
+ *                       storage array) objects, reviews array, average_rating, review_count,
+ *                       files_full_url, main_image_full_url, catalogue_full_url, is_wishlisted
+ *                       (always false), variations (always empty)
+ *       500:
+ *         description: Failed to fetch products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string, example: "Failed to fetch products." }
+ *                 error: { type: string }
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(`
@@ -95,12 +137,14 @@ export async function GET() {
         ON p.brand_id = b.id
       LEFT JOIN storages cs
         ON cs.data_id = c.id
+        AND cs.data_type = ?
       LEFT JOIN storages bs
         ON bs.data_id = b.id
+        AND bs.data_type = ?
       WHERE p.status = 1
       ORDER BY p.id DESC
-      
-    `);
+
+    `, ["App\\Models\\Category", "App\\Models\\Brand"]);
 
     // ---- Reviews ----
     const productCodes = [...new Set(rows.map((r) => r.product_code))];

@@ -72,6 +72,33 @@ const normalizeVariationRow = (row, product) => {
   };
 };
 
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   get:
+ *     summary: Get a single product by numeric id, including variations
+ *     description: >
+ *       Looks up the product by its numeric primary key (products.id, not product_code).
+ *       Returns the product enriched with gallery images plus a "variations" array read
+ *       from product_variations. If has_variations=1 but no variation rows exist, a single
+ *       synthetic default variation is returned instead (built from the product's own
+ *       price/stock fields). No API-layer authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     responses:
+ *       200:
+ *         description: Product retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 product: { type: object }
+ *       404: { description: Product not found. }
+ *       500: { description: Internal error. }
+ */
 export async function GET(req, { params }) {
   const { id } = await params;
   try {
@@ -133,6 +160,75 @@ export async function GET(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   put:
+ *     summary: Update a product by numeric id (full replace of provided fields, plus image/variation management)
+ *     description: >
+ *       Reads a multipart/form-data payload (via req.formData()). product_name is required;
+ *       there is no existence check on id before the UPDATE (a non-matching id silently
+ *       affects 0 rows and still returns success). existing_image/existing_catalogue let the
+ *       client echo back the current file path when not replacing it; remove_image="1" clears
+ *       the main image and deletes the old file from disk. Uploading main_image/product_catalogue
+ *       replaces the old file (old file deleted from disk). When has_variations=1, ALL existing
+ *       product_variations rows for this product_code are deleted and replaced from the
+ *       "variations" JSON array; each item may have an accompanying file field named
+ *       variation_image_{index} (0-based). No API-layer authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [product_name]
+ *             properties:
+ *               product_name: { type: string }
+ *               product_code: { type: string }
+ *               slug: { type: string }
+ *               product_description: { type: string }
+ *               key_specifications: { type: string }
+ *               packaging: { type: string }
+ *               warranty: { type: string }
+ *               category_id: { type: integer, nullable: true }
+ *               brand_id: { type: integer, nullable: true }
+ *               delivery_target_days: { type: integer, nullable: true }
+ *               actual_price: { type: number, default: 0 }
+ *               sell_price: { type: number, default: 0 }
+ *               discount: { type: number, default: 0 }
+ *               available_quantity: { type: integer, default: 0 }
+ *               stock_quantity: { type: integer, default: 0 }
+ *               product_location: { type: string }
+ *               has_variations: { type: integer, enum: [0, 1], default: 0 }
+ *               flash_sale: { type: integer, enum: [0, 1], default: 0 }
+ *               weekly_offer: { type: integer, enum: [0, 1], default: 0 }
+ *               special_offer: { type: integer, enum: [0, 1], default: 0 }
+ *               today_deals: { type: integer, enum: [0, 1], default: 0 }
+ *               status: { type: integer, default: 1 }
+ *               existing_image: { type: string, description: Current main_image path to keep when no new file is uploaded. }
+ *               existing_catalogue: { type: string, description: Current product_catalogue path to keep when no new file is uploaded. }
+ *               remove_image: { type: string, enum: ["1"], description: Pass "1" to clear the main image. }
+ *               main_image: { type: string, format: binary }
+ *               product_catalogue: { type: string, format: binary }
+ *               gallery_images: { type: array, items: { type: string, format: binary } }
+ *               variations: { type: string, description: "JSON-encoded array, used only when has_variations=1 (replaces all existing variations)." }
+ *               variation_image_0: { type: string, format: binary, description: "Image for variations[0]; repeat as variation_image_1, variation_image_2, ... aligned by array index." }
+ *     responses:
+ *       200:
+ *         description: Product updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Product updated successfully }
+ *       400: { description: Product name missing, or invalid variations JSON. }
+ *       500: { description: Internal error. }
+ */
 export async function PUT(req, { params }) {
   const { id } = await params;
   try {
@@ -320,6 +416,39 @@ export async function PUT(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   patch:
+ *     summary: Publish or unpublish a product (toggle status only)
+ *     description: >
+ *       Sets products.status to 1 if body.status is 1 or "1", otherwise 0. No API-layer
+ *       authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: integer, enum: [0, 1], description: "1 (or \"1\") publishes; anything else unpublishes." }
+ *     responses:
+ *       200:
+ *         description: Status updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Product published successfully }
+ *                 status: { type: integer, enum: [0, 1] }
+ *       404: { description: Product not found (no rows affected). }
+ *       500: { description: Internal error. }
+ */
 export async function PATCH(req, { params }) {
   const { id } = await params;
 
@@ -344,6 +473,33 @@ export async function PATCH(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   delete:
+ *     summary: Delete a product by numeric id, cascading child records and files
+ *     description: >
+ *       Runs inside a DB transaction. Deletes matching rows (by product_code) from
+ *       cart_items, order_items, product_images, product_reviews, product_variations,
+ *       recommended_products and wishlist, then deletes the products row itself. After a
+ *       successful commit, the main image and gallery image files are removed from disk
+ *       on a best-effort basis. No API-layer authentication is enforced.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: id, in: path, required: true, schema: { type: integer } }
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Product deleted successfully }
+ *       404: { description: Product not found. }
+ *       500: { description: Internal error (includes DB error code when available). }
+ */
 export async function DELETE(req, { params }) {
   const { id } = await params;
 

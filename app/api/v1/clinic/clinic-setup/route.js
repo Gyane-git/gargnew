@@ -39,6 +39,40 @@ const readSettings = async () => {
   });
 };
 
+/**
+ * @swagger
+ * /api/v1/clinic/clinic-setup:
+ *   get:
+ *     summary: Get clinic setup settings
+ *     description: >
+ *       No API-layer auth enforced. Reads all rows from the
+ *       clinic_setup_settings key/value table (creating the table if it does
+ *       not exist). The row keyed `clinic_cover_image` additionally includes
+ *       a resolved `clinic_cover_image_full_url`.
+ *     tags: [Clinic Setup]
+ *     responses:
+ *       200:
+ *         description: Clinic setup settings fetched successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 clinic:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       key: { type: string, example: "clinic_video_title" }
+ *                       value: { type: string, nullable: true }
+ *                       clinic_cover_image_full_url: { type: string, description: "Only present on the clinic_cover_image row." }
+ *                       created_at: { type: string, format: date-time }
+ *                       updated_at: { type: string, format: date-time }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function GET() {
   try {
     const clinic = await readSettings();
@@ -53,6 +87,55 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/clinic/clinic-setup:
+ *   post:
+ *     summary: Create or update clinic setup settings
+ *     description: >
+ *       No API-layer auth enforced. Accepts either multipart/form-data
+ *       (required to upload clinic_cover_image as a file, saved under
+ *       /public/uploads/clinic-setup) or application/json (where
+ *       clinic_cover_image is a string path/URL). Upserts
+ *       clinic_video_title, clinic_video_link, clinic_video_description, and
+ *       (if provided) clinic_cover_image rows in the clinic_setup_settings
+ *       table.
+ *     tags: [Clinic Setup]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               clinic_video_title: { type: string }
+ *               clinic_video_link: { type: string }
+ *               clinic_video_description: { type: string }
+ *               clinic_cover_image: { type: string, format: binary }
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               clinic_video_title: { type: string }
+ *               clinic_video_link: { type: string }
+ *               clinic_video_description: { type: string }
+ *               clinic_cover_image: { type: string }
+ *     responses:
+ *       200:
+ *         description: Clinic setup saved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Clinic setup saved successfully." }
+ *                 clinic:
+ *                   type: array
+ *                   items: { type: object }
+ *       500:
+ *         description: Internal server error.
+ */
 export async function POST(req) {
   try {
     await ensureSettingsTable();

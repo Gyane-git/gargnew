@@ -32,6 +32,43 @@ const parseFormFiles = (formData) =>
 
 const normalizeOrderId = (value) => String(value || "").trim().replace(/^#/, "");
 
+/**
+ * @swagger
+ * /api/v1/customer/order/return:
+ *   post:
+ *     summary: Submit a return request for a delivered order
+ *     description: Multipart form submission. Validates the given return reason (must be
+ *       reason_type=return and reason_for=customer), locates the order (must currently be
+ *       order_status=delivered), saves any uploaded images to public/uploads/returns,
+ *       inserts an order_returns (or legacy order_retuns) record (columns detected
+ *       dynamically from the table schema), marks the order as returned, and records an
+ *       audit log entry (best-effort).
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [order_id, reason_id, reason_description]
+ *             properties:
+ *               order_id: { type: string, description: Order id/number of a delivered order }
+ *               reason_id: { type: integer, description: ID of a return reason }
+ *               reason_description: { type: string }
+ *               images[]:
+ *                 type: array
+ *                 items: { type: string, format: binary }
+ *                 description: Optional supporting images for the return request
+ *     responses:
+ *       200:
+ *         description: Return request submitted successfully, with return_id and saved image_paths
+ *       401: { description: Unauthorized }
+ *       404: { description: Return reason not found, or order not found }
+ *       422: { description: Missing order_id/reason_id/reason_description, selected reason not valid for customer returns, or order not delivered }
+ *       500: { description: Internal server error }
+ */
 export async function POST(request) {
   let connection = null;
 

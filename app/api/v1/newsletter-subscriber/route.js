@@ -16,6 +16,18 @@ const ensureTable = async () => {
   `);
 };
 
+/**
+ * @swagger
+ * /api/v1/newsletter-subscriber:
+ *   get:
+ *     summary: List all newsletter subscribers
+ *     description: Lazily creates the `newsletter_subscribers` table on first call, then
+ *       returns every row (all statuses), newest first.
+ *     tags: [Newsletter]
+ *     responses:
+ *       200: { description: '{ success: true, newsletter_subscribers } - array of { id, email, status, created_at, updated_at }.' }
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 export async function GET() {
   try {
     await ensureTable();
@@ -38,6 +50,31 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/newsletter-subscriber:
+ *   post:
+ *     summary: Subscribe an email to the newsletter
+ *     description: Email is normalized (trimmed + lowercased). If the email already exists,
+ *       its status is reset to 1 (active) and updated_at is bumped, returning 200 with
+ *       "Subscriber already exists." rather than an error. Otherwise a new row is inserted
+ *       with status 1.
+ *     tags: [Newsletter]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string }
+ *     responses:
+ *       200: { description: '{ success: true, message: "Subscriber already exists." } - returned when the email is already in the table (status is reactivated).' }
+ *       201: { description: '{ success: true, message: "Subscribed successfully." } - returned when a new subscriber row is created.' }
+ *       400: { description: '{ success: false, message: "Email is required." }' }
+ *       500: { description: '{ success: false, message } returned on an unexpected error.' }
+ */
 export async function POST(req) {
   try {
     await ensureTable();

@@ -1,6 +1,54 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 
+/**
+ * @swagger
+ * /api/v1/customers/reviews/list:
+ *   get:
+ *     summary: List product reviews (paginated, searchable)
+ *     description: No API-layer authentication is enforced on this route.
+ *     tags: [Admin - Reviews]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Matches against name, email, product_code, or review_detail
+ *     responses:
+ *       200:
+ *         description: Paginated list of reviews
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 reviews:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       customer_id: { type: integer }
+ *                       product_code: { type: string }
+ *                       order_id: { type: string }
+ *                       name: { type: string }
+ *                       email: { type: string }
+ *                       review_detail: { type: string }
+ *                       rating: { type: number }
+ *                       image_path: { type: string, nullable: true }
+ *                       created_at: { type: string, format: date-time }
+ *                 total: { type: integer }
+ *                 page: { type: integer }
+ *                 limit: { type: integer }
+ *                 totalPages: { type: integer }
+ *       500: { description: Failed to fetch reviews }
+ */
 // GET /api/v1/customers/reviews/list?page=1&limit=10&search=
 export async function GET(request) {
   try {

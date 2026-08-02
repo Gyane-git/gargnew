@@ -1,6 +1,40 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 
+/**
+ * @swagger
+ * /api/v1/customers/{id}:
+ *   get:
+ *     summary: Get a single customer by ID
+ *     description: No API-layer authentication is enforced on this route.
+ *     tags: [Admin - Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Customer found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 customer:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     name: { type: string }
+ *                     email: { type: string }
+ *                     phone: { type: string }
+ *                     status: { type: integer }
+ *                     created_at: { type: string, format: date-time }
+ *                     updated_at: { type: string, format: date-time }
+ *       404: { description: Customer not found }
+ *       500: { description: Internal server error }
+ */
 // ── GET CUSTOMER BY ID ────────────────────────────────────────────
 export async function GET(req, { params }) {
   try {
@@ -21,6 +55,47 @@ export async function GET(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/customers/{id}:
+ *   put:
+ *     summary: Update a customer
+ *     description: No API-layer authentication is enforced on this route. Only fields
+ *       present (not undefined) in the request body are updated; password, if provided,
+ *       is written as-is (not re-hashed by this route).
+ *     tags: [Admin - Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               phone: { type: string }
+ *               password: { type: string }
+ *               status: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Customer updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       400: { description: No fields provided to update }
+ *       404: { description: Customer not found }
+ *       409: { description: Email already in use by another customer }
+ *       500: { description: Internal server error }
+ */
 // ── UPDATE CUSTOMER ───────────────────────────────────────────────
 export async function PUT(req, { params }) {
   try {
@@ -84,6 +159,32 @@ export async function PUT(req, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/customers/{id}:
+ *   delete:
+ *     summary: Delete a customer
+ *     description: No API-layer authentication is enforced on this route. Permanently
+ *       deletes the row from `users`.
+ *     tags: [Admin - Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Customer deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       404: { description: Customer not found }
+ *       500: { description: Internal server error }
+ */
 // ── DELETE CUSTOMER ───────────────────────────────────────────────
 export async function DELETE(req, { params }) {
   try {

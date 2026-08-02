@@ -9,6 +9,59 @@ import {
   getProductVariationByKey,
 } from "@/utils/cart";
 
+/**
+ * @swagger
+ * /api/v1/customer/cart/remove-item:
+ *   delete:
+ *     summary: Remove a single item from the authenticated customer's cart
+ *     description: Deletes one cart_items row (scoped to the customer's own cart)
+ *       identified by item_id, then returns the updated cart.
+ *     tags: [Customer - Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [item_id]
+ *             properties:
+ *               item_id: { type: integer, description: cart_items row id to remove }
+ *     responses:
+ *       200:
+ *         description: Cart item removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Cart item removed successfully. }
+ *                 cart:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer, nullable: true }
+ *                     subtotal: { type: number }
+ *                     items:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: integer }
+ *                           cart_id: { type: integer }
+ *                           product_code: { type: string }
+ *                           variation_key: { type: string, nullable: true }
+ *                           quantity: { type: integer }
+ *                           price: { type: number }
+ *                           actual_price: { type: number }
+ *                           created_at: { type: string, format: date-time }
+ *                           updated_at: { type: string, format: date-time }
+ *                           product: { type: object, nullable: true, description: Full product (or resolved variation) record }
+ *       400: { description: item_id is required }
+ *       404: { description: Cart not found, or cart item not found }
+ *       500: { description: Internal server error }
+ */
 export async function DELETE(req) {
   try {
     const authUser = getAuthUser(req);

@@ -11,6 +11,20 @@ function buildFullUrl(basePath, fileName) {
   return assetUrl(fileName, basePath.replace(/^\/+/, ""), null);
 }
 
+/**
+ * @swagger
+ * /api/v1/banners/mobile:
+ *   get:
+ *     summary: Get active carousel banners with product, review, and storage details
+ *     description: Joins carousel_images (status = 1) with products (status = 1), left joins
+ *       storages by data_id, and attaches aggregated product_reviews per product_code.
+ *     tags: [Banners]
+ *     responses:
+ *       200:
+ *         description: Mobile banners fetched successfully.
+ *       500:
+ *         description: Failed to fetch carousel products.
+ */
 export async function GET() {
   try {
     const [rows] = await pool.query(`
@@ -67,9 +81,10 @@ export async function GET() {
         ON ci.product_code = p.product_code
       LEFT JOIN storages s
         ON s.data_id = ci.id
+        AND s.data_type = ?
       WHERE ci.status = 1
         AND p.status = 1
-    `);
+    `, ["App\\Models\\Carousel"]);
 
     // ---- Reviews ----
     const productCodes = [...new Set(rows.map((r) => r.product_code))];

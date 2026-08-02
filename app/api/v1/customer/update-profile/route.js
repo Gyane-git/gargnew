@@ -11,6 +11,58 @@ const normalizeProfilePhotoPath = (value) => {
   return raw.startsWith("/") ? raw : `/${raw}`;
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/update-profile:
+ *   post:
+ *     summary: Update the authenticated customer's profile (name, phone, profile photo)
+ *     description: Updates full_name, phone, and profile_photo_path on the users table for
+ *       the authenticated customer. profile_photo_path is normalized - "data" URIs and
+ *       "http(s)" URLs are passed through as-is, a "/public/..." or "public/..." prefix is
+ *       stripped/rewritten to a root-relative path, and any other value is coerced to start
+ *       with "/".
+ *     tags: [Customer - Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [full_name, phone]
+ *             properties:
+ *               full_name: { type: string }
+ *               phone: { type: string }
+ *               profile_photo_path: { type: string, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     full_name: { type: string }
+ *                     email: { type: string }
+ *                     phone: { type: string }
+ *                     profile_photo_path: { type: string, nullable: true }
+ *                     status: { type: integer }
+ *                     is_email_verified: { type: integer }
+ *                     created_at: { type: string, format: date-time }
+ *                     updated_at: { type: string, format: date-time }
+ *                     image_full_url: { type: string, nullable: true }
+ *       400: { description: Full name and phone are required }
+ *       401: { description: Unauthorized }
+ *       404: { description: Customer not found }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   try {
     const authUser = getAuthUser(req);

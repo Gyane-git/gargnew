@@ -3,6 +3,38 @@ import { formatBrand } from "@/utils/apiFormatters";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
+/**
+ * @swagger
+ * /api/v1/brands:
+ *   get:
+ *     summary: List brands
+ *     description: Returns active brands (status=1) ordered by order_wise then id
+ *       descending, unless `include_inactive=1` is passed, in which case all brands
+ *       are returned. No authentication is enforced.
+ *     tags: [Brands]
+ *     parameters:
+ *       - name: include_inactive
+ *         in: query
+ *         required: false
+ *         schema: { type: string, enum: ["1"] }
+ *         description: Pass include_inactive=1 to include inactive (status=0) brands.
+ *     responses:
+ *       200:
+ *         description: Brands retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 brands:
+ *                   type: array
+ *                   description: Brand rows with image_full_url/image_url/logo_full_url
+ *                     derived from the stored image path.
+ *                   items: { type: object }
+ *       500:
+ *         description: Server error
+ */
 // GET ALL BRANDS
 export async function GET(req) {
   try {
@@ -21,6 +53,37 @@ export async function GET(req) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/brands:
+ *   post:
+ *     summary: Create a brand
+ *     description: Accepts multipart/form-data. `brand_name` is required; `top` and
+ *       `status` default to 0 and 1 respectively when omitted; `order_wise` defaults
+ *       to NULL. An optional `image` file is saved to public/uploads/brands and only
+ *       the filename (not the full path) is stored. No authentication is enforced.
+ *     tags: [Brands]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               brand_name: { type: string }
+ *               top: { type: string, description: "0 or 1, defaults to 0" }
+ *               status: { type: string, description: "0 or 1, defaults to 1" }
+ *               order_wise: { type: string, description: "Sort order, defaults to null" }
+ *               image: { type: string, format: binary, description: "Optional brand logo/image" }
+ *             required: [brand_name]
+ *     responses:
+ *       200:
+ *         description: Brand added successfully
+ *       400:
+ *         description: Brand name is required
+ *       500:
+ *         description: Server error
+ */
 // ADD BRAND
 export async function POST(req) {
   try {
@@ -70,6 +133,39 @@ export async function POST(req) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/brands:
+ *   put:
+ *     summary: Update a brand
+ *     description: Accepts a JSON body. `id` is required; the remaining fields are
+ *       written as-is with no validation (e.g. `image` is stored verbatim as passed,
+ *       it is not a file upload). No authentication is enforced.
+ *     tags: [Brands]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id: { type: integer }
+ *               brand_name: { type: string }
+ *               image: { type: string, description: "Stored image path/filename as-is" }
+ *               top: { type: integer }
+ *               status: { type: integer }
+ *               order_wise: { type: integer }
+ *             required: [id]
+ *     responses:
+ *       200:
+ *         description: Brand updated successfully
+ *       400:
+ *         description: Brand ID is required
+ *       404:
+ *         description: Brand not found
+ *       500:
+ *         description: Server error
+ */
 // UPDATE BRAND
 export async function PUT(req) {
   try {
@@ -102,6 +198,29 @@ export async function PUT(req) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/brands:
+ *   delete:
+ *     summary: Delete a brand
+ *     description: Brand id is passed as a query parameter (not a path segment). Hard
+ *       deletes the brand row. No authentication is enforced.
+ *     tags: [Brands]
+ *     parameters:
+ *       - name: id
+ *         in: query
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Brand deleted successfully
+ *       400:
+ *         description: Brand ID is required
+ *       404:
+ *         description: Brand not found
+ *       500:
+ *         description: Server error
+ */
 // DELETE BRAND
 export async function DELETE(req) {
   try {

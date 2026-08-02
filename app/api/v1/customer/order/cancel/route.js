@@ -11,6 +11,39 @@ const getTableColumns = async (connection, tableName) => {
   return rows.map((row) => row.Field);
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/order/cancel:
+ *   post:
+ *     summary: Cancel a customer's own order
+ *     description: Validates the given cancel reason (must be reason_type=cancel and
+ *       reason_for=customer), locates the order (matching by order_id in various formats
+ *       or by numeric id), inserts an order_cancel record (columns are detected dynamically
+ *       from the table schema), marks the order as cancelled, and records an audit log entry
+ *       (best-effort).
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [order_id, reason_id]
+ *             properties:
+ *               order_id: { type: string, description: "Order id/number (accepts orderId as an alias)" }
+ *               reason_id: { type: integer, description: "ID of a cancel reason (accepts reasonId as an alias)" }
+ *               reason_description: { type: string, nullable: true, description: "Accepts reasonDescription as an alias" }
+ *               policy_checked: { type: string, default: Y, description: "Y/N; accepts policyChecked as an alias" }
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *       401: { description: Unauthorized }
+ *       404: { description: Cancel reason not found, or order not found }
+ *       422: { description: order_id/reason_id missing, or the selected reason is not a valid customer cancel reason }
+ *       500: { description: Internal server error }
+ */
 export async function POST(request) {
   let connection = null;
   try {

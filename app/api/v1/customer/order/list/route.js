@@ -31,6 +31,29 @@ const buildOrder = (row, itemRows = [], productMap = new Map()) => {
   };
 };
 
+/**
+ * @swagger
+ * /api/v1/customer/order/list:
+ *   get:
+ *     summary: List the authenticated customer's orders
+ *     description: Returns all orders belonging to the authenticated customer (newest
+ *       first), including shipping/billing delivery-information fields and each order's
+ *       line items enriched with product name and price.
+ *     tags: [Customer - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *         required: false
+ *         description: Filter orders by order_status
+ *     responses:
+ *       200:
+ *         description: List of orders with their items
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
+ */
 export async function GET(req) {
   let connection = null;
 

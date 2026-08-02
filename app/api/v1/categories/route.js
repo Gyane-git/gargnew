@@ -4,6 +4,48 @@ import path from "path";
 import pool from "@/utils/db";
 import { buildCategoryTree, formatCategoryRows, shouldReturnFlatCategories } from "@/utils/apiFormatters";
 
+/**
+ * @swagger
+ * /api/v1/categories:
+ *   get:
+ *     summary: List categories
+ *     description: Returns either a flat list of all categories or a nested tree of
+ *       active categories. The flat form is returned when the `flat=1` query param is
+ *       present, or automatically when the request's `Referer` header contains `/admin`
+ *       (see shouldReturnFlatCategories); otherwise an active-only tree (parent/children,
+ *       via buildCategoryTree) is returned. No authentication is enforced.
+ *     tags: [Categories]
+ *     parameters:
+ *       - name: flat
+ *         in: query
+ *         required: false
+ *         schema: { type: string, enum: ["1"] }
+ *         description: Pass flat=1 to force a flat array instead of the nested tree.
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 categories:
+ *                   type: array
+ *                   description: Flat array of categories (flat mode) or nested tree
+ *                     with `children`/`active_children` (tree mode). Each item includes
+ *                     image_full_url/image_url derived from the stored image path.
+ *                   items: { type: object }
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string }
+ */
 export async function GET(req) {
   try {
     const [rows] = await pool.query("SELECT * FROM categories ORDER BY id ASC");
@@ -28,6 +70,45 @@ export async function GET(req) {
   }
 }
 
+/**
+ * @swagger
+ * /api/v1/categories:
+ *   post:
+ *     summary: Create a category
+ *     description: Accepts multipart/form-data. Reads `name` (falls back to
+ *       `category_name`) and `parentCategory` (falls back to `parent_id`); an empty
+ *       string or the literal "null" for parent is stored as NULL. An optional `image`
+ *       file is saved to public/uploads. New categories are always created with
+ *       status=1 and top=0. No authentication is enforced.
+ *     tags: [Categories]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, description: "Category name (or use category_name)" }
+ *               category_name: { type: string, description: "Alias for name" }
+ *               parentCategory: { type: string, description: "Parent category id (or use parent_id); empty/\"null\" means no parent" }
+ *               parent_id: { type: string, description: "Alias for parentCategory" }
+ *               image: { type: string, format: binary, description: "Optional category image" }
+ *             required: [name]
+ *     responses:
+ *       200:
+ *         description: Category created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Category created successfully" }
+ *       400:
+ *         description: Category name is required
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req) {
   try {
     const formData = await req.formData();

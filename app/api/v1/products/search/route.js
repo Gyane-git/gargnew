@@ -20,6 +20,56 @@ const productSelect = `
   LEFT JOIN brands b ON p.brand_id = b.id
 `;
 
+/**
+ * @swagger
+ * /api/v1/products/search:
+ *   get:
+ *     summary: Search products by name, code, category, brand, or description
+ *     description: >
+ *       When name is provided, matches products where product_name,
+ *       product_code, category_name, brand_name, or product_description LIKE
+ *       "%name%". By default only active products (status = 1) are included; pass
+ *       include_inactive=1 to include inactive ones too. The response nests results
+ *       under products.products (with products.total_size), matching Laravel's
+ *       ProductController::get_searched_products shape - this is NOT a flat
+ *       products array at the top level. Public endpoint, no authentication required.
+ *     tags: [Products]
+ *     parameters:
+ *       - { name: name, in: query, required: false, schema: { type: string }, description: "Substring search term; omit or leave blank to match all products" }
+ *       - { name: limit, in: query, required: false, schema: { type: integer, default: 10 }, description: "parsePagination default 10, capped at 100" }
+ *       - { name: offset, in: query, required: false, schema: { type: integer, default: 0 } }
+ *       - { name: include_inactive, in: query, required: false, schema: { type: string, enum: ["1"] }, description: "Pass \"1\" to also include products with status != 1" }
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "Products fetched successfully." }
+ *                 products:
+ *                   type: object
+ *                   description: Nested search result wrapper (not a flat array)
+ *                   properties:
+ *                     total_size: { type: integer, description: Total matching rows (ignores limit/offset) }
+ *                     products: { type: array, items: { type: object }, description: "Formatted product rows for this page (see formatProduct)" }
+ *                 count: { type: integer, description: Number of rows in this page }
+ *                 total: { type: integer, description: Same as products.total_size }
+ *                 limit: { type: integer }
+ *                 offset: { type: integer }
+ *                 name: { type: string, description: Echo of the trimmed `name` query param }
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string }
+ */
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -67,12 +117,23 @@ export async function GET(req) {
 
     const imageMap = await fetchProductImagesMap(rows.map((row) => row.product_code));
     const enrichedRows = enrichProductsWithImages(rows, imageMap);
+    const total = countRows[0]?.total || 0;
 
+    // Nested under `products.products` to match Laravel's ProductController::get_searched_products
+    // (`'products' => ['total_size' => ..., 'products' => [...]]`). Both web call sites
+    // (components/SearchBar.js, app/Search-bar/page.js) already read `res.products?.products`
+    // expecting this nested shape - the previous flat `products: [...]` here meant search
+    // suggestions were silently broken on the live site; this fixes that bug and achieves
+    // Laravel parity in the same change.
     return NextResponse.json({
       success: true,
-      products: enrichedRows.map(formatProduct),
+      message: "Products fetched successfully.",
+      products: {
+        total_size: total,
+        products: enrichedRows.map(formatProduct),
+      },
       count: rows.length,
-      total: countRows[0]?.total || 0,
+      total,
       limit,
       offset,
       name,

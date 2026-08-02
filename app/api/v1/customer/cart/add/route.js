@@ -9,6 +9,66 @@ import {
   getProductVariationByKey,
 } from "@/utils/cart";
 
+/**
+ * @swagger
+ * /api/v1/customer/cart/add:
+ *   post:
+ *     summary: Add a product (or product variation) to the authenticated customer's cart
+ *     description: Creates the customer's cart if it doesn't exist yet. If the product
+ *       (and variation, when applicable) is already in the cart, the quantity is
+ *       incremented instead of a duplicate row being created. Validates against
+ *       available/stock quantity before saving.
+ *     tags: [Customer - Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_code]
+ *             properties:
+ *               product_code: { type: string, description: Code of the product to add }
+ *               variation_key: { type: string, description: "Product variation SKU (optional). `variation_sku` is also accepted as an alias." }
+ *               variation_sku: { type: string, description: Alias for variation_key }
+ *               quantity: { type: integer, minimum: 1, default: 1 }
+ *               price: { type: number, description: Override price for the cart line; falls back to the product's sell_price/actual_price when omitted or 0 }
+ *     responses:
+ *       200:
+ *         description: Product added to cart successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Product added to cart successfully. }
+ *                 cart:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer, nullable: true }
+ *                     subtotal: { type: number }
+ *                     items:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: integer }
+ *                           cart_id: { type: integer }
+ *                           product_code: { type: string }
+ *                           variation_key: { type: string, nullable: true }
+ *                           quantity: { type: integer }
+ *                           price: { type: number }
+ *                           actual_price: { type: number }
+ *                           created_at: { type: string, format: date-time }
+ *                           updated_at: { type: string, format: date-time }
+ *                           product: { type: object, nullable: true, description: Full product (or resolved variation) record }
+ *       400: { description: product_code is required }
+ *       404: { description: Product not found }
+ *       422: { description: quantity is less than 1, or requested quantity exceeds available stock }
+ *       500: { description: Internal server error }
+ */
 export async function POST(req) {
   try {
     const authUser = getAuthUser(req);

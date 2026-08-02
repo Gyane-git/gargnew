@@ -15,13 +15,17 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   // Check if route starts with `/admin`
   const isAdminRoute = pathname?.startsWith("/admin");
+  // Swagger UI (/api-docs) is a standalone API reference page - it shouldn't carry the
+  // storefront's header/footer/chat widget, same as admin routes don't.
+  const isApiDocsRoute = pathname?.startsWith("/api-docs");
+  const hideChrome = isAdminRoute || isApiDocsRoute;
 
   return (
     <>
-      {!isAdminRoute && <HeaderBarNew />}
+      {!hideChrome && <HeaderBarNew />}
       {children}
-      {!isAdminRoute && <FooterBar />}
-      {!isAdminRoute && <TawkToWidget />}
+      {!hideChrome && <FooterBar />}
+      {!hideChrome && <TawkToWidget />}
     </>
   );
 }
