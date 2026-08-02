@@ -38,9 +38,6 @@ function buildResponseData(value) {
 
   return {
     introduction_video_url: introduction_video_url,
-    title,
-    youtubeLink,
-    aboutUsContent,
     about_us_title: title,
     youtube_video: youtubeLink,
     about_us: aboutUsContent,
