@@ -27,7 +27,7 @@ function buildResponseData(value) {
   const story = value?.story || {};
   const title = value?.title || "About Garg Dental";
   const youtubeLink = value?.youtubeLink || "";
-  const introVideoUrl = value?.introVideoUrl || "";
+  const introduction_video_url = value?.introVideoUrl || "";
   const aboutUsContent = value?.aboutUsContent || "";
 
   const storyTitle = story?.title || "Our Story";
@@ -37,27 +37,19 @@ function buildResponseData(value) {
   const storyDescription = story?.description || "";
 
   return {
+    introduction_video_url: introduction_video_url,
     title,
     youtubeLink,
-    introVideoUrl,
     aboutUsContent,
-    story: {
-      title: storyTitle,
-      name: storyName,
-      designation: storyDesignation,
-      imageUrl: storyImageUrl,
-      description: storyDescription,
-    },
     about_us_title: title,
-    about_us: aboutUsContent,
     youtube_video: youtubeLink,
-    introduction_video_url: introVideoUrl,
+    about_us: aboutUsContent,
     story_title: storyTitle,
     stories: [
       {
+        image: storyImageUrl,
         name: storyName,
         designation: storyDesignation,
-        image: storyImageUrl,
         description: storyDescription,
       },
     ],
@@ -92,12 +84,14 @@ export async function GET() {
 
     return Response.json({
       success: true,
+      message: "About page details fetched successfully.",
       data: parsed ? buildResponseData(parsed) : null,
     });
   } catch (error) {
     return Response.json(
       {
         success: false,
+        message: "Failed to fetch about.",
         message: error.message,
       },
       { status: 500 },
