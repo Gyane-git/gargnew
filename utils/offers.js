@@ -36,23 +36,6 @@ export const formatOffer = (row = {}) => ({
   offer_image_url: assetUrl(row.offer_image || row.file_path || row.image, "uploads/offers"),
 });
 
-// export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
-//   const conditions = [];
-//   const params = [];
-
-//   if (activeOnly) {
-//     conditions.push("(is_active = 1)");
-//   }
-
-//   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-//   const limitSql = Number(limit) > 0 ? "LIMIT ?" : "";
-//   if (limitSql) params.push(Number(limit));
-
-//   const [rows] = await pool.query(`SELECT * FROM ${TABLE} ${where} ORDER BY id DESC ${limitSql}`, params);
-
-//   return rows.map(formatOffer);
-// };
-
 export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
   const conditions = [];
   const params = [];
@@ -66,7 +49,7 @@ export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
 
   if (limitSql) params.push(Number(limit));
 
-  const [rows] = await pool.query(n
+  const [rows] = await pool.query(
     `
     SELECT
       o.*,
