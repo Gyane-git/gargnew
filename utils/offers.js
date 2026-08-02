@@ -41,21 +41,111 @@ export const fetchOffers = async ({ activeOnly = true, limit = null } = {}) => {
   const params = [];
 
   if (activeOnly) {
-    conditions.push("(is_active = 1)");
+    conditions.push("o.is_active = 1");
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const limitSql = Number(limit) > 0 ? "LIMIT ?" : "";
+
   if (limitSql) params.push(Number(limit));
 
-  const [rows] = await pool.query(`SELECT * FROM ${TABLE} ${where} ORDER BY id DESC ${limitSql}`, params);
+  const [rows] = await pool.query(
+    `
+    SELECT
+      o.*,
 
-  return rows.map(formatOffer);
+      s.id AS storage_id,
+      s.data_type,
+      s.data_id,
+      s.key AS storage_key,
+      s.value AS storage_value,
+      s.created_at AS storage_created_at,
+      s.updated_at AS storage_updated_at
+
+    FROM offers o
+
+
+    LEFT JOIN storages s
+      ON s.data_id = o.id
+    ${where}
+
+    ORDER BY o.id DESC
+    ${limitSql}
+    `,
+    params,
+  );
+
+  const offers = {};
+
+  for (const row of rows) {
+    if (!offers[row.id]) {
+      offers[row.id] = formatOffer({
+        ...row,
+      });
+
+      offers[row.id].storage = [];
+    }
+
+    if (row.storage_id) {
+      offers[row.id].storage.push({
+        id: row.storage_id,
+        data_type: row.data_type,
+        data_id: row.data_id,
+        key: row.storage_key,
+        value: row.storage_value,
+        created_at: row.storage_created_at,
+        updated_at: row.storage_updated_at,
+      });
+    }
+  }
+
+  return Object.values(offers);
 };
 
 export const fetchOfferById = async (id) => {
-  const [rows] = await pool.query(`SELECT * FROM ${TABLE} WHERE id = ? LIMIT 1`, [id]);
-  return rows[0] ? formatOffer(rows[0]) : null;
+  const [rows] = await pool.query(
+    `
+    SELECT
+      o.*,
+
+      s.id AS storage_id,
+      s.data_type,
+      s.data_id,
+      s.key AS storage_key,
+      s.value AS storage_value,
+      s.created_at AS storage_created_at,
+      s.updated_at AS storage_updated_at
+
+    FROM offers o
+
+    LEFT JOIN storages s
+      ON s.data_id = o.id
+
+    WHERE o.id = ?
+    `,
+    [id],
+  );
+
+  if (!rows.length) return null;
+
+  const offer = formatOffer(rows[0]);
+  offer.storage = [];
+
+  rows.forEach((row) => {
+    if (row.storage_id) {
+      offer.storage.push({
+        id: row.storage_id,
+        data_type: row.data_type,
+        data_id: row.data_id,
+        key: row.storage_key,
+        value: row.storage_value,
+        created_at: row.storage_created_at,
+        updated_at: row.storage_updated_at,
+      });
+    }
+  });
+
+  return offer;
 };
 
 export const saveOffer = async ({ id = null, body = {}, file = null } = {}) => {

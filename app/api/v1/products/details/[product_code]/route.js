@@ -35,7 +35,7 @@ const normalizeVariationRow = (row, product) => {
   const attributes = parseVariationAttributes(row.attributes);
   const variationImage = attributes.image || attributes.image_url || row.image_path || row.image || product.main_image || product.main_image_path || null;
   const imageFullUrl = variationImage
-    ? assetUrl(variationImage, "uploads/products/variations") || assetUrl(variationImage, "uploads/products") || variationImage
+    ? assetUrl(variationImage, "uploads/products/variations") || assetUrl(variationImage, "uploads/products") || product.image_full_url || product.main_image_full_url || null
     : product.image_full_url || product.main_image_full_url || null;
 
   const sellPrice = Number(attributes.sell_price ?? row.sell_price ?? row.price ?? product.sell_price ?? 0);

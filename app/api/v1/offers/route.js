@@ -39,13 +39,7 @@ export async function GET(req) {
     const cacheKey = includeInactive ? "includeInactive" : "activeOnly";
     const cachedOffers = getOffersCache();
 
-    if (
-      cachedOffers[cacheKey] &&
-      Date.now() - cachedOffers.at < OFFERS_CACHE_TTL_MS &&
-      (limit ? cachedOffers[cacheKey].limit === Number(limit) : true)
-    ) {
-      // `message` added for Laravel parity (OfferController::get_offers) - additive only,
-      // app/page.js and app/dashboard/page.js only read success/offers[0].offer_image_full_url.
+    if (cachedOffers[cacheKey] && Date.now() - cachedOffers.at < OFFERS_CACHE_TTL_MS && (limit ? cachedOffers[cacheKey].limit === Number(limit) : true)) {
       return NextResponse.json({
         success: true,
         message: "Offers fetched successfully.",
@@ -140,10 +134,7 @@ export async function POST(request) {
     const result = await saveOffer({ body, file });
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, message: result.message },
-        { status: result.status || 400 },
-      );
+      return NextResponse.json({ success: false, message: result.message }, { status: result.status || 400 });
     }
 
     invalidateOffersCache();
