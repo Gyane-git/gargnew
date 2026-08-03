@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { AUTH_COOKIE_NAMES } from "@/utils/authUser";
 
 const tokenSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "");
 
@@ -23,11 +24,19 @@ export async function POST(req) {
 
     const response = NextResponse.json({ message: "Token set successfully" });
 
-    response.cookies.set("token", token, {
+    response.cookies.set(AUTH_COOKIE_NAMES.customer, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    response.cookies.set("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0,
       path: "/",
     });
 

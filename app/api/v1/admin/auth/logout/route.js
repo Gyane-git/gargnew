@@ -6,6 +6,14 @@ export async function POST() {
     message: "Logged out successfully",
   });
 
+  response.cookies.set("admin_token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 0,
+    path: "/",
+  });
+
   response.cookies.set("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -16,4 +24,3 @@ export async function POST() {
 
   return response;
 }
-

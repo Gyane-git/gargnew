@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { canAccessAdminPath, getAdminLandingPath } from "@/utils/adminAccess";
 import { jwtVerify } from "jose";
+import { AUTH_COOKIE_NAMES } from "@/utils/authUser";
 
 const jwtSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "");
 
@@ -33,12 +34,13 @@ const redirectToLogin = (req: NextRequest, clearToken = false) => {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const token = req.cookies.get("token")?.value;
+  const customerToken = req.cookies.get(AUTH_COOKIE_NAMES.customer)?.value;
+  const adminToken = req.cookies.get(AUTH_COOKIE_NAMES.admin)?.value;
 
   const customerAuthRoutes = ["/account", "/account/signup"];
 
-  if (token && customerAuthRoutes.includes(pathname)) {
-    const payload = await verifyJwt(token);
+  if (customerToken && customerAuthRoutes.includes(pathname)) {
+    const payload = await verifyJwt(customerToken);
     if (payload?.id) {
       return NextResponse.redirect(new URL("/myaccount", req.url));
     }
@@ -54,11 +56,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!token) {
+  if (!adminToken) {
     return redirectToLogin(req);
   }
 
-  const payload = await verifyJwt(token);
+  const payload = await verifyJwt(adminToken);
   const role = String(payload?.role || payload?.accountType || "").trim();
   const accountType = String(payload?.type || "").toLowerCase();
 

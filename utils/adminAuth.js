@@ -1,13 +1,13 @@
 import pool from "@/utils/db";
 import { ensureAdminUsersSchema } from "@/utils/adminUsers";
-import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
+import { AUTH_COOKIE_NAMES, getAuthUser, unauthorizedResponse } from "@/utils/authUser";
 
 const normalizeValue = (value) => String(value || "").trim().toLowerCase();
 
 const isAdminToken = (payload) => normalizeValue(payload?.type) === "admin";
 
 export const requireAdminAuth = async (req, db = pool) => {
-  const authUser = getAuthUser(req);
+  const authUser = getAuthUser(req, AUTH_COOKIE_NAMES.admin);
 
   if (!authUser?.id || !isAdminToken(authUser)) {
     return { error: unauthorizedResponse() };

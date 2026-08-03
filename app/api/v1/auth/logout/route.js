@@ -5,12 +5,20 @@ export async function POST() {
     const response = NextResponse.json({ success: true, message: "Logged out successfully." }, { status: 200 });
 
     // Clear the token cookie
-    response.cookies.set("token", "", {
+    response.cookies.set("customer_token", "", {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 0, // immediately expire
+    });
+
+    response.cookies.set("token", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
     });
 
     return response;

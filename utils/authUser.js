@@ -1,16 +1,21 @@
 import jwt from "jsonwebtoken";
 
-export const getBearerToken = (req) => {
+export const AUTH_COOKIE_NAMES = {
+  customer: "customer_token",
+  admin: "admin_token",
+};
+
+export const getBearerToken = (req, cookieName = AUTH_COOKIE_NAMES.customer) => {
   const authHeader = req.headers.get("authorization") || "";
   if (authHeader.toLowerCase().startsWith("bearer ")) {
     return authHeader.slice(7).trim();
   }
 
-  return req.cookies?.get("token")?.value || null;
+  return req.cookies?.get(cookieName)?.value || null;
 };
 
-export const getAuthUser = (req) => {
-  const token = getBearerToken(req);
+export const getAuthUser = (req, cookieName = AUTH_COOKIE_NAMES.customer) => {
+  const token = getBearerToken(req, cookieName);
   if (!token) return null;
 
   try {
