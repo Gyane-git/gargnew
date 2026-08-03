@@ -15,11 +15,7 @@ export async function GET(req) {
     const cacheKey = includeInactive ? "includeInactive" : "activeOnly";
     const cachedOffers = getOffersCache();
 
-    if (
-      cachedOffers[cacheKey] &&
-      Date.now() - cachedOffers.at < OFFERS_CACHE_TTL_MS &&
-      (limit ? cachedOffers[cacheKey].limit === Number(limit) : true)
-    ) {
+    if (cachedOffers[cacheKey] && Date.now() - cachedOffers.at < OFFERS_CACHE_TTL_MS && (limit ? cachedOffers[cacheKey].limit === Number(limit) : true)) {
       return NextResponse.json({
         success: true,
         offers: cachedOffers[cacheKey].data,
@@ -40,6 +36,7 @@ export async function GET(req) {
 
     return NextResponse.json({
       success: true,
+      message: "Offers fetched successfully.",
       offers,
     });
   } catch (error) {
@@ -73,10 +70,7 @@ export async function POST(request) {
     const result = await saveOffer({ body, file });
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, message: result.message },
-        { status: result.status || 400 },
-      );
+      return NextResponse.json({ success: false, message: result.message }, { status: result.status || 400 });
     }
 
     invalidateOffersCache();

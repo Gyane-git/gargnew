@@ -75,6 +75,9 @@ export async function GET(request) {
 
       LEFT JOIN brands b
         ON p.brand_id = b.id
+
+      LEFT JOIN storages s
+        ON s.data_id = b.id
       `,
       [limit, offset],
     );
@@ -116,6 +119,76 @@ export async function GET(request) {
       }, {});
     }
 
+    const [variationRows] = await pool.query(
+      `
+      SELECT *
+      FROM product_variations
+      WHERE product_code IN (?)
+      ORDER BY id ASC
+      `,
+      [productCodes],
+    );
+
+    const brandIds = [...new Set(rows.map((r) => r.brand_id).filter(Boolean))];
+
+    let storageByBrand = {};
+
+    if (brandIds.length > 0) {
+      const [storageRows] = await pool.query(
+        `
+    SELECT
+      id,
+      data_type,
+      data_id,
+      \`key\`,
+      value,
+      created_at,
+      updated_at
+      FROM storages
+      WHERE data_id IN (?)
+       `,
+        [brandIds],
+      );
+
+      storageByBrand = storageRows.reduce((acc, row) => {
+        if (!acc[row.data_id]) {
+          acc[row.data_id] = [];
+        }
+
+        acc[row.data_id].push({
+          id: row.id,
+          data_type: row.data_type,
+          data_id: row.data_id,
+          key: row.key,
+          value: row.value,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        });
+
+        return acc;
+      }, {});
+    }
+
+    const variationsByProduct = variationRows.reduce((acc, row) => {
+      if (!acc[row.product_code]) {
+        acc[row.product_code] = [];
+      }
+
+      acc[row.product_code].push({
+        id: row.id,
+        product_code: row.product_code,
+        attributes: row.attributes,
+        variation_value: row.variation_value,
+        price: row.price,
+        stock: row.stock,
+        sku: row.sku,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      });
+
+      return acc;
+    }, {});
+
     // ---- Group rows by product, since the storages join can produce
     // multiple rows per product (one per matching storage record) ----
     const productMap = new Map();
@@ -149,7 +222,7 @@ export async function GET(request) {
               created_at: row.brand_created_at,
               updated_at: row.brand_updated_at,
               image_full_url: buildFullUrl(BRAND_IMAGE_PATH, row.brand_image),
-              storage: [],
+              storage: storageByBrand[row.brand_id] || [],
             }
           : null;
 
@@ -199,33 +272,32 @@ export async function GET(request) {
           review_count: reviewCount,
           reviews: productReviews,
 
-          variations: [],
+          variations: variationsByProduct[row.product_code] || [],
 
           category,
           brand,
         });
       }
 
-      if (row.storage_id_ref) {
-        const product = productMap.get(key);
-        if (row.image_path) {
-          const imageUrl = buildFullUrl(PRODUCT_IMAGE_PATH, row.image_path);
+      const product = productMap.get(key);
+      if (row.image_path) {
+        const imageUrl = buildFullUrl(PRODUCT_IMAGE_PATH, row.image_path);
 
-          if (!product.files_full_url.includes(imageUrl)) {
-            product.files_full_url.push(imageUrl);
-          }
+        if (!product.files_full_url.includes(imageUrl)) {
+          product.files_full_url.push(imageUrl);
         }
-        if (product.brand) {
-          product.brand.storage.push({
-            id: row.storage_id_ref,
-            data_type: row.data_type,
-            data_id: row.storage_data_id,
-            key: row.storage_key,
-            value: row.storage_value,
-            created_at: row.storage_created_at,
-            updated_at: row.storage_updated_at,
-          });
-        }
+      }
+
+      if (row.storage_id_ref && product.brand) {
+        product.brand.storage.push({
+          id: row.storage_id_ref,
+          data_type: row.data_type,
+          data_id: row.storage_data_id,
+          key: row.storage_key,
+          value: row.storage_value,
+          created_at: row.storage_created_at,
+          updated_at: row.storage_updated_at,
+        });
       }
     });
 
