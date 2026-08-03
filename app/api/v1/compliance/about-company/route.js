@@ -1,4 +1,5 @@
 import pool from "@/utils/db";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 export async function GET() {
   try {
@@ -42,6 +43,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { content } = await request.json();
 
     if (!content?.trim()) {

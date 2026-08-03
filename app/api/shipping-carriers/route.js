@@ -1,7 +1,7 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 const TABLE = "shipping_carriers";
 
@@ -37,8 +37,11 @@ async function ensureTable() {
   };
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     await ensureTable();
 
     const [rows] = await pool.query(`
@@ -66,8 +69,11 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { hasStatus } = await ensureTable();
-    const authUser = getAuthUser(req);
+    const authUser = adminAuth.authUser;
 
     const body = await req.json();
     const name = String(body.name || "").trim();

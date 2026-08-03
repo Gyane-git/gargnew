@@ -65,8 +65,8 @@ export async function POST(request) {
     }
 
     const [orders] = await connection.query(
-      `SELECT * FROM orders WHERE ${whereParts.join(" OR ")} LIMIT 1`,
-      values,
+      `SELECT * FROM orders WHERE customer_id = ? AND (${whereParts.join(" OR ")}) LIMIT 1`,
+      [authUser.id, ...values],
     );
 
     const order = orders[0];

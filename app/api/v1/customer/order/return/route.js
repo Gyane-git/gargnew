@@ -81,8 +81,8 @@ export async function POST(request) {
 
     const numericOrderId = Number(orderIdInput);
     const [orders] = await connection.query(
-      `SELECT * FROM orders WHERE order_id = ? OR id = ? LIMIT 1`,
-      [orderIdInput, Number.isFinite(numericOrderId) ? numericOrderId : null],
+      `SELECT * FROM orders WHERE customer_id = ? AND (order_id = ? OR id = ?) LIMIT 1`,
+      [authUser.id, orderIdInput, Number.isFinite(numericOrderId) ? numericOrderId : null],
     );
 
     const order = orders[0];
@@ -124,7 +124,8 @@ export async function POST(request) {
     const imagePaths = [];
 
     for (const file of images) {
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`;
+      const safeName = String(file.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "_");
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
       const filePath = path.join(UPLOAD_DIR, fileName);
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);

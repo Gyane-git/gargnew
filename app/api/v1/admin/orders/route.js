@@ -1,10 +1,14 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 import { fetchAdminOrders } from "@/utils/adminOrders";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 export async function GET(request) {
   let connection = null;
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     connection = await pool.getConnection();
     const { searchParams } = new URL(request.url);
     const status = String(searchParams.get("status") || "").trim();

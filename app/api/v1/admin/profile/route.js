@@ -4,7 +4,8 @@ import { randomUUID } from "crypto";
 import path from "path";
 import pool from "@/utils/db";
 import { ensureAdminUsersSchema } from "@/utils/adminUsers";
-import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
+import { unauthorizedResponse } from "@/utils/authUser";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/admin-profiles");
 
@@ -101,13 +102,11 @@ const buildResponse = (admin) => ({
 
 export async function GET(req) {
   try {
-    const authUser = getAuthUser(req);
-    if (!authUser?.id) {
-      return unauthorizedResponse();
-    }
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
 
     await ensureAdminUsersSchema(pool);
-    const admin = await readCurrentAdmin(authUser.id);
+    const admin = await readCurrentAdmin(adminAuth.authUser.id);
 
     if (!admin || Number(admin.status) === 0) {
       return unauthorizedResponse();
@@ -127,13 +126,11 @@ export async function GET(req) {
 
 export async function PATCH(req) {
   try {
-    const authUser = getAuthUser(req);
-    if (!authUser?.id) {
-      return unauthorizedResponse();
-    }
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
 
     await ensureAdminUsersSchema(pool);
-    const current = await readCurrentAdmin(authUser.id);
+    const current = await readCurrentAdmin(adminAuth.authUser.id);
 
     if (!current || Number(current.status) === 0) {
       return unauthorizedResponse();
@@ -171,7 +168,7 @@ export async function PATCH(req) {
       }
 
       const newHash = await bcrypt.hash(newPassword, 10);
-      await pool.query("UPDATE admins SET password = ?, updated_at = NOW() WHERE id = ?", [newHash, authUser.id]);
+      await pool.query("UPDATE admins SET password = ?, updated_at = NOW() WHERE id = ?", [newHash, adminAuth.authUser.id]);
 
       return Response.json({
         success: true,
@@ -198,7 +195,7 @@ export async function PATCH(req) {
     const normalizedEmail = email.toLowerCase();
     const [duplicateRows] = await pool.query(
       "SELECT id FROM admins WHERE email = ? AND id <> ? LIMIT 1",
-      [normalizedEmail, authUser.id],
+      [normalizedEmail, adminAuth.authUser.id],
     );
 
     if (duplicateRows.length > 0) {
@@ -232,11 +229,11 @@ export async function PATCH(req) {
         nextProfilePhotoPath,
         nextRoleId,
         accountType || current.account_type || current.role || "Staff",
-        authUser.id,
+        adminAuth.authUser.id,
       ],
     );
 
-    const updated = await readCurrentAdmin(authUser.id);
+    const updated = await readCurrentAdmin(adminAuth.authUser.id);
 
     return Response.json({
       success: true,

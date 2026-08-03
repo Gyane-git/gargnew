@@ -1,6 +1,7 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 import { fetchAllComplianceRows, fetchComplianceRowByKey, formatComplianceRecord } from "@/utils/compliance";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 async function upsertCompliance({ key, value }) {
   const existing = await fetchComplianceRowByKey(key);
@@ -55,6 +56,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const body = await request.json();
     const key = String(body.key || "").trim();
 

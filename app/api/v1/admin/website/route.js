@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 import pool from "@/utils/db";
+import { requireAdminAuth } from "@/utils/adminAuth";
+import { safeUploadName } from "@/utils/pathSecurity";
 
 const SETTINGS_TABLE = "system_settings";
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/system-settings");
@@ -125,15 +127,18 @@ const upsertSetting = async (key, value) => {
 const saveUploadedFile = async (file, folder = "system-settings") => {
   if (!file || typeof file !== "object" || !file.size) return null;
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  const extension = path.extname(file.name || "");
+  const extension = path.extname(safeUploadName(file.name || ""));
   const filename = `${randomUUID()}${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await fs.writeFile(path.join(UPLOAD_DIR, filename), buffer);
   return `/uploads/${folder}/${filename}`;
 };
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const settings = await readSettings();
     return Response.json({
       success: true,
@@ -153,6 +158,9 @@ export async function POST(req) {
 
 export async function PATCH(req) {
   try {
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     await ensureTable();
 
     const contentType = req.headers.get("content-type") || "";

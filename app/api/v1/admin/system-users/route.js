@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
-import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { fetchAdminUsers, saveAdminUser } from "@/utils/adminUsers";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const admins = await fetchAdminUsers(pool);
 
     return NextResponse.json({
@@ -20,6 +23,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const body = await request.json();
     const result = await saveAdminUser(pool, { body });
 
@@ -27,7 +33,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: result.message }, { status: result.status || 400 });
     }
 
-    const authUser = getAuthUser(request);
+    const authUser = adminAuth.authUser;
     await recordAuditLog(pool, {
       admin_name: authUser?.full_name || authUser?.name || authUser?.email || "System",
       role: authUser?.role || authUser?.user_role || "System",
@@ -52,4 +58,3 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: error.message || "Internal server error." }, { status: 500 });
   }
 }
-

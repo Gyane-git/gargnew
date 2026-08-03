@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import fs from "fs/promises";
+import path from "path";
 import pool from "@/utils/db";
 import { buildCategoryTree } from "@/utils/apiFormatters";
 import { ensureCategoryFolder, organizeFilesForCategories } from "@/utils/excelUpload";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const [rows] = await pool.query("SELECT * FROM categories ORDER BY id ASC");
     const categories = buildCategoryTree(rows, { onlyActive: false });
     const organizedFiles = await organizeFilesForCategories(categories);
@@ -26,6 +32,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const formData = await request.formData();
     const zipFile = formData.get("zip_file");
     const folderName = String(formData.get("folder_name") || "").trim();
@@ -54,15 +63,27 @@ export async function POST(request) {
     }
 
     const destinationPath = await ensureCategoryFolder(folderName);
+    const storedFolderName = path.basename(destinationPath);
     const buffer = Buffer.from(await zipFile.arrayBuffer());
     const zip = new AdmZip(buffer);
-    zip.extractAllTo(destinationPath, true);
+    for (const entry of zip.getEntries()) {
+      const entryName = String(entry.entryName || "").replace(/\\/g, "/");
+      if (!entryName || entryName.includes("..")) continue;
+      if (entry.isDirectory) continue;
+
+      const resolvedPath = path.resolve(destinationPath, entryName);
+      const rootPath = path.resolve(destinationPath);
+      if (resolvedPath !== rootPath && !resolvedPath.startsWith(`${rootPath}${path.sep}`)) continue;
+
+      await fs.mkdir(path.dirname(resolvedPath), { recursive: true });
+      await fs.writeFile(resolvedPath, entry.getData());
+    }
 
     return NextResponse.json({
       success: true,
       message: "Files uploaded and extracted successfully!",
-      folder: folderName,
-      path: `/images/uploads/${folderName}`,
+      folder: storedFolderName,
+      path: `/images/uploads/${storedFolderName}`,
     });
   } catch (error) {
     console.error("IMAGE FOLDER UPLOAD ERROR:", error);

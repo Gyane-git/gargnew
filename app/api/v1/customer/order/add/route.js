@@ -28,9 +28,6 @@ export async function POST(req) {
     const billingAddressId = Number(body.billing_address);
     const shippingAddressId = Number(body.shipping_address);
     const invoiceEmail = String(body.invoice_email || "").trim();
-    const subtotal = toNumber(body.subtotal);
-    const grandtotal = toNumber(body.grandtotal);
-    const shipping = toNumber(body.shipping);
     const selectedItems = Array.isArray(body.selected_items) ? body.selected_items.map((id) => Number(id)).filter(Boolean) : [];
     const transactionId = String(body.transaction_id || "").trim() || null;
 
@@ -99,6 +96,7 @@ export async function POST(req) {
       }
     }
 
+    const shipping = Number(billingAddress.shipping_cost || shippingAddress.shipping_cost || 0);
     const orderItems = cartRows.map((row) => {
       const quantity = Number(row.quantity || 0);
       const price = Number(row.price || 0);
@@ -117,6 +115,11 @@ export async function POST(req) {
         shipping_cost: shipping.toFixed(2),
       };
     });
+
+    const subtotal = Number(
+      orderItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0).toFixed(2),
+    );
+    const grandtotal = Number((subtotal + shipping).toFixed(2));
 
     const orderNumber = generateOrderNumber(authUser.id);
     const orderCode = `#ORD${orderNumber}`;

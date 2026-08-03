@@ -1,11 +1,11 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 import { fetchAdminOrderById, upsertOrderPaymentHistory, upsertOrderStatusHistory } from "@/utils/adminOrders";
-import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { buildOrderStatusEmail } from "@/lib/orderEmail";
 import { sendMail } from "@/utils/mailer";
 import { fetchOrderCancelReasonById, normalizeReasonText } from "@/utils/orderCancelReasons";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
 
@@ -17,6 +17,9 @@ const getTableColumns = async (connection, tableName) => {
 export async function GET(_request, context) {
   let connection = null;
   try {
+    const adminAuth = await requireAdminAuth(_request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     connection = await pool.getConnection();
     const { id } = await context.params;
     const order = await fetchAdminOrderById(connection, id);
@@ -45,9 +48,12 @@ export async function GET(_request, context) {
 export async function PATCH(request, context) {
   let connection = null;
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     connection = await pool.getConnection();
     const { id } = await context.params;
-    const authUser = getAuthUser(request);
+    const authUser = adminAuth.authUser;
     const order = await fetchAdminOrderById(connection, id);
 
     if (!order) {

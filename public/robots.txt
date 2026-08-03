@@ -7,7 +7,7 @@ User-agent: *
 Disallow: /admin
 
 # Host
-Host: https://www.dentalnepal.com
+Host: https://gargdental.com
 
 # Sitemaps
-Sitemap: https://www.dentalnepal.com/sitemap.xml
+Sitemap: https://gargdental.com/sitemap.xml

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { fetchAuditLogs, recordAuditLog } from "@/utils/auditLogs";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 export async function GET(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Number(searchParams.get("limit") || 500) || 500, 2000);
     const offset = Math.max(Number(searchParams.get("offset") || 0) || 0, 0);
@@ -40,6 +44,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const body = await request.json();
     await recordAuditLog(pool, body);
 

@@ -72,9 +72,7 @@ export async function POST(req) {
     const price = Number(product.sell_price || product.actual_price || 0);
     const actualPrice = Number(product.actual_price || 0);
     const subtotal = Number((price * quantity).toFixed(2));
-    const shipping = Number(
-      body.shipping ?? shippingAddress.shipping_cost ?? billingAddress.shipping_cost ?? 0,
-    );
+    const shipping = Number(billingAddress.shipping_cost || shippingAddress.shipping_cost || 0);
     const grandtotal = Number((subtotal + shipping).toFixed(2));
     const itemSubtotal = Number((price * quantity).toFixed(2));
     const orderItems = [

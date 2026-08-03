@@ -1,6 +1,7 @@
 import pool from "@/utils/db";
 import { NextResponse } from "next/server";
 import { fetchComplianceRowByKey, formatComplianceRecord } from "@/utils/compliance";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 async function upsertByKey(key, value) {
   const [existing] = await pool.query("SELECT id FROM compliances WHERE `key` = ? LIMIT 1", [key]);
@@ -44,6 +45,9 @@ export async function GET(_request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const body = await request.json();
 
     if (body.value === undefined || body.value === null) {
@@ -75,6 +79,9 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(_request, { params }) {
   try {
+    const adminAuth = await requireAdminAuth(_request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const row = await fetchComplianceRowByKey(params.key);
 
     if (!row) {

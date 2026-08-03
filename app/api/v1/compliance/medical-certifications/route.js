@@ -2,6 +2,8 @@ import pool from "@/utils/db";
 import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { requireAdminAuth } from "@/utils/adminAuth";
+import { safeUploadName } from "@/utils/pathSecurity";
 
 export async function GET() {
   try {
@@ -45,6 +47,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const formData = await request.formData();
 
     const description = formData.get("description");
@@ -91,7 +96,7 @@ export async function POST(request) {
 
       if (!title || !value) continue;
 
-      const extension = path.extname(value.name);
+      const extension = path.extname(safeUploadName(value.name || ""));
       const fileName = `${randomUUID()}${extension}`;
       const filePath = path.join(uploadDir, fileName);
 

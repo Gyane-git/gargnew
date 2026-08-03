@@ -2,6 +2,8 @@ import pool from "@/utils/db";
 import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { requireAdminAuth } from "@/utils/adminAuth";
+import { safeUploadName } from "@/utils/pathSecurity";
 
 const ABOUT_US_KEY = "about_us";
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/about-us");
@@ -107,6 +109,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const formData = await request.formData();
 
     const title = formData.get("title");
@@ -128,14 +133,14 @@ export async function POST(request) {
     let storyImageUrl = existingData?.story?.imageUrl || "";
 
     if (introVideo && introVideo.size > 0) {
-      const extension = path.extname(introVideo.name);
+      const extension = path.extname(safeUploadName(introVideo.name || ""));
       const fileName = `${randomUUID()}${extension}`;
       await fs.writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(await introVideo.arrayBuffer()));
       introVideoUrl = `/uploads/about-us/${fileName}`;
     }
 
     if (storyImage && storyImage.size > 0) {
-      const extension = path.extname(storyImage.name);
+      const extension = path.extname(safeUploadName(storyImage.name || ""));
       const fileName = `${randomUUID()}${extension}`;
       await fs.writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(await storyImage.arrayBuffer()));
       storyImageUrl = `/uploads/about-us/${fileName}`;
@@ -177,8 +182,11 @@ export async function POST(request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const row = await readAboutUsRow();
     const parsed = normalizeStoredValue(row?.value);
 

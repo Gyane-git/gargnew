@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { deleteOffer, fetchOfferById, saveOffer } from "@/utils/offers";
-import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { invalidateOffersCache } from "@/utils/offersCache";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 export async function GET(_req, context) {
   try {
@@ -25,8 +25,11 @@ export async function GET(_req, context) {
 
 export async function PUT(request, context) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { id } = await context.params;
-    const authUser = getAuthUser(request);
+    const authUser = adminAuth.authUser;
     const contentType = request.headers.get("content-type") || "";
 
     let body = {};
@@ -82,8 +85,11 @@ export async function PUT(request, context) {
 
 export async function PATCH(request, context) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { id } = await context.params;
-    const authUser = getAuthUser(request);
+    const authUser = adminAuth.authUser;
     const { is_active } = await request.json();
 
     const result = await saveOffer({
@@ -121,8 +127,11 @@ export async function PATCH(request, context) {
 
 export async function DELETE(_request, context) {
   try {
+    const adminAuth = await requireAdminAuth(_request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const { id } = await context.params;
-    const authUser = getAuthUser(_request);
+    const authUser = adminAuth.authUser;
     const result = await deleteOffer(id);
 
     if (!result.success) {

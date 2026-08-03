@@ -1,4 +1,5 @@
 import pool from "@/utils/db";
+import { requireAdminAuth } from "@/utils/adminAuth";
 import {
   parseExcelBuffer,
   slugify,
@@ -13,6 +14,9 @@ export async function POST(request) {
   let connection = null;
 
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const formData = await request.formData();
     const file = formData.get("file");
 

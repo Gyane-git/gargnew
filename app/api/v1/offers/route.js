@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { deleteOffer, fetchOffers, saveOffer } from "@/utils/offers";
-import { getAuthUser } from "@/utils/authUser";
 import { recordAuditLog } from "@/utils/auditLogs";
 import { getOffersCache, invalidateOffersCache, setOffersCache } from "@/utils/offersCache";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 const OFFERS_CACHE_TTL_MS = 15000;
 
@@ -49,6 +49,9 @@ export async function GET(req) {
 
 export async function POST(request) {
   try {
+    const adminAuth = await requireAdminAuth(request, pool);
+    if (adminAuth.error) return adminAuth.error;
+
     const contentType = request.headers.get("content-type") || "";
     let body = {};
     let file = null;
@@ -78,7 +81,7 @@ export async function POST(request) {
 
     invalidateOffersCache();
 
-    const authUser = getAuthUser(request);
+    const authUser = adminAuth.authUser;
     await recordAuditLog(pool, {
       admin_name: authUser?.name || authUser?.full_name || authUser?.email || "System",
       role: authUser?.role || authUser?.user_role || "System",

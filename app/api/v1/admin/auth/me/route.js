@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import pool from "@/utils/db";
 import { ensureAdminUsersSchema } from "@/utils/adminUsers";
-import { getAuthUser, unauthorizedResponse } from "@/utils/authUser";
+import { unauthorizedResponse } from "@/utils/authUser";
+import { requireAdminAuth } from "@/utils/adminAuth";
 
 export async function GET(req) {
   try {
-    const authUser = getAuthUser(req);
-    if (!authUser?.id) {
-      return unauthorizedResponse();
-    }
+    const adminAuth = await requireAdminAuth(req, pool);
+    if (adminAuth.error) return adminAuth.error;
 
     await ensureAdminUsersSchema(pool);
 
@@ -27,7 +26,7 @@ export async function GET(req) {
        LEFT JOIN admin_roles r ON r.id = a.role_id
        WHERE a.id = ?
        LIMIT 1`,
-      [authUser.id],
+      [adminAuth.authUser.id],
     );
 
     if (!rows.length) {

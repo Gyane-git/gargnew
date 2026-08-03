@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import path from "path";
 import fs from "fs";
 import { mkdir, readdir, stat } from "fs/promises";
+import { safePathSegment } from "@/utils/pathSecurity";
 
 export const IMAGE_UPLOAD_ROOT = path.join(process.cwd(), "public", "images", "uploads");
 
@@ -261,7 +262,7 @@ export const organizeFilesForCategories = async (categories = []) => {
 };
 
 export const ensureCategoryFolder = async (folderName) => {
-  const destination = path.join(IMAGE_UPLOAD_ROOT, folderName);
+  const destination = path.join(IMAGE_UPLOAD_ROOT, safePathSegment(folderName, "default"));
   await mkdir(destination, { recursive: true });
   return destination;
 };

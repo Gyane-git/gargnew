@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { canAccessAdminPath, getAdminLandingPath } from "@/utils/adminAccess";
+import { jwtVerify } from "jose";
 
-const decodeJwtPayload = (token: string) => {
+const jwtSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "");
+
+const verifyJwt = async (token: string) => {
+  if (!token || !process.env.NEXTAUTH_SECRET) return null;
+
   try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    return JSON.parse(atob(padded));
+    const { payload } = await jwtVerify(token, jwtSecret);
+    return payload;
   } catch {
     return null;
   }
@@ -29,7 +30,7 @@ const redirectToLogin = (req: NextRequest, clearToken = false) => {
   return response;
 };
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const token = req.cookies.get("token")?.value;
@@ -37,7 +38,12 @@ export function middleware(req: NextRequest) {
   const customerAuthRoutes = ["/account", "/account/signup"];
 
   if (token && customerAuthRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL("/myaccount", req.url));
+    const payload = await verifyJwt(token);
+    if (payload?.id) {
+      return NextResponse.redirect(new URL("/myaccount", req.url));
+    }
+
+    return NextResponse.next();
   }
 
   if (!pathname.startsWith("/admin")) {
@@ -52,8 +58,8 @@ export function middleware(req: NextRequest) {
     return redirectToLogin(req);
   }
 
-  const payload = decodeJwtPayload(token);
-  const role = payload?.role || payload?.accountType || "";
+  const payload = await verifyJwt(token);
+  const role = String(payload?.role || payload?.accountType || "").trim();
   const accountType = String(payload?.type || "").toLowerCase();
 
   if (!payload?.id || accountType !== "admin") {
