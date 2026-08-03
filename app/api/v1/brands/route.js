@@ -36,17 +36,75 @@ import path from "path";
  *         description: Server error
  */
 // GET ALL BRANDS
+// export async function GET(req) {
+//   try {
+//     const { searchParams } = new URL(req.url);
+//     const includeInactive = searchParams.get("include_inactive") === "1";
+//     const conditions = includeInactive ? [] : ["status = 1"];
+//     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+//     const [rows] = await pool.query(`SELECT * FROM brands ${where} ORDER BY COALESCE(order_wise, 999999), id DESC`);
+
+//     return Response.json({
+//       success: true,
+//       brands: rows.map(formatBrand),
+//     });
+//   } catch (error) {
+//     return Response.json({ success: false, message: error.message }, { status: 500 });
+//   }
+// }
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
+
     const includeInactive = searchParams.get("include_inactive") === "1";
-    const conditions = includeInactive ? [] : ["status = 1"];
+    const conditions = includeInactive ? [] : ["b.status = 1"];
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    const [rows] = await pool.query(`SELECT * FROM brands ${where} ORDER BY COALESCE(order_wise, 999999), id DESC`);
+
+    const [rows] = await pool.query(`
+      SELECT
+        b.*,
+        s.id AS storage_id,
+        s.data_type,
+        s.data_id,
+        s.key,
+        s.value,
+        s.created_at AS storage_created_at,
+        s.updated_at AS storage_updated_at
+      FROM brands b
+      LEFT JOIN storages s
+        ON s.data_id = b.id
+      ${where}
+      ORDER BY COALESCE(b.order_wise, 999999), b.id DESC
+    `);
+
+    const brandsMap = new Map();
+
+    for (const row of rows) {
+      if (!brandsMap.has(row.id)) {
+        brandsMap.set(row.id, {
+          ...formatBrand(row),
+          storage: [],
+        });
+      }
+
+      if (row.storage_id) {
+        brandsMap.get(row.id).storage.push({
+          id: row.storage_id,
+          data_type: row.data_type,
+          data_id: row.data_id,
+          key: row.key,
+          value: row.value,
+          created_at: row.storage_created_at,
+          updated_at: row.storage_updated_at,
+        });
+      }
+    }
 
     return Response.json({
       success: true,
-      brands: rows.map(formatBrand),
+      message: "Brands fetched successfully.",
+      brands: [...brandsMap.values()],
     });
   } catch (error) {
     return Response.json({ success: false, message: error.message }, { status: 500 });
