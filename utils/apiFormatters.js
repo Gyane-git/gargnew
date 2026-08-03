@@ -1,12 +1,7 @@
 import { existsSync } from "fs";
 import path from "path";
 
-const absoluteBaseUrl = () =>
-  (
-    process.env.NEXT_PUBLIC_MEDIA_BASE_URL ||
-    process.env.NEXT_PUBLIC_ASSET_BASE_URL ||
-    ""
-  ).replace(/\/+$/, "");
+const absoluteBaseUrl = () => (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || process.env.NEXT_PUBLIC_ASSET_BASE_URL || "").replace(/\/+$/, "");
 
 const publicAssetExists = (candidatePath) => {
   const localPath = path.join(process.cwd(), "public", candidatePath.replace(/^\/+/, ""));
@@ -38,9 +33,7 @@ const pickAssetPath = (value, folder = "") => {
   const filename = normalizedValue.split("/").filter(Boolean).pop() || normalizedValue;
   const candidates = uniqueCandidates([
     normalizedValue.includes("/") ? `/${normalizedValue}` : null,
-    normalizedValue.startsWith("storage/app/public/backend/")
-      ? `/${normalizedValue.replace(/^storage\/app\/public\//, "")}`
-      : null,
+    normalizedValue.startsWith("storage/app/public/backend/") ? `/${normalizedValue.replace(/^storage\/app\/public\//, "")}` : null,
     normalizedValue.startsWith("backend/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("uploads/") ? `/${normalizedValue}` : null,
     normalizedValue.startsWith("storage/") ? `/${normalizedValue}` : null,
@@ -118,9 +111,9 @@ export const formatProduct = (product) => ({
   brand: product.brand_id
     ? {
         id: product.brand_id,
-      brand_name: product.brand_name,
-      image_full_url: assetUrl(product.brand_image, "uploads/brands"),
-      image_url: assetUrl(product.brand_image, "uploads/brands"),
+        brand_name: product.brand_name,
+        image_full_url: assetUrl(product.brand_image, "uploads/brands"),
+        image_url: assetUrl(product.brand_image, "uploads/brands"),
         top: asFlag(product.brand_top),
         status: asFlag(product.brand_status),
       }
@@ -128,10 +121,10 @@ export const formatProduct = (product) => ({
   category: product.category_id
     ? {
         id: product.category_id,
-      category_name: product.category_name,
-      parent_id: product.category_parent_id,
-      image_full_url: assetUrl(product.category_image, "uploads"),
-      image_url: assetUrl(product.category_image, "uploads"),
+        category_name: product.category_name,
+        parent_id: product.category_parent_id,
+        image_full_url: assetUrl(product.category_image, "uploads"),
+        image_url: assetUrl(product.category_image, "uploads"),
         top: asFlag(product.category_top),
         status: asFlag(product.category_status),
       }
@@ -146,12 +139,42 @@ const formatCategory = (category) => ({
 
 export const formatCategoryRows = (rows) => rows.map(formatCategory);
 
+// export const buildCategoryTree = (rows, { onlyActive = true } = {}) => {
+//   const formattedRows = formatCategoryRows(rows).filter((category) => !onlyActive || Number(category.status) === 1);
+//   const byId = new Map();
+//   const tree = [];
+
+//   formattedRows.forEach((category) => {
+//     byId.set(Number(category.id), {
+//       ...category,
+//       active_children: [],
+//       children: [],
+//     });
+//   });
+
+//   formattedRows.forEach((category) => {
+//     const node = byId.get(Number(category.id));
+//     const parentId = category.parent_id == null ? null : Number(category.parent_id);
+//     const parent = parentId ? byId.get(parentId) : null;
+
+//     if (parent) {
+//       parent.active_children.push(node);
+//       parent.children.push(node);
+//     } else {
+//       tree.push(node);
+//     }
+//   });
+
+//   return tree;
+// };
+
 export const buildCategoryTree = (rows, { onlyActive = true } = {}) => {
-  const formattedRows = formatCategoryRows(rows).filter((category) => !onlyActive || Number(category.status) === 1);
+  const filteredRows = rows.filter((category) => !onlyActive || Number(category.status) === 1);
+
   const byId = new Map();
   const tree = [];
 
-  formattedRows.forEach((category) => {
+  filteredRows.forEach((category) => {
     byId.set(Number(category.id), {
       ...category,
       active_children: [],
@@ -159,14 +182,14 @@ export const buildCategoryTree = (rows, { onlyActive = true } = {}) => {
     });
   });
 
-  formattedRows.forEach((category) => {
+  filteredRows.forEach((category) => {
     const node = byId.get(Number(category.id));
-    const parentId = category.parent_id == null ? null : Number(category.parent_id);
-    const parent = parentId ? byId.get(parentId) : null;
 
-    if (parent) {
-      parent.active_children.push(node);
-      parent.children.push(node);
+    const parentId = category.parent_id == null ? null : Number(category.parent_id);
+
+    if (parentId && byId.has(parentId)) {
+      byId.get(parentId).active_children.push(node);
+      byId.get(parentId).children.push(node);
     } else {
       tree.push(node);
     }
@@ -183,10 +206,7 @@ export const shouldReturnFlatCategories = (req) => {
 };
 
 export const parsePagination = (searchParams, { defaultLimit = 10, maxLimit = 100 } = {}) => {
-  const limit = Math.min(
-    Math.max(Number.parseInt(searchParams.get("limit") || `${defaultLimit}`, 10) || defaultLimit, 1),
-    maxLimit,
-  );
+  const limit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") || `${defaultLimit}`, 10) || defaultLimit, 1), maxLimit);
   const offset = Math.max(Number.parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
 
   return { limit, offset };

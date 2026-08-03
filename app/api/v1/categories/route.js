@@ -46,15 +46,86 @@ import { buildCategoryTree, formatCategoryRows, shouldReturnFlatCategories } fro
  *                 success: { type: boolean, example: false }
  *                 message: { type: string }
  */
+// export async function GET(req) {
+//   try {
+//     const [rows] = await pool.query("SELECT * FROM categories ORDER BY id ASC");
+//     const categories = shouldReturnFlatCategories(req)
+//       ? formatCategoryRows(rows)
+//       : buildCategoryTree(rows, { onlyActive: true });
+
+//     return NextResponse.json({
+//       success: true,
+//       categories,
+//     });
+//   } catch (error) {
+//     console.error("GET CATEGORIES ERROR:", error);
+
+//     return NextResponse.json(
+//       {
+//         success: false,
+//         message: error.message,
+//       },
+//       { status: 500 },
+//     );
+//   }
+// }
+
 export async function GET(req) {
   try {
-    const [rows] = await pool.query("SELECT * FROM categories ORDER BY id ASC");
-    const categories = shouldReturnFlatCategories(req)
-      ? formatCategoryRows(rows)
-      : buildCategoryTree(rows, { onlyActive: true });
+    const [rows] = await pool.query(`
+      SELECT
+        c.*,
+        s.id AS storage_id,
+        s.data_type,
+        s.data_id,
+        s.key,
+        s.value,
+        s.created_at AS storage_created_at,
+        s.updated_at AS storage_updated_at
+      FROM categories c
+      LEFT JOIN storages s
+        ON s.data_id = c.id
+       
+      ORDER BY 
+        CASE WHEN c.parent_id IS NULL THEN c.id ELSE c.parent_id END ASC,
+        c.parent_id ASC,
+        c.id ASC
+    `);
+
+    const formattedCategories = formatCategoryRows(rows);
+
+    const formattedMap = new Map(formattedCategories.map((category) => [category.id, category]));
+
+    const categoryMap = new Map();
+
+    for (const row of rows) {
+      if (!categoryMap.has(row.id)) {
+        categoryMap.set(row.id, {
+          ...formattedMap.get(row.id),
+          storage: [],
+        });
+      }
+
+      if (row.storage_id) {
+        categoryMap.get(row.id).storage.push({
+          id: row.storage_id,
+          data_type: row.data_type,
+          data_id: row.data_id,
+          key: row.key,
+          value: row.value,
+          created_at: row.storage_created_at,
+          updated_at: row.storage_updated_at,
+        });
+      }
+    }
+
+    const categoryRows = [...categoryMap.values()];
+
+    const categories = shouldReturnFlatCategories(req) ? categoryRows : buildCategoryTree(categoryRows, { onlyActive: true });
 
     return NextResponse.json({
       success: true,
+      message: "Categories fetched successfully.",
       categories,
     });
   } catch (error) {
@@ -69,7 +140,6 @@ export async function GET(req) {
     );
   }
 }
-
 /**
  * @swagger
  * /api/v1/categories:
